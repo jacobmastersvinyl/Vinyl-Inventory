@@ -1,0 +1,1046 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0a0a0a">
+<title>Vinyl Media — Item Scan</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@400;500&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ─────────────────────────────────────────
+   FIELD-READY MOBILE UI
+   High contrast, big tap targets, zero friction
+   Works in direct sunlight, one-handed
+───────────────────────────────────────── */
+:root {
+  --bg:      #0a0a0a;
+  --surface: #141414;
+  --card:    #1c1c1c;
+  --border:  #2a2a2a;
+  --text:    #f0ede8;
+  --muted:   #6b6560;
+  --orange:  #e8500a;
+  --green:   #1a9e4a;
+  --red:     #c02020;
+  --blue:    #1a6bba;
+  --mono:    'DM Mono', monospace;
+  --display: 'Bebas Neue', sans-serif;
+  --body:    'Barlow', sans-serif;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+html, body {
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--body);
+  overscroll-behavior: none;
+}
+
+/* ── SCREENS ── */
+.screen {
+  display: none;
+  flex-direction: column;
+  min-height: 100dvh;
+  padding: 0;
+}
+.screen.active { display: flex; }
+
+/* ── HEADER ── */
+.app-header {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 14px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+
+.logo {
+  font-family: var(--display);
+  font-size: 22px;
+  letter-spacing: 0.06em;
+  line-height: 1;
+}
+.logo em { color: var(--orange); font-style: normal; }
+
+.header-id {
+  font-family: var(--mono);
+  font-size: 13px;
+  color: var(--muted);
+  letter-spacing: 0.08em;
+}
+
+/* ── BODY SCROLL AREA ── */
+.screen-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* ── STATUS PILL ── */
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  border-radius: 100px;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  align-self: flex-start;
+}
+.status-pill.new    { background: rgba(232,80,10,0.15); color: var(--orange); border: 1px solid rgba(232,80,10,0.3); }
+.status-pill.in     { background: rgba(26,158,74,0.15); color: var(--green);  border: 1px solid rgba(26,158,74,0.3); }
+.status-pill.out    { background: rgba(192,32,32,0.15); color: var(--red);    border: 1px solid rgba(192,32,32,0.3); }
+.status-dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+
+/* ── ITEM ID DISPLAY ── */
+.id-display {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--orange);
+  border-radius: 4px;
+  padding: 16px 18px;
+}
+
+.id-label {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 4px;
+}
+
+.id-value {
+  font-family: var(--display);
+  font-size: 52px;
+  letter-spacing: 0.04em;
+  line-height: 1;
+  color: var(--text);
+}
+
+.id-name {
+  font-size: 14px;
+  color: var(--muted);
+  margin-top: 4px;
+  font-style: italic;
+}
+
+/* ── EXISTING ITEM CARD ── */
+.item-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.item-photo {
+  width: 100%;
+  max-height: 200px;
+  object-fit: cover;
+  display: block;
+  background: var(--border);
+}
+
+.item-photo-empty {
+  width: 100%;
+  height: 100px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #111;
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+}
+
+.item-meta {
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.meta-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 13px;
+}
+.meta-key {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.meta-val { font-weight: 600; font-size: 14px; }
+
+/* ── LOCATION STRIP ── */
+.location-strip {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.loc-icon { font-size: 20px; flex-shrink: 0; }
+
+.loc-text {
+  flex: 1;
+}
+
+.loc-label {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.loc-value {
+  font-size: 13px;
+  font-weight: 500;
+  margin-top: 2px;
+  word-break: break-all;
+}
+
+.loc-value.loading { color: var(--muted); font-style: italic; }
+.loc-value.error   { color: var(--red); }
+
+/* ── FORM ── */
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.form-label {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.form-input {
+  background: var(--card);
+  border: 1.5px solid var(--border);
+  border-radius: 4px;
+  color: var(--text);
+  font-family: var(--body);
+  font-size: 16px; /* prevents iOS zoom */
+  padding: 14px 16px;
+  outline: none;
+  width: 100%;
+  transition: border-color 0.15s;
+  -webkit-appearance: none;
+}
+.form-input:focus { border-color: var(--orange); }
+
+select.form-input {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236b6560' stroke-width='1.5' fill='none'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  padding-right: 36px;
+  cursor: pointer;
+}
+select.form-input option { background: var(--card); }
+
+/* ── PHOTO BUTTON ── */
+.photo-btn {
+  width: 100%;
+  height: 120px;
+  background: var(--card);
+  border: 2px dashed var(--border);
+  border-radius: 4px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: border-color 0.15s;
+  color: var(--muted);
+  position: relative;
+  overflow: hidden;
+}
+.photo-btn:active { border-color: var(--orange); }
+
+.photo-btn .icon { font-size: 32px; }
+.photo-btn .label {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.photo-preview {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: none;
+}
+.photo-preview.visible { display: block; }
+
+.photo-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.45);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #fff;
+}
+.photo-overlay.visible { display: flex; }
+
+#photo-input { display: none; }
+
+/* ── WHO ── */
+.who-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.who-btn {
+  padding: 12px 8px;
+  background: var(--card);
+  border: 2px solid var(--border);
+  border-radius: 4px;
+  color: var(--muted);
+  font-family: var(--body);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.12s;
+  text-align: center;
+}
+.who-btn.selected {
+  background: rgba(232,80,10,0.12);
+  border-color: var(--orange);
+  color: var(--orange);
+}
+
+/* ── ACTION BUTTONS ── */
+.action-area {
+  padding: 16px 20px 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex-shrink: 0;
+  background: var(--bg);
+  border-top: 1px solid var(--border);
+}
+
+.btn-primary {
+  width: 100%;
+  padding: 18px;
+  background: var(--orange);
+  border: none;
+  border-radius: 4px;
+  color: #fff;
+  font-family: var(--display);
+  font-size: 22px;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  transition: opacity 0.12s, transform 0.08s;
+  -webkit-appearance: none;
+}
+.btn-primary:active { opacity: 0.85; transform: scale(0.99); }
+.btn-primary:disabled { opacity: 0.35; cursor: not-allowed; }
+
+.btn-secondary {
+  width: 100%;
+  padding: 14px;
+  background: transparent;
+  border: 1.5px solid var(--border);
+  border-radius: 4px;
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.12s;
+  -webkit-appearance: none;
+}
+.btn-secondary:active { border-color: var(--text); color: var(--text); }
+
+.btn-checkout {
+  background: var(--red);
+}
+
+.btn-checkin {
+  background: var(--green);
+}
+
+/* ── SUCCESS SCREEN ── */
+.success-wrap {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 24px;
+  text-align: center;
+  gap: 16px;
+}
+
+.success-icon { font-size: 64px; }
+
+.success-title {
+  font-family: var(--display);
+  font-size: 40px;
+  letter-spacing: 0.06em;
+  color: var(--green);
+}
+
+.success-id {
+  font-family: var(--mono);
+  font-size: 14px;
+  color: var(--muted);
+  letter-spacing: 0.1em;
+}
+
+.success-detail {
+  font-size: 14px;
+  color: var(--muted);
+  line-height: 1.6;
+  max-width: 280px;
+}
+
+/* ── SPINNER ── */
+.spinner {
+  width: 36px;
+  height: 36px;
+  border: 3px solid var(--border);
+  border-top-color: var(--orange);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  margin: 0 auto;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── TOAST ── */
+#toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%) translateY(80px);
+  background: #fff;
+  color: #0a0a0a;
+  padding: 12px 20px;
+  border-radius: 100px;
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1);
+  z-index: 999;
+  pointer-events: none;
+}
+#toast.show { transform: translateX(-50%) translateY(0); }
+#toast.error { background: var(--red); color: #fff; }
+
+/* ── SECTION DIVIDER ── */
+.divider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.divider::before, .divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+</style>
+</head>
+<body>
+
+<!-- ════════════════════════════════════
+     SCREEN 1 — LOADING / ID DETECTION
+═════════════════════════════════════ -->
+<div class="screen active" id="screen-loading">
+  <div class="screen-body" style="align-items:center; justify-content:center; gap:20px;">
+    <div class="logo">Vinyl <em>Media</em></div>
+    <div class="spinner"></div>
+    <div style="font-family:var(--mono); font-size:11px; color:var(--muted); letter-spacing:0.12em; text-transform:uppercase;">
+      Reading tag…
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════
+     SCREEN 2 — NEW ITEM REGISTRATION
+═════════════════════════════════════ -->
+<div class="screen" id="screen-new">
+  <div class="app-header">
+    <div class="logo">Vinyl <em>Media</em></div>
+    <div class="header-id" id="new-header-id"></div>
+  </div>
+
+  <div class="screen-body">
+    <div class="status-pill new"><div class="status-dot"></div>New Item</div>
+
+    <div class="id-display">
+      <div class="id-label">Item ID</div>
+      <div class="id-value" id="new-id-display"></div>
+    </div>
+
+    <div class="divider">Item Details</div>
+
+    <div class="form-group">
+      <div class="form-label">Item Name</div>
+      <input class="form-input" type="text" id="new-name" placeholder="e.g. Timing Banner 3m" autocomplete="off" />
+    </div>
+
+    <div class="form-group">
+      <div class="form-label">Category</div>
+      <select class="form-input" id="new-cat">
+        <option value="">— Select —</option>
+        <option>Signage</option>
+        <option>Timing</option>
+        <option>Barriers</option>
+        <option>Marquee</option>
+        <option>Audio / AV</option>
+        <option>Cables</option>
+        <option>Apparel</option>
+        <option>Bag / Case</option>
+        <option>Furniture</option>
+        <option>Safety</option>
+        <option>Misc</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <div class="form-label">Photo</div>
+      <div class="photo-btn" onclick="triggerPhoto()">
+        <img class="photo-preview" id="photo-preview" src="" alt="" />
+        <div class="photo-overlay" id="photo-overlay">Tap to retake</div>
+        <span class="icon" id="photo-icon">📷</span>
+        <span class="label" id="photo-label">Tap to photograph item</span>
+      </div>
+      <input type="file" id="photo-input" accept="image/*" capture="environment" onchange="handlePhoto(this)" />
+    </div>
+
+    <div class="divider">Location</div>
+
+    <div class="location-strip">
+      <div class="loc-icon">📍</div>
+      <div class="loc-text">
+        <div class="loc-label">Detected Location</div>
+        <div class="loc-value loading" id="loc-display">Getting GPS…</div>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <div class="form-label">Storage Location Name</div>
+      <input class="form-input" type="text" id="new-location" placeholder="e.g. CHC Storage Unit A" autocomplete="off" />
+    </div>
+
+    <div class="divider">Who's scanning</div>
+
+    <div class="who-grid" id="who-grid-new">
+      <button class="who-btn" onclick="selectWho(this, 'new')">Jacob</button>
+      <button class="who-btn" onclick="selectWho(this, 'new')">Add name…</button>
+    </div>
+    <input class="form-input" type="text" id="custom-who-new" placeholder="Enter name" style="display:none;" />
+
+  </div>
+
+  <div class="action-area">
+    <button class="btn-primary" id="btn-register" onclick="submitNew()">Register Item</button>
+    <button class="btn-secondary" onclick="showManualEntry()">Enter ID manually</button>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════
+     SCREEN 3 — EXISTING ITEM (CHECK IN/OUT)
+═════════════════════════════════════ -->
+<div class="screen" id="screen-existing">
+  <div class="app-header">
+    <div class="logo">Vinyl <em>Media</em></div>
+    <div class="header-id" id="exist-header-id"></div>
+  </div>
+
+  <div class="screen-body">
+    <div class="status-pill" id="exist-status-pill">
+      <div class="status-dot"></div>
+      <span id="exist-status-text">Checked In</span>
+    </div>
+
+    <div class="id-display">
+      <div class="id-label">Item ID</div>
+      <div class="id-value" id="exist-id-display"></div>
+      <div class="id-name" id="exist-name-display"></div>
+    </div>
+
+    <div class="item-card">
+      <img class="item-photo" id="exist-photo" src="" alt="" style="display:none;" />
+      <div class="item-photo-empty" id="exist-photo-empty">No photo on record</div>
+      <div class="item-meta" id="exist-meta">
+        <!-- populated by JS -->
+      </div>
+    </div>
+
+    <div class="location-strip">
+      <div class="loc-icon">📍</div>
+      <div class="loc-text">
+        <div class="loc-label">Current GPS</div>
+        <div class="loc-value loading" id="loc-display-exist">Getting GPS…</div>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <div class="form-label">Storage Location</div>
+      <input class="form-input" type="text" id="exist-location" placeholder="e.g. CHC Storage Unit A" autocomplete="off" />
+    </div>
+
+    <div class="form-group">
+      <div class="form-label">Notes (optional)</div>
+      <input class="form-input" type="text" id="exist-notes" placeholder="e.g. Damaged corner" autocomplete="off" />
+    </div>
+
+    <div class="divider">Who's scanning</div>
+    <div class="who-grid" id="who-grid-exist">
+      <button class="who-btn" onclick="selectWho(this, 'exist')">Jacob</button>
+      <button class="who-btn" onclick="selectWho(this, 'exist')">Add name…</button>
+    </div>
+    <input class="form-input" type="text" id="custom-who-exist" placeholder="Enter name" style="display:none;" />
+
+  </div>
+
+  <div class="action-area" id="checkinout-actions">
+    <!-- Populated by JS based on current status -->
+  </div>
+</div>
+
+<!-- ════════════════════════════════════
+     SCREEN 4 — SUCCESS
+═════════════════════════════════════ -->
+<div class="screen" id="screen-success">
+  <div class="success-wrap">
+    <div class="success-icon" id="success-icon">✅</div>
+    <div class="success-title" id="success-title">Done</div>
+    <div class="success-id" id="success-id"></div>
+    <div class="success-detail" id="success-detail"></div>
+  </div>
+  <div class="action-area">
+    <button class="btn-primary" onclick="scanAnother()">Scan Another</button>
+    <button class="btn-secondary" onclick="openSheet()">View in Sheet</button>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════
+     SCREEN 5 — MANUAL ID ENTRY
+═════════════════════════════════════ -->
+<div class="screen" id="screen-manual">
+  <div class="app-header">
+    <div class="logo">Vinyl <em>Media</em></div>
+    <div class="header-id">Manual</div>
+  </div>
+  <div class="screen-body" style="justify-content:center; gap:20px;">
+    <div style="font-family:var(--mono); font-size:10px; letter-spacing:0.2em; text-transform:uppercase; color:var(--muted);">Enter Item ID</div>
+    <input class="form-input" type="text" id="manual-id" placeholder="e.g. B42" maxlength="4"
+      style="font-family:var(--display); font-size:48px; text-align:center; letter-spacing:0.1em; text-transform:uppercase;" />
+    <div style="font-size:12px; color:var(--muted); text-align:center; line-height:1.6;">
+      Format: Letter + Number<br>e.g. A1, B12, Z99
+    </div>
+  </div>
+  <div class="action-area">
+    <button class="btn-primary" onclick="submitManualId()">Look Up</button>
+    <button class="btn-secondary" onclick="showScreen('screen-new')">Cancel</button>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+<script>
+// ══════════════════════════════════════════════
+// CONFIGURATION — fill these in after deploying
+// ══════════════════════════════════════════════
+const CONFIG = {
+  // Paste your deployed Apps Script Web App URL here:
+  SCRIPT_URL: 'https://script.google.com/a/macros/funkified.com.au/s/AKfycbwxhZiH_yrNp7oTWSht6qu7y5sWkKXnMTVAQyEXklnYXEbMQgYhacfhKU4ipJQ-rY6g8g/exec',
+
+  // Your Google Sheet ID (from the URL):
+  SHEET_ID: '143xqtYJo-PvwQWkfE06YH54etJC34gsXGapZd3wftfs',
+};
+
+// ══════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════
+let state = {
+  itemId: null,
+  existingItem: null,
+  photoFile: null,
+  photoBase64: null,
+  gps: null,
+  whoNew: null,
+  whoExist: null,
+};
+
+// ══════════════════════════════════════════════
+// INIT — read ID from URL param
+// ══════════════════════════════════════════════
+async function init() {
+  const params = new URLSearchParams(window.location.search);
+  const id = (params.get('id') || '').toUpperCase().trim();
+
+  // Start GPS immediately in background
+  getGPS();
+
+  if (!id) {
+    // No ID in URL — go straight to manual entry
+    showScreen('screen-manual');
+    return;
+  }
+
+  state.itemId = id;
+  await lookupItem(id);
+}
+
+async function lookupItem(id) {
+  try {
+    const url = `${CONFIG.SCRIPT_URL}?action=lookup&id=${encodeURIComponent(id)}`;
+    const resp = await fetch(url);
+    const data = await resp.json();
+
+    if (data.found) {
+      state.existingItem = data.item;
+      showExistingScreen(id, data.item);
+    } else {
+      showNewScreen(id);
+    }
+  } catch (e) {
+    // If script unreachable (e.g. not configured yet), show new item screen
+    showNewScreen(id);
+    toast('Offline mode — will submit when connected', true);
+  }
+}
+
+// ══════════════════════════════════════════════
+// SCREEN MANAGEMENT
+// ══════════════════════════════════════════════
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function showNewScreen(id) {
+  document.getElementById('new-header-id').textContent = id;
+  document.getElementById('new-id-display').textContent = id;
+  showScreen('screen-new');
+}
+
+function showExistingScreen(id, item) {
+  document.getElementById('exist-header-id').textContent = id;
+  document.getElementById('exist-id-display').textContent = id;
+  document.getElementById('exist-name-display').textContent = item.name || '';
+
+  // Status pill
+  const pill = document.getElementById('exist-status-pill');
+  const statusText = document.getElementById('exist-status-text');
+  const currentStatus = (item.status || 'in').toLowerCase();
+  pill.className = 'status-pill ' + currentStatus;
+  statusText.textContent = currentStatus === 'in' ? 'Checked In' : 'Checked Out';
+
+  // Photo
+  if (item.photoUrl) {
+    const img = document.getElementById('exist-photo');
+    img.src = item.photoUrl;
+    img.style.display = 'block';
+    document.getElementById('exist-photo-empty').style.display = 'none';
+  }
+
+  // Meta
+  const meta = document.getElementById('exist-meta');
+  meta.innerHTML = `
+    <div class="meta-row"><span class="meta-key">Category</span><span class="meta-val">${item.category || '—'}</span></div>
+    <div class="meta-row"><span class="meta-key">Last Location</span><span class="meta-val">${item.location || '—'}</span></div>
+    <div class="meta-row"><span class="meta-key">Last Scanned</span><span class="meta-val">${item.lastScan || '—'}</span></div>
+    <div class="meta-row"><span class="meta-key">Scanned By</span><span class="meta-val">${item.lastWho || '—'}</span></div>
+  `;
+
+  // Pre-fill location
+  document.getElementById('exist-location').value = item.location || '';
+
+  // Action buttons
+  const actions = document.getElementById('checkinout-actions');
+  if (currentStatus === 'in') {
+    actions.innerHTML = `
+      <button class="btn-primary btn-checkout" onclick="submitCheckout()">Check Out</button>
+      <button class="btn-secondary" onclick="submitUpdateOnly()">Update Record</button>
+    `;
+  } else {
+    actions.innerHTML = `
+      <button class="btn-primary btn-checkin" onclick="submitCheckin()">Check In</button>
+      <button class="btn-secondary" onclick="submitUpdateOnly()">Update Record</button>
+    `;
+  }
+
+  showScreen('screen-existing');
+}
+
+function showManualEntry() {
+  showScreen('screen-manual');
+}
+
+function submitManualId() {
+  const id = document.getElementById('manual-id').value.toUpperCase().trim();
+  if (!id || !/^[A-Z]\d{1,2}$/.test(id)) {
+    toast('Format: Letter + Number (e.g. B12)', true);
+    return;
+  }
+  state.itemId = id;
+  showScreen('screen-loading');
+  lookupItem(id);
+}
+
+// ══════════════════════════════════════════════
+// GPS
+// ══════════════════════════════════════════════
+function getGPS() {
+  if (!navigator.geolocation) {
+    setLocDisplay('GPS not available', true);
+    return;
+  }
+  navigator.geolocation.getCurrentPosition(
+    pos => {
+      state.gps = {
+        lat: pos.coords.latitude.toFixed(6),
+        lng: pos.coords.longitude.toFixed(6),
+        accuracy: Math.round(pos.coords.accuracy),
+      };
+      const txt = `${state.gps.lat}, ${state.gps.lng} (±${state.gps.accuracy}m)`;
+      setLocDisplay(txt, false);
+    },
+    err => setLocDisplay('Location unavailable', true),
+    { enableHighAccuracy: true, timeout: 10000 }
+  );
+}
+
+function setLocDisplay(txt, isError) {
+  ['loc-display', 'loc-display-exist'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.textContent = txt;
+    el.className = 'loc-value' + (isError ? ' error' : '');
+  });
+}
+
+// ══════════════════════════════════════════════
+// PHOTO
+// ══════════════════════════════════════════════
+function triggerPhoto() {
+  document.getElementById('photo-input').click();
+}
+
+function handlePhoto(input) {
+  const file = input.files[0];
+  if (!file) return;
+  state.photoFile = file;
+
+  const reader = new FileReader();
+  reader.onload = e => {
+    state.photoBase64 = e.target.result;
+    const preview = document.getElementById('photo-preview');
+    preview.src = e.target.result;
+    preview.classList.add('visible');
+    document.getElementById('photo-overlay').classList.add('visible');
+    document.getElementById('photo-icon').style.display = 'none';
+    document.getElementById('photo-label').style.display = 'none';
+  };
+  reader.readAsDataURL(file);
+}
+
+// ══════════════════════════════════════════════
+// WHO SELECTION
+// ══════════════════════════════════════════════
+const TEAM = ['Jacob', 'Add name…'];
+
+function selectWho(btn, screen) {
+  const grid = document.getElementById(`who-grid-${screen}`);
+  grid.querySelectorAll('.who-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  const customInput = document.getElementById(`custom-who-${screen}`);
+
+  if (btn.textContent === 'Add name…') {
+    customInput.style.display = 'block';
+    customInput.focus();
+    if (screen === 'new') state.whoNew = '__custom__';
+    else state.whoExist = '__custom__';
+  } else {
+    customInput.style.display = 'none';
+    if (screen === 'new') state.whoNew = btn.textContent;
+    else state.whoExist = btn.textContent;
+  }
+}
+
+function getWho(screen) {
+  const stateKey = screen === 'new' ? 'whoNew' : 'whoExist';
+  if (state[stateKey] === '__custom__') {
+    return document.getElementById(`custom-who-${screen}`).value.trim() || 'Unknown';
+  }
+  return state[stateKey] || 'Unknown';
+}
+
+// ══════════════════════════════════════════════
+// SUBMIT — NEW ITEM
+// ══════════════════════════════════════════════
+async function submitNew() {
+  const name = document.getElementById('new-name').value.trim();
+  const cat  = document.getElementById('new-cat').value;
+  const loc  = document.getElementById('new-location').value.trim();
+
+  if (!name) { toast('Item name required', true); return; }
+  if (!cat)  { toast('Select a category', true); return; }
+
+  const btn = document.getElementById('btn-register');
+  btn.disabled = true;
+  btn.textContent = 'Submitting…';
+
+  const payload = {
+    action:    'register',
+    id:        state.itemId,
+    name,
+    category:  cat,
+    location:  loc,
+    who:       getWho('new'),
+    gpsLat:    state.gps?.lat || '',
+    gpsLng:    state.gps?.lng || '',
+    gpsAcc:    state.gps?.accuracy || '',
+    photo:     state.photoBase64 || '',
+    timestamp: new Date().toISOString(),
+  };
+
+  await submitToScript(payload, 'register');
+}
+
+// ══════════════════════════════════════════════
+// SUBMIT — CHECK IN / OUT
+// ══════════════════════════════════════════════
+async function submitCheckin()  { await submitScan('in'); }
+async function submitCheckout() { await submitScan('out'); }
+async function submitUpdateOnly() { await submitScan('update'); }
+
+async function submitScan(action) {
+  const loc   = document.getElementById('exist-location').value.trim();
+  const notes = document.getElementById('exist-notes').value.trim();
+
+  const payload = {
+    action,
+    id:        state.itemId,
+    location:  loc,
+    notes,
+    who:       getWho('exist'),
+    gpsLat:    state.gps?.lat || '',
+    gpsLng:    state.gps?.lng || '',
+    gpsAcc:    state.gps?.accuracy || '',
+    timestamp: new Date().toISOString(),
+  };
+
+  await submitToScript(payload, action);
+}
+
+// ══════════════════════════════════════════════
+// CORE SUBMIT
+// ══════════════════════════════════════════════
+async function submitToScript(payload, type) {
+  try {
+    const resp = await fetch(CONFIG.SCRIPT_URL, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+    const data = await resp.json();
+
+    if (data.success) {
+      showSuccess(type, payload);
+    } else {
+      toast(data.error || 'Something went wrong', true);
+      resetButtons();
+    }
+  } catch (e) {
+    toast('Network error — check connection', true);
+    resetButtons();
+  }
+}
+
+function resetButtons() {
+  const btn = document.getElementById('btn-register');
+  if (btn) { btn.disabled = false; btn.textContent = 'Register Item'; }
+}
+
+function showSuccess(type, payload) {
+  const icons   = { register: '📦', in: '✅', out: '🔓', update: '✏️' };
+  const titles  = { register: 'Registered', in: 'Checked In', out: 'Checked Out', update: 'Updated' };
+  const details = {
+    register: `${payload.name} has been added to the master inventory.`,
+    in:       `Item is now marked as checked in at ${payload.location || 'unknown location'}.`,
+    out:      `Item is now checked out. GPS location logged.`,
+    update:   `Record updated in master inventory.`,
+  };
+
+  document.getElementById('success-icon').textContent  = icons[type]   || '✅';
+  document.getElementById('success-title').textContent = titles[type]  || 'Done';
+  document.getElementById('success-id').textContent    = `ID: ${state.itemId}`;
+  document.getElementById('success-detail').textContent = details[type] || '';
+
+  showScreen('screen-success');
+}
+
+function scanAnother() {
+  // Reset state
+  state = { itemId: null, existingItem: null, photoFile: null, photoBase64: null, gps: state.gps, whoNew: null, whoExist: null };
+  showScreen('screen-manual');
+}
+
+function openSheet() {
+  window.open(`https://docs.google.com/spreadsheets/d/${CONFIG.SHEET_ID}`, '_blank');
+}
+
+// ══════════════════════════════════════════════
+// TOAST
+// ══════════════════════════════════════════════
+let toastTimer;
+function toast(msg, isError = false) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'show' + (isError ? ' error' : '');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { el.className = ''; }, 3000);
+}
+
+// ── GO ──
+init();
+</script>
+</body>
+</html>
