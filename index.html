@@ -605,7 +605,7 @@ textarea.form-input { resize: vertical; min-height: 80px; font-size: 15px; line-
     </div>
     <div class="form-group">
       <div class="form-label">Event Name</div>
-      <input class="form-input" type="text" id="session-event" placeholder="e.g. Auckland City Run — Apr 2025" />
+      <input class="form-input" type="text" id="session-event" placeholder="e.g. NRMA Hospo Suite" />
     </div>
     <div style="font-family:var(--mono);font-size:9px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);margin-top:8px;">
       Who's running this session?
@@ -1459,15 +1459,25 @@ function showUpdatePhoto() {
 
 async function submitUpdatePhoto() {
   if (S.photos.updatephoto.length === 0) { toast('Add at least one photo', true); return; }
+
+  // Lock button immediately to prevent double-tap
+  const btn = document.querySelector('#screen-photo .btn-primary');
+  if (btn) { btn.disabled = true; btn.textContent = 'Uploading…'; }
+
   const payload = {
     action: 'updatephoto', id: S.itemId,
     photos: S.photos.updatephoto.map(p=>p.base64),
     timestamp: new Date().toISOString(),
   };
+const btn = document.querySelector('#screen-damage .btn-primary');
+  if (btn) { btn.disabled = true; btn.textContent = 'Submitting…'; }
+
   const result = await postToScript(payload);
-  if (result.success) showSuccessScreen('photo', S.itemId, S.item?.name||S.itemId);
-  else toast(result.error||'Error', true);
-}
+
+  if (btn) { btn.disabled = false; btn.textContent = 'Submit Damage Report'; }
+
+  if (result.success) showSuccessScreen('damage', id, S.item?.name||id);
+  else toast(result.error||'Submission failed', true);
 
 // ══════════════════════════════════════════
 // EDIT DETAILS
