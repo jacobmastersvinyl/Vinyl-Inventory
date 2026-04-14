@@ -5,14 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#0a0a0a">
-<title>Vinyl Media — Item Scan</title>
+<title>Vinyl Media — Storage</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@400;500&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
-/* ─────────────────────────────────────────
-   FIELD-READY MOBILE UI
-   High contrast, big tap targets, zero friction
-   Works in direct sunlight, one-handed
-───────────────────────────────────────── */
 :root {
   --bg:      #0a0a0a;
   --surface: #141414;
@@ -23,29 +18,17 @@
   --orange:  #e8500a;
   --green:   #1a9e4a;
   --red:     #c02020;
+  --amber:   #d4820a;
   --blue:    #1a6bba;
   --mono:    'DM Mono', monospace;
   --display: 'Bebas Neue', sans-serif;
   --body:    'Barlow', sans-serif;
 }
-
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-
-html, body {
-  height: 100%;
-  background: var(--bg);
-  color: var(--text);
-  font-family: var(--body);
-  overscroll-behavior: none;
-}
+html, body { height: 100%; background: var(--bg); color: var(--text); font-family: var(--body); overscroll-behavior: none; }
 
 /* ── SCREENS ── */
-.screen {
-  display: none;
-  flex-direction: column;
-  min-height: 100dvh;
-  padding: 0;
-}
+.screen { display: none; flex-direction: column; min-height: 100dvh; }
 .screen.active { display: flex; }
 
 /* ── HEADER ── */
@@ -57,31 +40,49 @@ html, body {
   align-items: center;
   justify-content: space-between;
   flex-shrink: 0;
+  position: sticky;
+  top: 0;
+  z-index: 50;
 }
-
-.logo {
-  font-family: var(--display);
-  font-size: 22px;
-  letter-spacing: 0.06em;
-  line-height: 1;
-}
+.logo { font-family: var(--display); font-size: 20px; letter-spacing: 0.06em; line-height: 1; }
 .logo em { color: var(--orange); font-style: normal; }
+.header-right { display: flex; align-items: center; gap: 10px; }
+.header-id { font-family: var(--mono); font-size: 12px; color: var(--muted); letter-spacing: 0.08em; }
 
-.header-id {
+/* Load list floating button */
+.load-fab {
+  display: none;
+  align-items: center;
+  gap: 6px;
+  background: var(--orange);
+  border: none;
+  border-radius: 100px;
+  padding: 6px 12px 6px 8px;
+  color: #fff;
   font-family: var(--mono);
-  font-size: 13px;
-  color: var(--muted);
+  font-size: 11px;
   letter-spacing: 0.08em;
+  cursor: pointer;
+  font-weight: 500;
+}
+.load-fab.visible { display: flex; }
+.load-fab-icon { font-size: 14px; }
+.load-fab-count {
+  background: rgba(255,255,255,0.25);
+  border-radius: 100px;
+  padding: 1px 6px;
+  font-size: 10px;
 }
 
-/* ── BODY SCROLL AREA ── */
+/* ── SCROLL BODY ── */
 .screen-body {
   flex: 1;
   overflow-y: auto;
   padding: 20px;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 14px;
+  padding-bottom: 120px;
 }
 
 /* ── STATUS PILL ── */
@@ -89,152 +90,119 @@ html, body {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 6px 14px;
+  padding: 5px 12px;
   border-radius: 100px;
   font-family: var(--mono);
-  font-size: 11px;
+  font-size: 10px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
   align-self: flex-start;
 }
-.status-pill.new    { background: rgba(232,80,10,0.15); color: var(--orange); border: 1px solid rgba(232,80,10,0.3); }
-.status-pill.in     { background: rgba(26,158,74,0.15); color: var(--green);  border: 1px solid rgba(26,158,74,0.3); }
-.status-pill.out    { background: rgba(192,32,32,0.15); color: var(--red);    border: 1px solid rgba(192,32,32,0.3); }
-.status-dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+.pill-new    { background: rgba(232,80,10,0.15);  color: var(--orange); border: 1px solid rgba(232,80,10,0.3); }
+.pill-in     { background: rgba(26,158,74,0.15);  color: var(--green);  border: 1px solid rgba(26,158,74,0.3); }
+.pill-out    { background: rgba(192,32,32,0.15);  color: var(--red);    border: 1px solid rgba(192,32,32,0.3); }
+.pill-damage { background: rgba(212,130,10,0.15); color: var(--amber);  border: 1px solid rgba(212,130,10,0.3); }
+.status-dot  { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
 
-/* ── ITEM ID DISPLAY ── */
+/* ── ID DISPLAY ── */
 .id-display {
   background: var(--card);
   border: 1px solid var(--border);
   border-left: 4px solid var(--orange);
   border-radius: 4px;
-  padding: 16px 18px;
+  padding: 14px 16px;
 }
+.id-label { font-family: var(--mono); font-size: 9px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--muted); margin-bottom: 2px; }
+.id-value { font-family: var(--display); font-size: 48px; letter-spacing: 0.04em; line-height: 1; }
+.id-sub   { font-size: 13px; color: var(--muted); margin-top: 3px; font-style: italic; }
 
-.id-label {
-  font-family: var(--mono);
-  font-size: 10px;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-  color: var(--muted);
-  margin-bottom: 4px;
+/* ── DAMAGE BANNER ── */
+.damage-banner {
+  background: rgba(212,130,10,0.12);
+  border: 1px solid rgba(212,130,10,0.35);
+  border-radius: 4px;
+  padding: 12px 14px;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
 }
+.damage-banner-icon { font-size: 18px; flex-shrink: 0; }
+.damage-banner-text { font-size: 13px; line-height: 1.5; color: var(--amber); }
+.damage-banner-text strong { display: block; font-size: 12px; font-family: var(--mono); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 2px; }
 
-.id-value {
-  font-family: var(--display);
-  font-size: 52px;
-  letter-spacing: 0.04em;
-  line-height: 1;
+/* ── ACTION MENU ── */
+.action-menu { display: flex; flex-direction: column; gap: 8px; }
+.action-btn {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: var(--card);
+  border: 1.5px solid var(--border);
+  border-radius: 4px;
+  padding: 16px;
+  cursor: pointer;
+  transition: border-color 0.12s, background 0.12s;
+  text-align: left;
+  width: 100%;
   color: var(--text);
 }
+.action-btn:active { background: #222; }
+.action-btn.takeout:active  { border-color: var(--orange); }
+.action-btn.return:active   { border-color: var(--green); }
+.action-btn.damage:active   { border-color: var(--amber); }
+.action-btn.photo:active    { border-color: var(--blue); }
+.action-btn.edit:active     { border-color: var(--muted); }
 
-.id-name {
-  font-size: 14px;
-  color: var(--muted);
-  margin-top: 4px;
-  font-style: italic;
-}
+.action-icon { font-size: 24px; flex-shrink: 0; width: 32px; text-align: center; }
+.action-text { flex: 1; }
+.action-title { font-family: var(--display); font-size: 20px; letter-spacing: 0.04em; line-height: 1; }
+.action-sub   { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.action-arrow { color: var(--muted); font-size: 18px; }
 
-/* ── EXISTING ITEM CARD ── */
+/* ── ITEM CARD ── */
 .item-card {
   background: var(--card);
   border: 1px solid var(--border);
   border-radius: 4px;
   overflow: hidden;
 }
-
-.item-photo {
-  width: 100%;
-  max-height: 200px;
-  object-fit: cover;
-  display: block;
-  background: var(--border);
+.item-photos-scroll {
+  display: flex;
+  overflow-x: auto;
+  gap: 2px;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
 }
-
-.item-photo-empty {
+.item-photos-scroll img {
+  flex-shrink: 0;
   width: 100%;
-  height: 100px;
+  max-height: 180px;
+  object-fit: cover;
+  scroll-snap-align: start;
+}
+.item-photo-empty {
+  height: 80px;
   display: flex;
   align-items: center;
   justify-content: center;
   background: #111;
   color: var(--muted);
   font-family: var(--mono);
-  font-size: 11px;
-  letter-spacing: 0.1em;
-}
-
-.item-meta {
-  padding: 14px 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.meta-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  font-size: 13px;
-}
-.meta-key {
-  font-family: var(--mono);
   font-size: 10px;
   letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--muted);
 }
-.meta-val { font-weight: 600; font-size: 14px; }
+.item-meta { padding: 12px 14px; display: flex; flex-direction: column; gap: 5px; }
+.meta-row { display: flex; justify-content: space-between; align-items: baseline; }
+.meta-key { font-family: var(--mono); font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); }
+.meta-val { font-size: 13px; font-weight: 600; }
+.meta-val.green { color: var(--green); }
+.meta-val.red   { color: var(--red); }
+.meta-val.amber { color: var(--amber); }
 
-/* ── LOCATION STRIP ── */
-.location-strip {
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  padding: 12px 16px;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.loc-icon { font-size: 20px; flex-shrink: 0; }
-
-.loc-text {
-  flex: 1;
-}
-
-.loc-label {
-  font-family: var(--mono);
-  font-size: 9px;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: var(--muted);
-}
-
-.loc-value {
-  font-size: 13px;
-  font-weight: 500;
-  margin-top: 2px;
-  word-break: break-all;
-}
-
-.loc-value.loading { color: var(--muted); font-style: italic; }
-.loc-value.error   { color: var(--red); }
-
-/* ── FORM ── */
-.form-group {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.form-label {
-  font-family: var(--mono);
-  font-size: 10px;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: var(--muted);
-}
+/* ── FORMS ── */
+.form-section { display: flex; flex-direction: column; gap: 12px; }
+.form-group   { display: flex; flex-direction: column; gap: 5px; }
+.form-label   { font-family: var(--mono); font-size: 9px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--muted); }
 
 .form-input {
   background: var(--card);
@@ -242,17 +210,18 @@ html, body {
   border-radius: 4px;
   color: var(--text);
   font-family: var(--body);
-  font-size: 16px; /* prevents iOS zoom */
-  padding: 14px 16px;
+  font-size: 16px;
+  padding: 13px 14px;
   outline: none;
   width: 100%;
-  transition: border-color 0.15s;
+  transition: border-color 0.12s;
   -webkit-appearance: none;
 }
 .form-input:focus { border-color: var(--orange); }
+.form-input.large { font-family: var(--display); font-size: 36px; letter-spacing: 0.04em; text-transform: uppercase; text-align: center; }
 
 select.form-input {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236b6560' stroke-width='1.5' fill='none'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236b6560' stroke-width='1.5' fill='none'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 14px center;
   padding-right: 36px;
@@ -260,10 +229,79 @@ select.form-input {
 }
 select.form-input option { background: var(--card); }
 
-/* ── PHOTO BUTTON ── */
-.photo-btn {
-  width: 100%;
-  height: 120px;
+textarea.form-input { resize: vertical; min-height: 80px; font-size: 15px; line-height: 1.5; }
+
+/* Severity selector */
+.severity-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+.severity-btn {
+  padding: 12px 6px;
+  background: var(--card);
+  border: 2px solid var(--border);
+  border-radius: 4px;
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  text-align: center;
+  line-height: 1.4;
+  transition: all 0.12s;
+}
+.severity-btn.sel-minor  { background: rgba(26,107,186,0.15); border-color: var(--blue);  color: var(--blue); }
+.severity-btn.sel-repair { background: rgba(212,130,10,0.15); border-color: var(--amber); color: var(--amber); }
+.severity-btn.sel-out    { background: rgba(192,32,32,0.15);  border-color: var(--red);   color: var(--red); }
+
+/* Who buttons */
+.who-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+.who-btn {
+  padding: 9px 14px;
+  background: var(--card);
+  border: 2px solid var(--border);
+  border-radius: 100px;
+  color: var(--muted);
+  font-family: var(--body);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.12s;
+}
+.who-btn.selected { background: rgba(232,80,10,0.12); border-color: var(--orange); color: var(--orange); }
+
+/* ── PHOTO MULTI-UPLOAD ── */
+.photos-area { display: flex; flex-direction: column; gap: 8px; }
+.photos-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+.photo-thumb {
+  width: 80px; height: 80px;
+  border-radius: 4px;
+  object-fit: cover;
+  position: relative;
+  flex-shrink: 0;
+}
+.photo-thumb-wrap {
+  position: relative;
+  width: 80px; height: 80px;
+  flex-shrink: 0;
+}
+.photo-thumb-wrap img { width: 100%; height: 100%; object-fit: cover; border-radius: 4px; }
+.photo-remove {
+  position: absolute;
+  top: -6px; right: -6px;
+  width: 18px; height: 18px;
+  background: var(--red);
+  border: none;
+  border-radius: 50%;
+  color: #fff;
+  font-size: 11px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  line-height: 1;
+}
+.add-photo-btn {
+  width: 80px; height: 80px;
   background: var(--card);
   border: 2px dashed var(--border);
   border-radius: 4px;
@@ -271,199 +309,74 @@ select.form-input option { background: var(--card); }
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: 4px;
   cursor: pointer;
-  transition: border-color 0.15s;
   color: var(--muted);
-  position: relative;
-  overflow: hidden;
-}
-.photo-btn:active { border-color: var(--orange); }
-
-.photo-btn .icon { font-size: 32px; }
-.photo-btn .label {
   font-family: var(--mono);
-  font-size: 11px;
-  letter-spacing: 0.12em;
+  font-size: 9px;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
-}
-
-.photo-preview {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: none;
-}
-.photo-preview.visible { display: block; }
-
-.photo-overlay {
-  position: absolute;
-  inset: 0;
-  background: rgba(0,0,0,0.45);
-  display: none;
-  align-items: center;
-  justify-content: center;
-  font-family: var(--mono);
-  font-size: 11px;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: #fff;
-}
-.photo-overlay.visible { display: flex; }
-
-#photo-input { display: none; }
-
-/* ── WHO ── */
-.who-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
-}
-
-.who-btn {
-  padding: 12px 8px;
-  background: var(--card);
-  border: 2px solid var(--border);
-  border-radius: 4px;
-  color: var(--muted);
-  font-family: var(--body);
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.12s;
-  text-align: center;
-}
-.who-btn.selected {
-  background: rgba(232,80,10,0.12);
-  border-color: var(--orange);
-  color: var(--orange);
-}
-
-/* ── ACTION BUTTONS ── */
-.action-area {
-  padding: 16px 20px 32px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
   flex-shrink: 0;
-  background: var(--bg);
-  border-top: 1px solid var(--border);
 }
+.add-photo-btn:active { border-color: var(--orange); }
+.add-photo-icon { font-size: 22px; }
+#photo-input-multi { display: none; }
 
-.btn-primary {
-  width: 100%;
-  padding: 18px;
-  background: var(--orange);
-  border: none;
-  border-radius: 4px;
-  color: #fff;
-  font-family: var(--display);
-  font-size: 22px;
-  letter-spacing: 0.08em;
-  cursor: pointer;
-  transition: opacity 0.12s, transform 0.08s;
-  -webkit-appearance: none;
-}
-.btn-primary:active { opacity: 0.85; transform: scale(0.99); }
-.btn-primary:disabled { opacity: 0.35; cursor: not-allowed; }
-
-.btn-secondary {
-  width: 100%;
-  padding: 14px;
-  background: transparent;
+/* ── QUANTITY INPUT ── */
+.qty-control {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  background: var(--card);
   border: 1.5px solid var(--border);
   border-radius: 4px;
-  color: var(--muted);
-  font-family: var(--mono);
-  font-size: 12px;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
+  overflow: hidden;
+}
+.qty-btn {
+  width: 54px;
+  height: 54px;
+  background: transparent;
+  border: none;
+  color: var(--text);
+  font-size: 24px;
   cursor: pointer;
-  transition: all 0.12s;
-  -webkit-appearance: none;
-}
-.btn-secondary:active { border-color: var(--text); color: var(--text); }
-
-.btn-checkout {
-  background: var(--red);
-}
-
-.btn-checkin {
-  background: var(--green);
-}
-
-/* ── SUCCESS SCREEN ── */
-.success-wrap {
-  flex: 1;
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 40px 24px;
+  flex-shrink: 0;
+  transition: background 0.1s;
+}
+.qty-btn:active { background: #333; }
+.qty-val {
+  flex: 1;
   text-align: center;
-  gap: 16px;
-}
-
-.success-icon { font-size: 64px; }
-
-.success-title {
   font-family: var(--display);
-  font-size: 40px;
-  letter-spacing: 0.06em;
-  color: var(--green);
+  font-size: 36px;
+  letter-spacing: 0.04em;
+  color: var(--text);
+  border: none;
+  background: transparent;
+  outline: none;
+  width: 100%;
 }
 
-.success-id {
-  font-family: var(--mono);
-  font-size: 14px;
-  color: var(--muted);
-  letter-spacing: 0.1em;
+/* ── LOCATION STRIP ── */
+.loc-strip {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 11px 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
+.loc-icon { font-size: 18px; flex-shrink: 0; }
+.loc-label { font-family: var(--mono); font-size: 9px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--muted); }
+.loc-val { font-size: 12px; font-weight: 500; margin-top: 1px; word-break: break-all; }
+.loc-val.loading { color: var(--muted); font-style: italic; }
+.loc-val.error   { color: var(--red); }
 
-.success-detail {
-  font-size: 14px;
-  color: var(--muted);
-  line-height: 1.6;
-  max-width: 280px;
-}
-
-/* ── SPINNER ── */
-.spinner {
-  width: 36px;
-  height: 36px;
-  border: 3px solid var(--border);
-  border-top-color: var(--orange);
-  border-radius: 50%;
-  animation: spin 0.7s linear infinite;
-  margin: 0 auto;
-}
-@keyframes spin { to { transform: rotate(360deg); } }
-
-/* ── TOAST ── */
-#toast {
-  position: fixed;
-  bottom: 24px;
-  left: 50%;
-  transform: translateX(-50%) translateY(80px);
-  background: #fff;
-  color: #0a0a0a;
-  padding: 12px 20px;
-  border-radius: 100px;
-  font-family: var(--mono);
-  font-size: 12px;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  white-space: nowrap;
-  transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1);
-  z-index: 999;
-  pointer-events: none;
-}
-#toast.show { transform: translateX(-50%) translateY(0); }
-#toast.error { background: var(--red); color: #fff; }
-
-/* ── SECTION DIVIDER ── */
+/* ── DIVIDER ── */
 .divider {
   display: flex;
   align-items: center;
@@ -474,569 +387,1468 @@ select.form-input option { background: var(--card); }
   text-transform: uppercase;
   color: var(--muted);
 }
-.divider::before, .divider::after {
-  content: '';
-  flex: 1;
-  height: 1px;
-  background: var(--border);
+.divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+/* ── ACTION AREA (bottom) ── */
+.action-area {
+  padding: 14px 20px 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex-shrink: 0;
+  background: var(--bg);
+  border-top: 1px solid var(--border);
 }
+.btn-primary {
+  width: 100%; padding: 17px;
+  background: var(--orange); border: none; border-radius: 4px;
+  color: #fff; font-family: var(--display); font-size: 20px;
+  letter-spacing: 0.08em; cursor: pointer;
+  transition: opacity 0.12s, transform 0.08s;
+  -webkit-appearance: none;
+}
+.btn-primary:active { opacity: 0.85; transform: scale(0.99); }
+.btn-primary:disabled { opacity: 0.3; cursor: not-allowed; }
+.btn-primary.green  { background: var(--green); }
+.btn-primary.red    { background: var(--red); }
+.btn-primary.amber  { background: var(--amber); }
+.btn-secondary {
+  width: 100%; padding: 13px;
+  background: transparent; border: 1.5px solid var(--border); border-radius: 4px;
+  color: var(--muted); font-family: var(--mono); font-size: 11px;
+  letter-spacing: 0.12em; text-transform: uppercase; cursor: pointer;
+  transition: all 0.12s; -webkit-appearance: none;
+}
+.btn-secondary:active { border-color: var(--text); color: var(--text); }
+
+/* ── LOAD LIST SHEET ── */
+.load-sheet {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: none;
+  flex-direction: column;
+  background: var(--bg);
+}
+.load-sheet.open { display: flex; }
+.load-sheet-header {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.load-sheet-title { font-family: var(--display); font-size: 26px; letter-spacing: 0.06em; }
+.load-sheet-close {
+  background: transparent; border: 1px solid var(--border); border-radius: 4px;
+  color: var(--muted); padding: 6px 12px; font-family: var(--mono); font-size: 11px;
+  letter-spacing: 0.1em; text-transform: uppercase; cursor: pointer;
+}
+.load-event-name {
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--border);
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  color: var(--orange);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.load-event-name span { color: var(--muted); }
+.load-items { flex: 1; overflow-y: auto; }
+.load-item-row {
+  display: flex;
+  align-items: center;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--border);
+  gap: 12px;
+}
+.load-item-id {
+  font-family: var(--display);
+  font-size: 22px;
+  letter-spacing: 0.04em;
+  color: var(--orange);
+  width: 60px;
+  flex-shrink: 0;
+}
+.load-item-name { flex: 1; font-size: 14px; font-weight: 600; line-height: 1.3; }
+.load-item-cat  { font-size: 11px; color: var(--muted); margin-top: 2px; }
+.load-item-qty  {
+  font-family: var(--display);
+  font-size: 28px;
+  letter-spacing: 0.04em;
+  color: var(--text);
+  width: 48px;
+  text-align: right;
+  flex-shrink: 0;
+}
+.load-item-remove {
+  background: transparent; border: none; color: var(--muted);
+  font-size: 18px; cursor: pointer; padding: 4px; flex-shrink: 0;
+}
+.load-empty {
+  padding: 60px 24px;
+  text-align: center;
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.load-footer {
+  padding: 14px 20px 32px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.load-summary {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+  padding-bottom: 10px;
+}
+.load-summary strong { color: var(--text); }
+
+/* ── SUCCESS ── */
+.success-wrap {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 40px 24px; text-align: center; gap: 14px;
+}
+.success-icon  { font-size: 60px; }
+.success-title { font-family: var(--display); font-size: 42px; letter-spacing: 0.06em; color: var(--green); }
+.success-title.orange { color: var(--orange); }
+.success-title.amber  { color: var(--amber); }
+.success-id    { font-family: var(--mono); font-size: 13px; color: var(--muted); letter-spacing: 0.1em; }
+.success-detail { font-size: 14px; color: var(--muted); line-height: 1.65; max-width: 280px; }
+
+/* ── SPINNER ── */
+.spinner {
+  width: 34px; height: 34px;
+  border: 3px solid var(--border); border-top-color: var(--orange);
+  border-radius: 50%; animation: spin 0.7s linear infinite; margin: 0 auto;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── TOAST ── */
+#toast {
+  position: fixed; bottom: 24px; left: 50%;
+  transform: translateX(-50%) translateY(80px);
+  background: #fff; color: #0a0a0a;
+  padding: 11px 20px; border-radius: 100px;
+  font-family: var(--mono); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase;
+  white-space: nowrap; transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1);
+  z-index: 999; pointer-events: none;
+}
+#toast.show { transform: translateX(-50%) translateY(0); }
+#toast.error { background: var(--red); color: #fff; }
+#toast.success { background: var(--green); color: #fff; }
 </style>
 </head>
 <body>
 
-<!-- ════════════════════════════════════
-     SCREEN 1 — LOADING / ID DETECTION
-═════════════════════════════════════ -->
+<!-- ════════════════════════════
+     LOAD LIST SHEET (overlay)
+════════════════════════════ -->
+<div class="load-sheet" id="load-sheet">
+  <div class="load-sheet-header">
+    <div class="load-sheet-title">📦 Load List</div>
+    <button class="load-sheet-close" onclick="closeLoadSheet()">Close</button>
+  </div>
+  <div class="load-event-name">
+    <span>Event:</span>
+    <span id="load-event-display">—</span>
+  </div>
+  <div class="load-items" id="load-items-list">
+    <div class="load-empty">No items added yet.<br>Scan items and tap Take Out.</div>
+  </div>
+  <div class="load-footer">
+    <div class="load-summary">
+      <span><strong id="load-count">0</strong> items</span>
+      <span><strong id="load-units">0</strong> units total</span>
+    </div>
+    <button class="btn-primary" onclick="submitLoad()">✓ Confirm &amp; Submit Load</button>
+    <button class="btn-secondary" onclick="closeLoadSheet()">Continue Scanning</button>
+  </div>
+</div>
+
+<!-- ════════════════════════════
+     SCREEN: LOADING
+════════════════════════════ -->
 <div class="screen active" id="screen-loading">
-  <div class="screen-body" style="align-items:center; justify-content:center; gap:20px;">
+  <div class="screen-body" style="align-items:center;justify-content:center;gap:20px;">
     <div class="logo">Vinyl <em>Media</em></div>
     <div class="spinner"></div>
-    <div style="font-family:var(--mono); font-size:11px; color:var(--muted); letter-spacing:0.12em; text-transform:uppercase;">
-      Reading tag…
-    </div>
+    <div style="font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:0.14em;text-transform:uppercase;">Reading tag…</div>
   </div>
 </div>
 
-<!-- ════════════════════════════════════
-     SCREEN 2 — NEW ITEM REGISTRATION
-═════════════════════════════════════ -->
-<div class="screen" id="screen-new">
+<!-- ════════════════════════════
+     SCREEN: START SESSION
+════════════════════════════ -->
+<div class="screen" id="screen-session">
   <div class="app-header">
     <div class="logo">Vinyl <em>Media</em></div>
-    <div class="header-id" id="new-header-id"></div>
   </div>
-
-  <div class="screen-body">
-    <div class="status-pill new"><div class="status-dot"></div>New Item</div>
-
-    <div class="id-display">
-      <div class="id-label">Item ID</div>
-      <div class="id-value" id="new-id-display"></div>
+  <div class="screen-body" style="justify-content:center;">
+    <div style="font-family:var(--display);font-size:32px;letter-spacing:0.04em;line-height:1.2;margin-bottom:4px;">
+      Start a New<br>Load Session
     </div>
-
-    <div class="divider">Item Details</div>
-
+    <div style="font-size:14px;color:var(--muted);line-height:1.6;margin-bottom:20px;">
+      Name the event you're loading for. This creates a new tab in your Sheet for this load.
+    </div>
     <div class="form-group">
-      <div class="form-label">Item Name</div>
-      <input class="form-input" type="text" id="new-name" placeholder="e.g. Timing Banner 3m" autocomplete="off" />
+      <div class="form-label">Event Name</div>
+      <input class="form-input" type="text" id="session-event" placeholder="e.g. Auckland City Run — Apr 2025" />
     </div>
-
-    <div class="form-group">
-      <div class="form-label">Category</div>
-      <select class="form-input" id="new-cat">
-        <option value="">— Select —</option>
-        <option>Signage</option>
-        <option>Timing</option>
-        <option>Barriers</option>
-        <option>Marquee</option>
-        <option>Audio / AV</option>
-        <option>Cables</option>
-        <option>Apparel</option>
-        <option>Bag / Case</option>
-        <option>Furniture</option>
-        <option>Safety</option>
-        <option>Misc</option>
-      </select>
+    <div style="font-family:var(--mono);font-size:9px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);margin-top:8px;">
+      Who's running this session?
     </div>
-
-    <div class="form-group">
-      <div class="form-label">Photo</div>
-      <div class="photo-btn" onclick="triggerPhoto()">
-        <img class="photo-preview" id="photo-preview" src="" alt="" />
-        <div class="photo-overlay" id="photo-overlay">Tap to retake</div>
-        <span class="icon" id="photo-icon">📷</span>
-        <span class="label" id="photo-label">Tap to photograph item</span>
-      </div>
-      <input type="file" id="photo-input" accept="image/*" capture="environment" onchange="handlePhoto(this)" />
+    <div class="who-grid" style="margin-top:8px;" id="session-who-grid">
+      <button class="who-btn" onclick="selectSessionWho(this)">Jacob</button>
+      <button class="who-btn" onclick="selectSessionWho(this)">+ Add name</button>
     </div>
-
-    <div class="divider">Location</div>
-
-    <div class="location-strip">
-      <div class="loc-icon">📍</div>
-      <div class="loc-text">
-        <div class="loc-label">Detected Location</div>
-        <div class="loc-value loading" id="loc-display">Getting GPS…</div>
-      </div>
-    </div>
-
-    <div class="form-group">
-      <div class="form-label">Storage Location Name</div>
-      <input class="form-input" type="text" id="new-location" placeholder="e.g. CHC Storage Unit A" autocomplete="off" />
-    </div>
-
-    <div class="divider">Who's scanning</div>
-
-    <div class="who-grid" id="who-grid-new">
-      <button class="who-btn" onclick="selectWho(this, 'new')">Jacob</button>
-      <button class="who-btn" onclick="selectWho(this, 'new')">Add name…</button>
-    </div>
-    <input class="form-input" type="text" id="custom-who-new" placeholder="Enter name" style="display:none;" />
-
-  </div>
-
-  <div class="action-area">
-    <button class="btn-primary" id="btn-register" onclick="submitNew()">Register Item</button>
-    <button class="btn-secondary" onclick="showManualEntry()">Enter ID manually</button>
-  </div>
-</div>
-
-<!-- ════════════════════════════════════
-     SCREEN 3 — EXISTING ITEM (CHECK IN/OUT)
-═════════════════════════════════════ -->
-<div class="screen" id="screen-existing">
-  <div class="app-header">
-    <div class="logo">Vinyl <em>Media</em></div>
-    <div class="header-id" id="exist-header-id"></div>
-  </div>
-
-  <div class="screen-body">
-    <div class="status-pill" id="exist-status-pill">
-      <div class="status-dot"></div>
-      <span id="exist-status-text">Checked In</span>
-    </div>
-
-    <div class="id-display">
-      <div class="id-label">Item ID</div>
-      <div class="id-value" id="exist-id-display"></div>
-      <div class="id-name" id="exist-name-display"></div>
-    </div>
-
-    <div class="item-card">
-      <img class="item-photo" id="exist-photo" src="" alt="" style="display:none;" />
-      <div class="item-photo-empty" id="exist-photo-empty">No photo on record</div>
-      <div class="item-meta" id="exist-meta">
-        <!-- populated by JS -->
-      </div>
-    </div>
-
-    <div class="location-strip">
-      <div class="loc-icon">📍</div>
-      <div class="loc-text">
-        <div class="loc-label">Current GPS</div>
-        <div class="loc-value loading" id="loc-display-exist">Getting GPS…</div>
-      </div>
-    </div>
-
-    <div class="form-group">
-      <div class="form-label">Storage Location</div>
-      <input class="form-input" type="text" id="exist-location" placeholder="e.g. CHC Storage Unit A" autocomplete="off" />
-    </div>
-
-    <div class="form-group">
-      <div class="form-label">Notes (optional)</div>
-      <input class="form-input" type="text" id="exist-notes" placeholder="e.g. Damaged corner" autocomplete="off" />
-    </div>
-
-    <div class="divider">Who's scanning</div>
-    <div class="who-grid" id="who-grid-exist">
-      <button class="who-btn" onclick="selectWho(this, 'exist')">Jacob</button>
-      <button class="who-btn" onclick="selectWho(this, 'exist')">Add name…</button>
-    </div>
-    <input class="form-input" type="text" id="custom-who-exist" placeholder="Enter name" style="display:none;" />
-
-  </div>
-
-  <div class="action-area" id="checkinout-actions">
-    <!-- Populated by JS based on current status -->
-  </div>
-</div>
-
-<!-- ════════════════════════════════════
-     SCREEN 4 — SUCCESS
-═════════════════════════════════════ -->
-<div class="screen" id="screen-success">
-  <div class="success-wrap">
-    <div class="success-icon" id="success-icon">✅</div>
-    <div class="success-title" id="success-title">Done</div>
-    <div class="success-id" id="success-id"></div>
-    <div class="success-detail" id="success-detail"></div>
+    <input class="form-input" type="text" id="session-who-custom" placeholder="Enter name" style="display:none;margin-top:8px;" />
   </div>
   <div class="action-area">
-    <button class="btn-primary" onclick="scanAnother()">Scan Another</button>
-    <button class="btn-secondary" onclick="openSheet()">View in Sheet</button>
+    <button class="btn-primary" onclick="startSession()">Start Session</button>
+    <button class="btn-secondary" onclick="skipSession()">Skip — just scanning, no load</button>
   </div>
 </div>
 
-<!-- ════════════════════════════════════
-     SCREEN 5 — MANUAL ID ENTRY
-═════════════════════════════════════ -->
+<!-- ════════════════════════════
+     SCREEN: MANUAL ID ENTRY
+════════════════════════════ -->
 <div class="screen" id="screen-manual">
   <div class="app-header">
     <div class="logo">Vinyl <em>Media</em></div>
-    <div class="header-id">Manual</div>
+    <div class="header-right">
+      <button class="load-fab" id="fab-manual" onclick="openLoadSheet()">
+        <span class="load-fab-icon">📦</span>
+        <span>List</span>
+        <span class="load-fab-count" id="fab-count-manual">0</span>
+      </button>
+    </div>
   </div>
-  <div class="screen-body" style="justify-content:center; gap:20px;">
-    <div style="font-family:var(--mono); font-size:10px; letter-spacing:0.2em; text-transform:uppercase; color:var(--muted);">Enter Item ID</div>
-    <input class="form-input" type="text" id="manual-id" placeholder="e.g. B42" maxlength="4"
-      style="font-family:var(--display); font-size:48px; text-align:center; letter-spacing:0.1em; text-transform:uppercase;" />
-    <div style="font-size:12px; color:var(--muted); text-align:center; line-height:1.6;">
-      Format: Letter + Number<br>e.g. A1, B12, Z99
+  <div class="screen-body" style="justify-content:center;gap:16px;">
+    <div style="font-family:var(--mono);font-size:9px;letter-spacing:0.2em;text-transform:uppercase;color:var(--muted);">Enter Item ID</div>
+    <input class="form-input large" type="text" id="manual-id" placeholder="B12" maxlength="4" />
+    <div style="font-size:12px;color:var(--muted);text-align:center;line-height:1.7;">
+      Letter + Number &nbsp;•&nbsp; e.g. A1, B12, Z99<br>
+      <span style="color:#444;">or tap your NFC tag to auto-open</span>
     </div>
   </div>
   <div class="action-area">
     <button class="btn-primary" onclick="submitManualId()">Look Up</button>
-    <button class="btn-secondary" onclick="showScreen('screen-new')">Cancel</button>
   </div>
 </div>
 
-<!-- TOAST -->
+<!-- ════════════════════════════
+     SCREEN: NEW ITEM
+════════════════════════════ -->
+<div class="screen" id="screen-new">
+  <div class="app-header">
+    <div class="logo">Vinyl <em>Media</em></div>
+    <div class="header-right">
+      <div class="header-id" id="new-header-id"></div>
+      <button class="load-fab" id="fab-new" onclick="openLoadSheet()">
+        <span class="load-fab-icon">📦</span>
+        <span>List</span>
+        <span class="load-fab-count" id="fab-count-new">0</span>
+      </button>
+    </div>
+  </div>
+  <div class="screen-body">
+    <div class="status-pill pill-new"><div class="status-dot"></div>New Item</div>
+
+    <div class="id-display">
+      <div class="id-label">Item ID</div>
+      <div class="id-value" id="new-id-val"></div>
+    </div>
+
+    <div class="divider">Item Details</div>
+    <div class="form-section">
+      <div class="form-group">
+        <div class="form-label">Item Name</div>
+        <input class="form-input" type="text" id="new-name" placeholder="e.g. NRMA teardrop flag" autocomplete="off" />
+      </div>
+      <div class="form-group">
+        <div class="form-label">Category / Group</div>
+        <div style="display:flex;gap:8px;">
+          <select class="form-input" id="new-cat" onchange="handleCatSelect(this)" style="flex:1;">
+            <option value="">— Select or add new —</option>
+          </select>
+          <button type="button" onclick="promptNewCategory()" style="flex-shrink:0;padding:0 14px;background:var(--card);border:1.5px solid var(--border);border-radius:4px;color:var(--orange);font-family:var(--mono);font-size:11px;letter-spacing:0.1em;text-transform:uppercase;cursor:pointer;white-space:nowrap;">+ New</button>
+        </div>
+        <div id="new-cat-display" style="font-family:var(--mono);font-size:11px;color:var(--orange);letter-spacing:0.1em;margin-top:4px;display:none;"></div>
+      </div>
+      <div class="form-group">
+        <div class="form-label">Total Quantity Owned</div>
+        <div class="qty-control">
+          <button class="qty-btn" onclick="adjustQty('new-owned-qty', -1)">−</button>
+          <input class="qty-val" type="number" id="new-owned-qty" value="1" min="1" oninput="clampQty(this)" />
+          <button class="qty-btn" onclick="adjustQty('new-owned-qty', 1)">+</button>
+        </div>
+      </div>
+      <div class="form-group">
+        <div class="form-label">Notes</div>
+        <textarea class="form-input" id="new-notes" placeholder="Any details worth noting…"></textarea>
+      </div>
+    </div>
+
+    <div class="divider">Photos</div>
+    <div class="photos-area">
+      <div class="photos-grid" id="new-photos-grid">
+        <div class="add-photo-btn" onclick="triggerPhoto('new')">
+          <span class="add-photo-icon">📷</span>
+          <span>Add</span>
+        </div>
+      </div>
+    </div>
+    <input type="file" id="photo-input-new" accept="image/*" capture="environment" multiple onchange="handlePhotos(this,'new')" style="display:none;" />
+
+    <div class="divider">Location</div>
+    <div class="loc-strip">
+      <div class="loc-icon">📍</div>
+      <div>
+        <div class="loc-label">Detected Location</div>
+        <div class="loc-val loading" id="loc-new">Getting GPS…</div>
+      </div>
+    </div>
+
+    <div class="divider">Who's registering</div>
+    <div class="who-grid" id="who-grid-new"></div>
+    <input class="form-input" type="text" id="custom-who-new" placeholder="Enter name" style="display:none;margin-top:4px;" />
+  </div>
+  <div class="action-area">
+    <button class="btn-primary" id="btn-register" onclick="submitNew()">Register Item</button>
+    <button class="btn-secondary" onclick="showScreen('screen-manual')">← Back</button>
+  </div>
+</div>
+
+<!-- ════════════════════════════
+     SCREEN: EXISTING — ACTION MENU
+════════════════════════════ -->
+<div class="screen" id="screen-existing">
+  <div class="app-header">
+    <div class="logo">Vinyl <em>Media</em></div>
+    <div class="header-right">
+      <div class="header-id" id="exist-header-id"></div>
+      <button class="load-fab" id="fab-exist" onclick="openLoadSheet()">
+        <span class="load-fab-icon">📦</span>
+        <span>List</span>
+        <span class="load-fab-count" id="fab-count-exist">0</span>
+      </button>
+    </div>
+  </div>
+  <div class="screen-body">
+    <div class="status-pill" id="exist-status-pill"><div class="status-dot"></div><span id="exist-status-text"></span></div>
+
+    <div id="exist-damage-banner" style="display:none;"></div>
+
+    <div class="id-display">
+      <div class="id-label">Item ID</div>
+      <div class="id-value" id="exist-id-val"></div>
+      <div class="id-sub" id="exist-name-sub"></div>
+    </div>
+
+    <div class="item-card">
+      <div id="exist-photos-area"></div>
+      <div class="item-meta" id="exist-meta"></div>
+    </div>
+
+    <div class="divider">Actions</div>
+    <div class="action-menu">
+      <button class="action-btn takeout" onclick="showTakeOut()">
+        <div class="action-icon">📦</div>
+        <div class="action-text">
+          <div class="action-title">Take Items Out</div>
+          <div class="action-sub">Add to active load list</div>
+        </div>
+        <div class="action-arrow">›</div>
+      </button>
+      <button class="action-btn return" onclick="showReturn()">
+        <div class="action-icon">📥</div>
+        <div class="action-text">
+          <div class="action-title">Return Items</div>
+          <div class="action-sub">Log back into storage</div>
+        </div>
+        <div class="action-arrow">›</div>
+      </button>
+      <button class="action-btn damage" onclick="showDamage()">
+        <div class="action-icon">⚠️</div>
+        <div class="action-text">
+          <div class="action-title">Log Damage</div>
+          <div class="action-sub">Photo + description + severity</div>
+        </div>
+        <div class="action-arrow">›</div>
+      </button>
+      <button class="action-btn photo" onclick="showUpdatePhoto()">
+        <div class="action-icon">📷</div>
+        <div class="action-text">
+          <div class="action-title">Update Photo</div>
+          <div class="action-sub">Replace or add item photos</div>
+        </div>
+        <div class="action-arrow">›</div>
+      </button>
+      <button class="action-btn edit" onclick="showEdit()">
+        <div class="action-icon">✏️</div>
+        <div class="action-text">
+          <div class="action-title">Edit Details</div>
+          <div class="action-sub">Name, category, location, notes</div>
+        </div>
+        <div class="action-arrow">›</div>
+      </button>
+    </div>
+  </div>
+  <div class="action-area">
+    <button class="btn-secondary" onclick="showScreen('screen-manual')">← Scan Another</button>
+  </div>
+</div>
+
+<!-- ════════════════════════════
+     SCREEN: TAKE OUT
+════════════════════════════ -->
+<div class="screen" id="screen-takeout">
+  <div class="app-header">
+    <div class="logo">Vinyl <em>Media</em></div>
+    <div class="header-right">
+      <div class="header-id" id="takeout-header-id"></div>
+    </div>
+  </div>
+  <div class="screen-body">
+    <div class="id-display">
+      <div class="id-label">Taking Out</div>
+      <div class="id-value" id="takeout-id-val"></div>
+      <div class="id-sub" id="takeout-name-sub"></div>
+    </div>
+    <div class="form-group">
+      <div class="form-label">How many are you taking?</div>
+      <div class="qty-control">
+        <button class="qty-btn" onclick="adjustQty('takeout-qty', -1)">−</button>
+        <input class="qty-val" type="number" id="takeout-qty" value="1" min="1" />
+        <button class="qty-btn" onclick="adjustQty('takeout-qty', 1)">+</button>
+      </div>
+    </div>
+    <div class="divider">Who's taking</div>
+    <div class="who-grid" id="who-grid-takeout"></div>
+    <input class="form-input" type="text" id="custom-who-takeout" placeholder="Enter name" style="display:none;margin-top:4px;" />
+    <div class="loc-strip">
+      <div class="loc-icon">📍</div>
+      <div>
+        <div class="loc-label">GPS</div>
+        <div class="loc-val loading" id="loc-takeout">Getting GPS…</div>
+      </div>
+    </div>
+  </div>
+  <div class="action-area">
+    <button class="btn-primary" onclick="submitTakeOut()">Add to Load List</button>
+    <button class="btn-secondary" onclick="showScreen('screen-existing')">← Back</button>
+  </div>
+</div>
+
+<!-- ════════════════════════════
+     SCREEN: RETURN
+════════════════════════════ -->
+<div class="screen" id="screen-return">
+  <div class="app-header">
+    <div class="logo">Vinyl <em>Media</em></div>
+    <div class="header-right">
+      <div class="header-id" id="return-header-id"></div>
+    </div>
+  </div>
+  <div class="screen-body">
+    <div class="id-display">
+      <div class="id-label">Returning</div>
+      <div class="id-value" id="return-id-val"></div>
+      <div class="id-sub" id="return-name-sub"></div>
+    </div>
+    <div class="form-group">
+      <div class="form-label">How many are you returning?</div>
+      <div class="qty-control">
+        <button class="qty-btn" onclick="adjustQty('return-qty', -1)">−</button>
+        <input class="qty-val" type="number" id="return-qty" value="1" min="1" />
+        <button class="qty-btn" onclick="adjustQty('return-qty', 1)">+</button>
+      </div>
+    </div>
+    <div class="form-group">
+      <div class="form-label">Any damage to report?</div>
+      <div style="display:flex;gap:10px;">
+        <button class="who-btn" id="damage-no-btn"  onclick="setDamageOnReturn(false)" style="flex:1;">No — all good</button>
+        <button class="who-btn" id="damage-yes-btn" onclick="setDamageOnReturn(true)"  style="flex:1;">Yes — log damage</button>
+      </div>
+    </div>
+    <div class="form-group">
+      <div class="form-label">Notes (optional)</div>
+      <input class="form-input" type="text" id="return-notes" placeholder="Any notes on condition…" autocomplete="off" />
+    </div>
+    <div class="divider">Who's returning</div>
+    <div class="who-grid" id="who-grid-return"></div>
+    <input class="form-input" type="text" id="custom-who-return" placeholder="Enter name" style="display:none;margin-top:4px;" />
+    <div class="loc-strip">
+      <div class="loc-icon">📍</div>
+      <div>
+        <div class="loc-label">GPS</div>
+        <div class="loc-val loading" id="loc-return">Getting GPS…</div>
+      </div>
+    </div>
+  </div>
+  <div class="action-area">
+    <button class="btn-primary green" onclick="submitReturn()">Confirm Return</button>
+    <button class="btn-secondary" onclick="showScreen('screen-existing')">← Back</button>
+  </div>
+</div>
+
+<!-- ════════════════════════════
+     SCREEN: DAMAGE LOG
+════════════════════════════ -->
+<div class="screen" id="screen-damage">
+  <div class="app-header">
+    <div class="logo">Vinyl <em>Media</em></div>
+    <div class="header-right">
+      <div class="header-id" id="damage-header-id"></div>
+    </div>
+  </div>
+  <div class="screen-body">
+    <div class="status-pill pill-damage"><div class="status-dot"></div>Logging Damage</div>
+    <div class="id-display" style="border-left-color:var(--amber);">
+      <div class="id-label">Item</div>
+      <div class="id-value" id="damage-id-val"></div>
+      <div class="id-sub" id="damage-name-sub"></div>
+    </div>
+    <div class="divider">Damage Photos</div>
+    <div class="photos-area">
+      <div class="photos-grid" id="damage-photos-grid">
+        <div class="add-photo-btn" onclick="triggerPhoto('damage')">
+          <span class="add-photo-icon">📷</span>
+          <span>Add</span>
+        </div>
+      </div>
+    </div>
+    <input type="file" id="photo-input-damage" accept="image/*" capture="environment" multiple onchange="handlePhotos(this,'damage')" style="display:none;" />
+    <div class="divider">Details</div>
+    <div class="form-section">
+      <div class="form-group">
+        <div class="form-label">Description</div>
+        <textarea class="form-input" id="damage-desc" placeholder="Describe the damage — be specific. e.g. Bent corner post, cracked base, torn fabric panel…"></textarea>
+      </div>
+      <div class="form-group">
+        <div class="form-label">Severity</div>
+        <div class="severity-grid">
+          <button class="severity-btn" id="sev-minor"  onclick="setSeverity('minor')">🔵 Minor<br><span style="font-size:8px;">Usable as-is</span></button>
+          <button class="severity-btn" id="sev-repair" onclick="setSeverity('repair')">🟡 Needs<br>Repair</button>
+          <button class="severity-btn" id="sev-out"    onclick="setSeverity('out')">🔴 Out of<br>Service</button>
+        </div>
+      </div>
+    </div>
+    <div class="divider">Who's reporting</div>
+    <div class="who-grid" id="who-grid-damage"></div>
+    <input class="form-input" type="text" id="custom-who-damage" placeholder="Enter name" style="display:none;margin-top:4px;" />
+  </div>
+  <div class="action-area">
+    <button class="btn-primary amber" onclick="submitDamage()">Submit Damage Report</button>
+    <button class="btn-secondary" onclick="showScreen('screen-existing')">← Back</button>
+  </div>
+</div>
+
+<!-- ════════════════════════════
+     SCREEN: UPDATE PHOTO
+════════════════════════════ -->
+<div class="screen" id="screen-photo">
+  <div class="app-header">
+    <div class="logo">Vinyl <em>Media</em></div>
+    <div class="header-right"><div class="header-id" id="photo-header-id"></div></div>
+  </div>
+  <div class="screen-body">
+    <div class="id-display">
+      <div class="id-label">Update Photos</div>
+      <div class="id-value" id="photo-id-val"></div>
+      <div class="id-sub" id="photo-name-sub"></div>
+    </div>
+    <div class="divider">New Photos</div>
+    <div class="photos-area">
+      <div class="photos-grid" id="updatephoto-photos-grid">
+        <div class="add-photo-btn" onclick="triggerPhoto('updatephoto')">
+          <span class="add-photo-icon">📷</span>
+          <span>Add</span>
+        </div>
+      </div>
+    </div>
+    <input type="file" id="photo-input-updatephoto" accept="image/*" capture="environment" multiple onchange="handlePhotos(this,'updatephoto')" style="display:none;" />
+    <div style="font-size:12px;color:var(--muted);line-height:1.6;">Photos added here will be appended to the item's record. Existing photos are kept unless you edit directly in the Sheet.</div>
+  </div>
+  <div class="action-area">
+    <button class="btn-primary" onclick="submitUpdatePhoto()">Save Photos</button>
+    <button class="btn-secondary" onclick="showScreen('screen-existing')">← Back</button>
+  </div>
+</div>
+
+<!-- ════════════════════════════
+     SCREEN: EDIT DETAILS
+════════════════════════════ -->
+<div class="screen" id="screen-edit">
+  <div class="app-header">
+    <div class="logo">Vinyl <em>Media</em></div>
+    <div class="header-right"><div class="header-id" id="edit-header-id"></div></div>
+  </div>
+  <div class="screen-body">
+    <div class="id-display">
+      <div class="id-label">Editing</div>
+      <div class="id-value" id="edit-id-val"></div>
+    </div>
+    <div class="form-section">
+      <div class="form-group">
+        <div class="form-label">Item Name</div>
+        <input class="form-input" type="text" id="edit-name" autocomplete="off" />
+      </div>
+      <div class="form-group">
+        <div class="form-label">Category</div>
+        <select class="form-input" id="edit-cat">
+          <option>Signage</option><option>Timing</option><option>Barriers</option>
+          <option>Marquee</option><option>Audio / AV</option><option>Cables</option>
+          <option>Apparel</option><option>Bag / Case</option><option>Furniture</option>
+          <option>Safety</option><option>Staging</option><option>Misc</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <div class="form-label">Storage Location</div>
+        <input class="form-input" type="text" id="edit-location" autocomplete="off" />
+      </div>
+      <div class="form-group">
+        <div class="form-label">Total Quantity Owned</div>
+        <div class="qty-control">
+          <button class="qty-btn" onclick="adjustQty('edit-owned-qty',-1)">−</button>
+          <input class="qty-val" type="number" id="edit-owned-qty" value="1" min="1" />
+          <button class="qty-btn" onclick="adjustQty('edit-owned-qty',1)">+</button>
+        </div>
+      </div>
+      <div class="form-group">
+        <div class="form-label">Notes</div>
+        <textarea class="form-input" id="edit-notes"></textarea>
+      </div>
+    </div>
+  </div>
+  <div class="action-area">
+    <button class="btn-primary" onclick="submitEdit()">Save Changes</button>
+    <button class="btn-secondary" onclick="showScreen('screen-existing')">← Cancel</button>
+  </div>
+</div>
+
+<!-- ════════════════════════════
+     SCREEN: SUCCESS
+════════════════════════════ -->
+<div class="screen" id="screen-success">
+  <div class="success-wrap">
+    <div class="success-icon"  id="success-icon">✅</div>
+    <div class="success-title" id="success-title">Done</div>
+    <div class="success-id"    id="success-id"></div>
+    <div class="success-detail" id="success-detail"></div>
+  </div>
+  <div class="action-area">
+    <button class="btn-primary" onclick="showScreen('screen-manual')">Scan Another</button>
+    <button class="btn-secondary" onclick="openLoadSheet()">View Load List</button>
+  </div>
+</div>
+
 <div id="toast"></div>
 
 <script>
-// ══════════════════════════════════════════════
-// CONFIGURATION — fill these in after deploying
-// ══════════════════════════════════════════════
+// ══════════════════════════════════════════
+// CONFIG — fill in after deploying
+// ══════════════════════════════════════════
 const CONFIG = {
-  // Paste your deployed Apps Script Web App URL here:
-  SCRIPT_URL: 'https://script.google.com/a/macros/funkified.com.au/s/AKfycbwxhZiH_yrNp7oTWSht6qu7y5sWkKXnMTVAQyEXklnYXEbMQgYhacfhKU4ipJQ-rY6g8g/exec',
-
-  // Your Google Sheet ID (from the URL):
-  SHEET_ID: '143xqtYJo-PvwQWkfE06YH54etJC34gsXGapZd3wftfs',
+  SCRIPT_URL: 'https://script.google.com/macros/s/AKfycbwxhZiH_yrNp7oTWSht6qu7y5sWkKXnMTVAQyEXklnYXEbMQgYhacfhKU4ipJQ-rY6g8g/exec',
+  SHEET_ID:   '143xqtYJo-PvwQWkfE06YH54etJC34gsXGapZd3wftfs',
 };
 
-// ══════════════════════════════════════════════
+// ══════════════════════════════════════════
 // STATE
-// ══════════════════════════════════════════════
-let state = {
-  itemId: null,
-  existingItem: null,
-  photoFile: null,
-  photoBase64: null,
-  gps: null,
-  whoNew: null,
-  whoExist: null,
+// ══════════════════════════════════════════
+const TEAM = ['Jacob'];
+
+let S = {
+  itemId:       null,
+  item:         null,       // existing item data from sheet
+  gps:          null,
+  sessionEvent: null,
+  sessionWho:   null,
+  damageOnReturn: false,
+  severity:     null,
+  // photo arrays per context
+  photos: { new: [], damage: [], updatephoto: [] },
 };
 
-// ══════════════════════════════════════════════
-// INIT — read ID from URL param
-// ══════════════════════════════════════════════
-async function init() {
+// Load list — persists across scans
+let loadList = []; // [{ id, name, category, qty, who }]
+
+// ══════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════
+function init() {
+  buildWhoGrids();
+  getGPS();
+  populateCatDropdown();
+  S.currentCategory = null;
+
   const params = new URLSearchParams(window.location.search);
   const id = (params.get('id') || '').toUpperCase().trim();
 
-  // Start GPS immediately in background
-  getGPS();
-
   if (!id) {
-    // No ID in URL — go straight to manual entry
-    showScreen('screen-manual');
+    // No tag scanned — go to session start
+    showScreen('screen-session');
     return;
   }
 
-  state.itemId = id;
-  await lookupItem(id);
-}
+  S.itemId = id;
 
-async function lookupItem(id) {
-  try {
-    const url = `${CONFIG.SCRIPT_URL}?action=lookup&id=${encodeURIComponent(id)}`;
-    const resp = await fetch(url);
-    const data = await resp.json();
-
-    if (data.found) {
-      state.existingItem = data.item;
-      showExistingScreen(id, data.item);
-    } else {
-      showNewScreen(id);
-    }
-  } catch (e) {
-    // If script unreachable (e.g. not configured yet), show new item screen
-    showNewScreen(id);
-    toast('Offline mode — will submit when connected', true);
-  }
-}
-
-// ══════════════════════════════════════════════
-// SCREEN MANAGEMENT
-// ══════════════════════════════════════════════
-function showScreen(id) {
-  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-  document.getElementById(id).classList.add('active');
-}
-
-function showNewScreen(id) {
-  document.getElementById('new-header-id').textContent = id;
-  document.getElementById('new-id-display').textContent = id;
-  showScreen('screen-new');
-}
-
-function showExistingScreen(id, item) {
-  document.getElementById('exist-header-id').textContent = id;
-  document.getElementById('exist-id-display').textContent = id;
-  document.getElementById('exist-name-display').textContent = item.name || '';
-
-  // Status pill
-  const pill = document.getElementById('exist-status-pill');
-  const statusText = document.getElementById('exist-status-text');
-  const currentStatus = (item.status || 'in').toLowerCase();
-  pill.className = 'status-pill ' + currentStatus;
-  statusText.textContent = currentStatus === 'in' ? 'Checked In' : 'Checked Out';
-
-  // Photo
-  if (item.photoUrl) {
-    const img = document.getElementById('exist-photo');
-    img.src = item.photoUrl;
-    img.style.display = 'block';
-    document.getElementById('exist-photo-empty').style.display = 'none';
-  }
-
-  // Meta
-  const meta = document.getElementById('exist-meta');
-  meta.innerHTML = `
-    <div class="meta-row"><span class="meta-key">Category</span><span class="meta-val">${item.category || '—'}</span></div>
-    <div class="meta-row"><span class="meta-key">Last Location</span><span class="meta-val">${item.location || '—'}</span></div>
-    <div class="meta-row"><span class="meta-key">Last Scanned</span><span class="meta-val">${item.lastScan || '—'}</span></div>
-    <div class="meta-row"><span class="meta-key">Scanned By</span><span class="meta-val">${item.lastWho || '—'}</span></div>
-  `;
-
-  // Pre-fill location
-  document.getElementById('exist-location').value = item.location || '';
-
-  // Action buttons
-  const actions = document.getElementById('checkinout-actions');
-  if (currentStatus === 'in') {
-    actions.innerHTML = `
-      <button class="btn-primary btn-checkout" onclick="submitCheckout()">Check Out</button>
-      <button class="btn-secondary" onclick="submitUpdateOnly()">Update Record</button>
-    `;
+  // If session already started, skip session screen
+  if (S.sessionEvent !== null) {
+    lookupAndRoute(id);
   } else {
-    actions.innerHTML = `
-      <button class="btn-primary btn-checkin" onclick="submitCheckin()">Check In</button>
-      <button class="btn-secondary" onclick="submitUpdateOnly()">Update Record</button>
-    `;
+    // Store pending id, show session screen
+    showScreen('screen-session');
   }
-
-  showScreen('screen-existing');
 }
 
-function showManualEntry() {
-  showScreen('screen-manual');
+// ══════════════════════════════════════════
+// SESSION START
+// ══════════════════════════════════════════
+let sessionWhoSelected = null;
+
+function selectSessionWho(btn) {
+  document.querySelectorAll('#session-who-grid .who-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  const custom = document.getElementById('session-who-custom');
+  if (btn.textContent.includes('Add name')) {
+    custom.style.display = 'block';
+    custom.focus();
+    sessionWhoSelected = '__custom__';
+  } else {
+    custom.style.display = 'none';
+    sessionWhoSelected = btn.textContent;
+  }
+}
+
+function getSessionWho() {
+  if (sessionWhoSelected === '__custom__') return document.getElementById('session-who-custom').value.trim() || 'Unknown';
+  return sessionWhoSelected || TEAM[0];
+}
+
+function startSession() {
+  const ev = document.getElementById('session-event').value.trim();
+  if (!ev) { toast('Enter an event name', true); return; }
+  S.sessionEvent = ev;
+  S.sessionWho   = getSessionWho();
+  document.getElementById('load-event-display').textContent = ev;
+  proceedAfterSession();
+}
+
+function skipSession() {
+  S.sessionEvent = 'No Event';
+  S.sessionWho   = TEAM[0];
+  document.getElementById('load-event-display').textContent = 'No Event';
+  proceedAfterSession();
+}
+
+function proceedAfterSession() {
+  // If we have a pending item ID from URL, look it up
+  if (S.itemId) {
+    showScreen('screen-loading');
+    lookupAndRoute(S.itemId);
+  } else {
+    showScreen('screen-manual');
+  }
+}
+
+// ══════════════════════════════════════════
+// ROUTING
+// ══════════════════════════════════════════
+async function lookupAndRoute(id) {
+  try {
+    const resp = await fetch(`${CONFIG.SCRIPT_URL}?action=lookup&id=${encodeURIComponent(id)}`);
+    const data = await resp.json();
+    if (data.found) {
+      S.item = data.item;
+      populateExistingScreen(id, data.item);
+      showScreen('screen-existing');
+    } else {
+      S.item = null;
+      populateNewScreen(id);
+      showScreen('screen-new');
+    }
+  } catch(e) {
+    S.item = null;
+    populateNewScreen(id);
+    showScreen('screen-new');
+    toast('Offline — working locally', true);
+  }
 }
 
 function submitManualId() {
-  const id = document.getElementById('manual-id').value.toUpperCase().trim();
-  if (!id || !/^[A-Z]\d{1,2}$/.test(id)) {
-    toast('Format: Letter + Number (e.g. B12)', true);
+  const raw = document.getElementById('manual-id').value.toUpperCase().trim();
+  if (!raw || !/^[A-Z]\d{1,2}$/.test(raw)) {
+    toast('Format: letter + number (e.g. B12)', true);
     return;
   }
-  state.itemId = id;
+  S.itemId = raw;
+  S.photos = { new: [], damage: [], updatephoto: [] };
   showScreen('screen-loading');
-  lookupItem(id);
+  lookupAndRoute(raw);
 }
 
-// ══════════════════════════════════════════════
-// GPS
-// ══════════════════════════════════════════════
-function getGPS() {
-  if (!navigator.geolocation) {
-    setLocDisplay('GPS not available', true);
-    return;
+// ══════════════════════════════════════════
+// NEW ITEM SCREEN
+// ══════════════════════════════════════════
+function populateNewScreen(id) {
+  document.getElementById('new-header-id').textContent = id;
+  document.getElementById('new-id-val').textContent = id;
+  S.photos.new = [];
+  renderPhotoGrid('new');
+  updateFabs();
+}
+
+async function submitNew() {
+  const name  = document.getElementById('new-name').value.trim();
+  const cat   = S.currentCategory || '';
+  const qty   = parseInt(document.getElementById('new-owned-qty').value) || 1;
+  const notes = document.getElementById('new-notes').value.trim();
+  const who   = getWho('new');
+
+  if (!name) { toast('Item name required', true); return; }
+  if (!cat)  { toast('Add a category first', true); return; }
+
+  const btn = document.getElementById('btn-register');
+  btn.disabled = true; btn.textContent = 'Submitting…';
+
+  const payload = {
+    action: 'register', id: S.itemId, name, category: cat,
+    totalQty: qty, notes, who,
+    gpsLat:   S.gps?.lat   || '',
+    gpsLng:   S.gps?.lng   || '',
+    gpsAcc:   S.gps?.accuracy || '',
+    gpsLabel: S.gps?.label || '',
+    photos:   S.photos.new.map(p => p.base64),
+    timestamp: new Date().toISOString(),
+  };
+
+  const result = await postToScript(payload);
+  btn.disabled = false; btn.textContent = 'Register Item';
+  if (result.success) showSuccessScreen('register', S.itemId, name);
+  else toast(result.error || 'Submission failed — check console', true);
+}
+
+// ══════════════════════════════════════════
+// EXISTING ITEM SCREEN
+// ══════════════════════════════════════════
+function populateExistingScreen(id, item) {
+  document.getElementById('exist-header-id').textContent = id;
+  document.getElementById('exist-id-val').textContent = id;
+  document.getElementById('exist-name-sub').textContent = item.name || '';
+
+  // Status pill
+  const pill = document.getElementById('exist-status-pill');
+  const statusTxt = document.getElementById('exist-status-text');
+  const st = (item.status || 'in').toLowerCase();
+  pill.className = `status-pill ${st === 'in' ? 'pill-in' : 'pill-out'}`;
+  statusTxt.textContent = st === 'in' ? 'In Storage' : 'Out';
+
+  // Damage banner
+  const banner = document.getElementById('exist-damage-banner');
+  if (item.damageFlagged) {
+    banner.style.display = 'flex';
+    banner.innerHTML = `
+      <div class="damage-banner">
+        <div class="damage-banner-icon">⚠️</div>
+        <div class="damage-banner-text">
+          <strong>Damage Flag Active</strong>
+          ${item.damageNote || 'This item has a logged damage report. Check before use.'}
+        </div>
+      </div>`;
+  } else {
+    banner.style.display = 'none';
   }
+
+  // Photos
+  const photosArea = document.getElementById('exist-photos-area');
+  if (item.photoUrls && item.photoUrls.length > 0) {
+    photosArea.innerHTML = `<div class="item-photos-scroll">${item.photoUrls.map(u=>`<img src="${u}" />`).join('')}</div>`;
+  } else {
+    photosArea.innerHTML = `<div class="item-photo-empty">No photos on record</div>`;
+  }
+
+  // Meta
+  const inStorage = (item.totalQty||0) - (item.qtyOut||0);
+  document.getElementById('exist-meta').innerHTML = `
+    <div class="meta-row"><span class="meta-key">Category</span><span class="meta-val">${item.category||'—'}</span></div>
+    <div class="meta-row"><span class="meta-key">In Storage</span><span class="meta-val ${inStorage>0?'green':'red'}">${inStorage} / ${item.totalQty||'?'}</span></div>
+    <div class="meta-row"><span class="meta-key">Location</span><span class="meta-val">${item.location||'—'}</span></div>
+    <div class="meta-row"><span class="meta-key">Last Scanned</span><span class="meta-val">${item.lastScan||'—'}</span></div>
+    <div class="meta-row"><span class="meta-key">By</span><span class="meta-val">${item.lastWho||'—'}</span></div>
+  `;
+
+  updateFabs();
+}
+
+// ══════════════════════════════════════════
+// TAKE OUT
+// ══════════════════════════════════════════
+function showTakeOut() {
+  const id   = S.itemId;
+  const name = S.item?.name || '';
+  document.getElementById('takeout-header-id').textContent = id;
+  document.getElementById('takeout-id-val').textContent = id;
+  document.getElementById('takeout-name-sub').textContent = name;
+  document.getElementById('takeout-qty').value = 1;
+  buildWhoGrid('takeout');
+  updateLocDisplay('loc-takeout');
+  showScreen('screen-takeout');
+}
+
+async function submitTakeOut() {
+  const qty = parseInt(document.getElementById('takeout-qty').value) || 1;
+  const who = getWho('takeout');
+  const id  = S.itemId;
+  const name = S.item?.name || id;
+  const cat  = S.item?.category || '';
+
+  // Add to local load list
+  const existing = loadList.find(r => r.id === id);
+  if (existing) {
+    existing.qty += qty;
+  } else {
+    loadList.push({ id, name, category: cat, qty, who });
+  }
+  updateFabs();
+
+  // Post to script
+  const payload = {
+    action: 'takeout', id, qty, who,
+    gpsLat: S.gps?.lat||'', gpsLng: S.gps?.lng||'', gpsAcc: S.gps?.accuracy||'',
+    event: S.sessionEvent,
+    timestamp: new Date().toISOString(),
+  };
+  await postToScript(payload);
+
+  toast(`${id} ×${qty} added to list ✓`, false);
+  showScreen('screen-manual');
+}
+
+// ══════════════════════════════════════════
+// RETURN
+// ══════════════════════════════════════════
+function showReturn() {
+  const id   = S.itemId;
+  const name = S.item?.name || '';
+  document.getElementById('return-header-id').textContent = id;
+  document.getElementById('return-id-val').textContent = id;
+  document.getElementById('return-name-sub').textContent = name;
+  document.getElementById('return-qty').value = 1;
+  document.getElementById('return-notes').value = '';
+  S.damageOnReturn = false;
+  document.getElementById('damage-no-btn').classList.add('selected');
+  document.getElementById('damage-yes-btn').classList.remove('selected');
+  buildWhoGrid('return');
+  updateLocDisplay('loc-return');
+  showScreen('screen-return');
+}
+
+function setDamageOnReturn(val) {
+  S.damageOnReturn = val;
+  document.getElementById('damage-no-btn').classList.toggle('selected', !val);
+  document.getElementById('damage-yes-btn').classList.toggle('selected', val);
+}
+
+async function submitReturn() {
+  const qty   = parseInt(document.getElementById('return-qty').value) || 1;
+  const notes = document.getElementById('return-notes').value.trim();
+  const who   = getWho('return');
+  const id    = S.itemId;
+
+  // Remove from load list
+  const idx = loadList.findIndex(r => r.id === id);
+  if (idx > -1) {
+    loadList[idx].qty -= qty;
+    if (loadList[idx].qty <= 0) loadList.splice(idx, 1);
+  }
+  updateFabs();
+
+  const payload = {
+    action: 'return', id, qty, notes, who,
+    gpsLat: S.gps?.lat||'', gpsLng: S.gps?.lng||'', gpsAcc: S.gps?.accuracy||'',
+    timestamp: new Date().toISOString(),
+  };
+  const result = await postToScript(payload);
+
+  if (result.success) {
+    if (S.damageOnReturn) {
+      showDamage();
+    } else {
+      showSuccessScreen('return', id, S.item?.name || id);
+    }
+  } else {
+    toast(result.error || 'Return failed', true);
+  }
+}
+
+// ══════════════════════════════════════════
+// DAMAGE
+// ══════════════════════════════════════════
+function showDamage() {
+  const id   = S.itemId;
+  const name = S.item?.name || '';
+  document.getElementById('damage-header-id').textContent = id;
+  document.getElementById('damage-id-val').textContent = id;
+  document.getElementById('damage-name-sub').textContent = name;
+  document.getElementById('damage-desc').value = '';
+  S.severity = null;
+  S.photos.damage = [];
+  renderPhotoGrid('damage');
+  ['sev-minor','sev-repair','sev-out'].forEach(id => {
+    const btn = document.getElementById(id);
+    if (btn) btn.className = 'severity-btn';
+  });
+  buildWhoGrid('damage');
+  showScreen('screen-damage');
+}
+
+function setSeverity(s) {
+  S.severity = s;
+  document.getElementById('sev-minor').className  = 'severity-btn' + (s==='minor'  ? ' sel-minor'  : '');
+  document.getElementById('sev-repair').className = 'severity-btn' + (s==='repair' ? ' sel-repair' : '');
+  document.getElementById('sev-out').className    = 'severity-btn' + (s==='out'    ? ' sel-out'    : '');
+}
+
+async function submitDamage() {
+  const desc = document.getElementById('damage-desc').value.trim();
+  const who  = getWho('damage');
+  const id   = S.itemId;
+
+  if (!desc)        { toast('Describe the damage', true); return; }
+  if (!S.severity)  { toast('Select a severity level', true); return; }
+
+  const payload = {
+    action: 'damage', id, name: S.item?.name||'', description: desc,
+    severity: S.severity, who,
+    gpsLat: S.gps?.lat||'', gpsLng: S.gps?.lng||'', gpsAcc: S.gps?.accuracy||'',
+    photos: S.photos.damage.map(p=>p.base64),
+    timestamp: new Date().toISOString(),
+  };
+  const result = await postToScript(payload);
+  if (result.success) showSuccessScreen('damage', id, S.item?.name||id);
+  else toast(result.error||'Error', true);
+}
+
+// ══════════════════════════════════════════
+// UPDATE PHOTO
+// ══════════════════════════════════════════
+function showUpdatePhoto() {
+  const id = S.itemId;
+  document.getElementById('photo-header-id').textContent = id;
+  document.getElementById('photo-id-val').textContent = id;
+  document.getElementById('photo-name-sub').textContent = S.item?.name||'';
+  S.photos.updatephoto = [];
+  renderPhotoGrid('updatephoto');
+  showScreen('screen-photo');
+}
+
+async function submitUpdatePhoto() {
+  if (S.photos.updatephoto.length === 0) { toast('Add at least one photo', true); return; }
+  const payload = {
+    action: 'updatephoto', id: S.itemId,
+    photos: S.photos.updatephoto.map(p=>p.base64),
+    timestamp: new Date().toISOString(),
+  };
+  const result = await postToScript(payload);
+  if (result.success) showSuccessScreen('photo', S.itemId, S.item?.name||S.itemId);
+  else toast(result.error||'Error', true);
+}
+
+// ══════════════════════════════════════════
+// EDIT DETAILS
+// ══════════════════════════════════════════
+function showEdit() {
+  const id   = S.itemId;
+  const item = S.item || {};
+  document.getElementById('edit-header-id').textContent = id;
+  document.getElementById('edit-id-val').textContent = id;
+  document.getElementById('edit-name').value     = item.name     || '';
+  document.getElementById('edit-location').value = item.location || '';
+  document.getElementById('edit-notes').value    = item.notes    || '';
+  document.getElementById('edit-owned-qty').value = item.totalQty || 1;
+  const catSel = document.getElementById('edit-cat');
+  for (let i=0;i<catSel.options.length;i++) {
+    if (catSel.options[i].value === item.category) { catSel.selectedIndex = i; break; }
+  }
+  showScreen('screen-edit');
+}
+
+async function submitEdit() {
+  const payload = {
+    action:   'edit',
+    id:       S.itemId,
+    name:     document.getElementById('edit-name').value.trim(),
+    category: document.getElementById('edit-cat').value,
+    location: document.getElementById('edit-location').value.trim(),
+    notes:    document.getElementById('edit-notes').value.trim(),
+    totalQty: parseInt(document.getElementById('edit-owned-qty').value)||1,
+    timestamp: new Date().toISOString(),
+  };
+  const result = await postToScript(payload);
+  if (result.success) showSuccessScreen('edit', S.itemId, payload.name);
+  else toast(result.error||'Error', true);
+}
+
+// ══════════════════════════════════════════
+// LOAD LIST
+// ══════════════════════════════════════════
+function openLoadSheet() {
+  renderLoadList();
+  document.getElementById('load-sheet').classList.add('open');
+}
+
+function closeLoadSheet() {
+  document.getElementById('load-sheet').classList.remove('open');
+}
+
+function renderLoadList() {
+  const list = document.getElementById('load-items-list');
+  if (loadList.length === 0) {
+    list.innerHTML = `<div class="load-empty">No items added yet.<br>Scan items and tap Take Out.</div>`;
+  } else {
+    list.innerHTML = loadList.map((r,i) => `
+      <div class="load-item-row">
+        <div class="load-item-id">${r.id}</div>
+        <div class="load-item-name">
+          ${r.name}
+          <div class="load-item-cat">${r.category}</div>
+        </div>
+        <div class="load-item-qty">×${r.qty}</div>
+        <button class="load-item-remove" onclick="removeLoadItem(${i})">✕</button>
+      </div>`).join('');
+  }
+  const total = loadList.reduce((a,r)=>a+r.qty,0);
+  document.getElementById('load-count').textContent = loadList.length;
+  document.getElementById('load-units').textContent = total;
+}
+
+function removeLoadItem(i) {
+  loadList.splice(i,1);
+  renderLoadList();
+  updateFabs();
+}
+
+async function submitLoad() {
+  if (loadList.length === 0) { toast('Load list is empty', true); return; }
+  const payload = {
+    action: 'submitload',
+    event:  S.sessionEvent,
+    who:    S.sessionWho,
+    items:  loadList,
+    timestamp: new Date().toISOString(),
+  };
+  const result = await postToScript(payload);
+  closeLoadSheet();
+  if (result.success) {
+    loadList = [];
+    updateFabs();
+    showSuccessScreen('load', '', S.sessionEvent);
+  } else {
+    toast(result.error||'Load submission failed', true);
+  }
+}
+
+function updateFabs() {
+  const count = loadList.length;
+  const show  = count > 0;
+  document.querySelectorAll('.load-fab').forEach(f => {
+    f.classList.toggle('visible', show);
+  });
+  document.querySelectorAll('.load-fab-count').forEach(el => {
+    el.textContent = count;
+  });
+}
+
+// ══════════════════════════════════════════
+// PHOTOS — multi upload
+// ══════════════════════════════════════════
+function triggerPhoto(ctx) {
+  document.getElementById(`photo-input-${ctx}`).click();
+}
+
+function handlePhotos(input, ctx) {
+  const files = Array.from(input.files);
+  files.forEach(file => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      S.photos[ctx].push({ base64: e.target.result, name: file.name });
+      renderPhotoGrid(ctx);
+    };
+    reader.readAsDataURL(file);
+  });
+  input.value = '';
+}
+
+function renderPhotoGrid(ctx) {
+  const gridId = ctx === 'new' ? 'new-photos-grid'
+               : ctx === 'damage' ? 'damage-photos-grid'
+               : 'updatephoto-photos-grid';
+  const grid = document.getElementById(gridId);
+  const thumbs = S.photos[ctx].map((p,i) => `
+    <div class="photo-thumb-wrap">
+      <img src="${p.base64}" />
+      <button class="photo-remove" onclick="removePhoto('${ctx}',${i})">✕</button>
+    </div>`).join('');
+  grid.innerHTML = thumbs + `
+    <div class="add-photo-btn" onclick="triggerPhoto('${ctx}')">
+      <span class="add-photo-icon">📷</span>
+      <span>Add</span>
+    </div>`;
+}
+
+function removePhoto(ctx, i) {
+  S.photos[ctx].splice(i,1);
+  renderPhotoGrid(ctx);
+}
+
+// ══════════════════════════════════════════
+// WHO SELECTORS
+// ══════════════════════════════════════════
+const SCREENS_WITH_WHO = ['new','takeout','return','damage'];
+
+function buildWhoGrids() {
+  SCREENS_WITH_WHO.forEach(ctx => buildWhoGrid(ctx));
+}
+
+function buildWhoGrid(ctx) {
+  const grid = document.getElementById(`who-grid-${ctx}`);
+  if (!grid) return;
+  grid.innerHTML = TEAM.map(name =>
+    `<button class="who-btn" onclick="selectWho(this,'${ctx}')">${name}</button>`
+  ).join('') + `<button class="who-btn" onclick="selectWho(this,'${ctx}')">+ Other</button>`;
+  // Auto-select first
+  const first = grid.querySelector('.who-btn');
+  if (first) first.classList.add('selected');
+}
+
+function selectWho(btn, ctx) {
+  const grid = document.getElementById(`who-grid-${ctx}`);
+  grid.querySelectorAll('.who-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  const custom = document.getElementById(`custom-who-${ctx}`);
+  if (btn.textContent.includes('Other')) {
+    custom.style.display = 'block'; custom.focus();
+  } else {
+    if (custom) custom.style.display = 'none';
+  }
+}
+
+function getWho(ctx) {
+  const grid = document.getElementById(`who-grid-${ctx}`);
+  const sel  = grid?.querySelector('.who-btn.selected');
+  if (!sel || sel.textContent.includes('Other')) {
+    const custom = document.getElementById(`custom-who-${ctx}`);
+    return custom?.value.trim() || S.sessionWho || TEAM[0];
+  }
+  return sel.textContent;
+}
+
+// ══════════════════════════════════════════
+// GPS
+// ══════════════════════════════════════════
+function getGPS() {
+  if (!navigator.geolocation) return;
   navigator.geolocation.getCurrentPosition(
-    pos => {
-      state.gps = {
+    async pos => {
+      S.gps = {
         lat: pos.coords.latitude.toFixed(6),
         lng: pos.coords.longitude.toFixed(6),
-        accuracy: Math.round(pos.coords.accuracy),
+        accuracy: Math.round(pos.coords.accuracy)
       };
-      const txt = `${state.gps.lat}, ${state.gps.lng} (±${state.gps.accuracy}m)`;
-      setLocDisplay(txt, false);
+      // Reverse geocode to suburb + city
+      try {
+        const r = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${S.gps.lat}&lon=${S.gps.lng}&format=json`);
+        const d = await r.json();
+        const a = d.address || {};
+        const suburb = a.suburb || a.neighbourhood || a.village || a.town || '';
+        const city   = a.city || a.state_district || a.county || '';
+        S.gps.label  = [suburb, city].filter(Boolean).join(', ') || `${S.gps.lat}, ${S.gps.lng}`;
+      } catch(e) {
+        S.gps.label = `${S.gps.lat}, ${S.gps.lng}`;
+      }
+      const txt = `${S.gps.label} (±${S.gps.accuracy}m)`;
+      ['loc-new','loc-takeout','loc-return'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) { el.textContent = txt; el.className = 'loc-val'; }
+      });
     },
-    err => setLocDisplay('Location unavailable', true),
+    () => {
+      ['loc-new','loc-takeout','loc-return'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) { el.textContent = 'Location unavailable'; el.className = 'loc-val error'; }
+      });
+    },
     { enableHighAccuracy: true, timeout: 10000 }
   );
 }
 
-function setLocDisplay(txt, isError) {
-  ['loc-display', 'loc-display-exist'].forEach(id => {
-    const el = document.getElementById(id);
-    if (!el) return;
-    el.textContent = txt;
-    el.className = 'loc-value' + (isError ? ' error' : '');
-  });
-}
-
-// ══════════════════════════════════════════════
-// PHOTO
-// ══════════════════════════════════════════════
-function triggerPhoto() {
-  document.getElementById('photo-input').click();
-}
-
-function handlePhoto(input) {
-  const file = input.files[0];
-  if (!file) return;
-  state.photoFile = file;
-
-  const reader = new FileReader();
-  reader.onload = e => {
-    state.photoBase64 = e.target.result;
-    const preview = document.getElementById('photo-preview');
-    preview.src = e.target.result;
-    preview.classList.add('visible');
-    document.getElementById('photo-overlay').classList.add('visible');
-    document.getElementById('photo-icon').style.display = 'none';
-    document.getElementById('photo-label').style.display = 'none';
-  };
-  reader.readAsDataURL(file);
-}
-
-// ══════════════════════════════════════════════
-// WHO SELECTION
-// ══════════════════════════════════════════════
-const TEAM = ['Jacob', 'Add name…'];
-
-function selectWho(btn, screen) {
-  const grid = document.getElementById(`who-grid-${screen}`);
-  grid.querySelectorAll('.who-btn').forEach(b => b.classList.remove('selected'));
-  btn.classList.add('selected');
-  const customInput = document.getElementById(`custom-who-${screen}`);
-
-  if (btn.textContent === 'Add name…') {
-    customInput.style.display = 'block';
-    customInput.focus();
-    if (screen === 'new') state.whoNew = '__custom__';
-    else state.whoExist = '__custom__';
-  } else {
-    customInput.style.display = 'none';
-    if (screen === 'new') state.whoNew = btn.textContent;
-    else state.whoExist = btn.textContent;
+function updateLocDisplay(elId) {
+  const el = document.getElementById(elId);
+  if (!el) return;
+  if (S.gps) {
+    el.textContent = `${S.gps.label || S.gps.lat + ', ' + S.gps.lng} (±${S.gps.accuracy}m)`;
+    el.className = 'loc-val';
   }
 }
 
-function getWho(screen) {
-  const stateKey = screen === 'new' ? 'whoNew' : 'whoExist';
-  if (state[stateKey] === '__custom__') {
-    return document.getElementById(`custom-who-${screen}`).value.trim() || 'Unknown';
-  }
-  return state[stateKey] || 'Unknown';
+// ══════════════════════════════════════════
+// QTY CONTROL
+// ══════════════════════════════════════════
+function adjustQty(inputId, delta) {
+  const input = document.getElementById(inputId);
+  const val = Math.max(1, (parseInt(input.value)||1) + delta);
+  input.value = val;
 }
 
-// ══════════════════════════════════════════════
-// SUBMIT — NEW ITEM
-// ══════════════════════════════════════════════
-async function submitNew() {
-  const name = document.getElementById('new-name').value.trim();
-  const cat  = document.getElementById('new-cat').value;
-  const loc  = document.getElementById('new-location').value.trim();
+// ══════════════════════════════════════════
+// SUCCESS
+// ══════════════════════════════════════════
+const SUCCESS_MAP = {
+  register: { icon:'📦', title:'Registered',  titleClass:'orange', detail: (id,n) => `${n} (${id}) added to master inventory.` },
+  takeout:  { icon:'📤', title:'Added',        titleClass:'orange', detail: (id,n) => `${id} added to load list.` },
+  return:   { icon:'✅', title:'Returned',     titleClass:'',       detail: (id,n) => `${n} logged back into storage.` },
+  damage:   { icon:'⚠️', title:'Flagged',      titleClass:'amber',  detail: (id,n) => `Damage report logged for ${id}. Item flagged in inventory.` },
+  photo:    { icon:'📷', title:'Updated',      titleClass:'',       detail: (id,n) => `Photos updated for ${id}.` },
+  edit:     { icon:'✏️', title:'Saved',         titleClass:'',       detail: (id,n) => `Details updated for ${n}.` },
+  load:     { icon:'🚛', title:'Submitted',    titleClass:'',       detail: (id,n) => `Load list submitted for "${n}". New tab created in Sheet.` },
+};
 
-  if (!name) { toast('Item name required', true); return; }
-  if (!cat)  { toast('Select a category', true); return; }
-
-  const btn = document.getElementById('btn-register');
-  btn.disabled = true;
-  btn.textContent = 'Submitting…';
-
-  const payload = {
-    action:    'register',
-    id:        state.itemId,
-    name,
-    category:  cat,
-    location:  loc,
-    who:       getWho('new'),
-    gpsLat:    state.gps?.lat || '',
-    gpsLng:    state.gps?.lng || '',
-    gpsAcc:    state.gps?.accuracy || '',
-    photo:     state.photoBase64 || '',
-    timestamp: new Date().toISOString(),
-  };
-
-  await submitToScript(payload, 'register');
-}
-
-// ══════════════════════════════════════════════
-// SUBMIT — CHECK IN / OUT
-// ══════════════════════════════════════════════
-async function submitCheckin()  { await submitScan('in'); }
-async function submitCheckout() { await submitScan('out'); }
-async function submitUpdateOnly() { await submitScan('update'); }
-
-async function submitScan(action) {
-  const loc   = document.getElementById('exist-location').value.trim();
-  const notes = document.getElementById('exist-notes').value.trim();
-
-  const payload = {
-    action,
-    id:        state.itemId,
-    location:  loc,
-    notes,
-    who:       getWho('exist'),
-    gpsLat:    state.gps?.lat || '',
-    gpsLng:    state.gps?.lng || '',
-    gpsAcc:    state.gps?.accuracy || '',
-    timestamp: new Date().toISOString(),
-  };
-
-  await submitToScript(payload, action);
-}
-
-// ══════════════════════════════════════════════
-// CORE SUBMIT
-// ══════════════════════════════════════════════
-async function submitToScript(payload, type) {
-  try {
-    const resp = await fetch(CONFIG.SCRIPT_URL, {
-      method: 'POST',
-      body: JSON.stringify(payload),
-    });
-    const data = await resp.json();
-
-    if (data.success) {
-      showSuccess(type, payload);
-    } else {
-      toast(data.error || 'Something went wrong', true);
-      resetButtons();
-    }
-  } catch (e) {
-    toast('Network error — check connection', true);
-    resetButtons();
-  }
-}
-
-function resetButtons() {
-  const btn = document.getElementById('btn-register');
-  if (btn) { btn.disabled = false; btn.textContent = 'Register Item'; }
-}
-
-function showSuccess(type, payload) {
-  const icons   = { register: '📦', in: '✅', out: '🔓', update: '✏️' };
-  const titles  = { register: 'Registered', in: 'Checked In', out: 'Checked Out', update: 'Updated' };
-  const details = {
-    register: `${payload.name} has been added to the master inventory.`,
-    in:       `Item is now marked as checked in at ${payload.location || 'unknown location'}.`,
-    out:      `Item is now checked out. GPS location logged.`,
-    update:   `Record updated in master inventory.`,
-  };
-
-  document.getElementById('success-icon').textContent  = icons[type]   || '✅';
-  document.getElementById('success-title').textContent = titles[type]  || 'Done';
-  document.getElementById('success-id').textContent    = `ID: ${state.itemId}`;
-  document.getElementById('success-detail').textContent = details[type] || '';
-
+function showSuccessScreen(type, id, name) {
+  const m = SUCCESS_MAP[type] || { icon:'✅', title:'Done', titleClass:'', detail:()=>'' };
+  document.getElementById('success-icon').textContent  = m.icon;
+  document.getElementById('success-title').textContent = m.title;
+  document.getElementById('success-title').className   = `success-title ${m.titleClass}`;
+  document.getElementById('success-id').textContent    = id ? `ID: ${id}` : '';
+  document.getElementById('success-detail').textContent = m.detail(id, name);
   showScreen('screen-success');
 }
 
-function scanAnother() {
-  // Reset state
-  state = { itemId: null, existingItem: null, photoFile: null, photoBase64: null, gps: state.gps, whoNew: null, whoExist: null };
-  showScreen('screen-manual');
+// ══════════════════════════════════════════
+// API
+// ══════════════════════════════════════════
+async function postToScript(payload) {
+  if (!CONFIG.SCRIPT_URL || CONFIG.SCRIPT_URL.includes('YOUR_APPS_SCRIPT')) {
+    return { success: false, error: 'Script URL not configured in CONFIG.' };
+  }
+  try {
+    const resp = await fetch(CONFIG.SCRIPT_URL, { method:'POST', body: JSON.stringify(payload) });
+    if (!resp.ok) return { success: false, error: `Server error ${resp.status}` };
+    return await resp.json();
+  } catch(e) {
+    return { success: false, error: `Network error: ${e.message}` };
+  }
 }
 
-function openSheet() {
-  window.open(`https://docs.google.com/spreadsheets/d/${CONFIG.SHEET_ID}`, '_blank');
+// ══════════════════════════════════════════
+// SCREEN NAV
+// ══════════════════════════════════════════
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0,0);
 }
 
-// ══════════════════════════════════════════════
+// ══════════════════════════════════════════
 // TOAST
-// ══════════════════════════════════════════════
+// ══════════════════════════════════════════
 let toastTimer;
-function toast(msg, isError = false) {
+function toast(msg, isError=false, isSuccess=false) {
   const el = document.getElementById('toast');
   el.textContent = msg;
-  el.className = 'show' + (isError ? ' error' : '');
+  el.className = 'show' + (isError?' error':'') + (isSuccess?' success':'');
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => { el.className = ''; }, 3000);
+  toastTimer = setTimeout(()=>{ el.className=''; }, 3000);
+}
+
+// ══════════════════════════════════════════
+// CATEGORY MANAGEMENT
+// ══════════════════════════════════════════
+const CAT_STORAGE_KEY = 'vinyl_categories';
+
+function loadCategories() {
+  try {
+    const stored = localStorage.getItem(CAT_STORAGE_KEY);
+    return stored ? JSON.parse(stored) : [];
+  } catch(e) { return []; }
+}
+
+function saveCategories(cats) {
+  try { localStorage.setItem(CAT_STORAGE_KEY, JSON.stringify(cats)); } catch(e) {}
+}
+
+function populateCatDropdown() {
+  const cats = loadCategories();
+  const sel  = document.getElementById('new-cat');
+  if (!sel) return;
+  sel.innerHTML = `<option value="">— Select or add new —</option>`;
+  cats.forEach(c => {
+    const opt = document.createElement('option');
+    opt.value = c; opt.textContent = c;
+    sel.appendChild(opt);
+  });
+  // Also populate edit-cat
+  const editSel = document.getElementById('edit-cat');
+  if (editSel) {
+    const cur = editSel.value;
+    editSel.innerHTML = '';
+    cats.forEach(c => {
+      const opt = document.createElement('option');
+      opt.value = c; opt.textContent = c;
+      editSel.appendChild(opt);
+    });
+    editSel.value = cur;
+  }
+}
+
+function handleCatSelect(sel) {
+  if (sel.value) {
+    S.currentCategory = sel.value;
+    const disp = document.getElementById('new-cat-display');
+    disp.textContent = sel.value;
+    disp.style.display = 'block';
+  }
+}
+
+function promptNewCategory() {
+  const name = prompt('New category name (e.g. NRMA, Signage, Barriers):');
+  if (!name || !name.trim()) return;
+  const trimmed = name.trim();
+  const cats = loadCategories();
+  if (!cats.includes(trimmed)) {
+    cats.push(trimmed);
+    saveCategories(cats);
+    populateCatDropdown();
+    toast(`"${trimmed}" added`, false);
+  }
+  // Select it
+  S.currentCategory = trimmed;
+  const sel = document.getElementById('new-cat');
+  if (sel) sel.value = trimmed;
+  const disp = document.getElementById('new-cat-display');
+  if (disp) { disp.textContent = trimmed; disp.style.display = 'block'; }
+}
+
+// ══════════════════════════════════════════
+// QTY — allow direct typing too
+// ══════════════════════════════════════════
+function clampQty(input) {
+  const v = parseInt(input.value);
+  if (isNaN(v) || v < 1) input.value = 1;
 }
 
 // ── GO ──
