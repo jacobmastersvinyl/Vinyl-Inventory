@@ -300,6 +300,94 @@ textarea.form-input { resize: vertical; min-height: 80px; font-size: 15px; line-
 #toast.show    { transform: translateX(-50%) translateY(0); }
 #toast.error   { background: var(--red);   color: #fff; }
 #toast.success { background: var(--green); color: #fff; }
+/* ── PHOTO OPTIONS SHEET ── */
+.photo-options-sheet {
+  position: fixed; inset: 0; z-index: 300;
+  display: none; align-items: flex-end;
+  background: rgba(0,0,0,0.6);
+}
+.photo-options-sheet.open { display: flex; }
+.photo-options-inner {
+  width: 100%; background: var(--surface);
+  border-radius: 12px 12px 0 0;
+  padding: 16px 20px 40px;
+  display: flex; flex-direction: column; gap: 10px;
+}
+.photo-options-title {
+  font-family: var(--mono); font-size: 10px; letter-spacing: 0.16em;
+  text-transform: uppercase; color: var(--muted);
+  text-align: center; margin-bottom: 4px;
+}
+.photo-option-btn {
+  width: 100%; padding: 16px; background: var(--card);
+  border: 1.5px solid var(--border); border-radius: 4px;
+  color: var(--text); font-family: var(--body); font-size: 16px;
+  font-weight: 600; cursor: pointer; text-align: left;
+  display: flex; align-items: center; gap: 14px;
+  transition: border-color 0.12s;
+}
+.photo-option-btn:active { border-color: var(--orange); }
+.photo-option-icon { font-size: 22px; }
+.photo-cancel-btn {
+  width: 100%; padding: 14px; background: transparent;
+  border: 1.5px solid var(--border); border-radius: 4px;
+  color: var(--muted); font-family: var(--mono); font-size: 11px;
+  letter-spacing: 0.12em; text-transform: uppercase; cursor: pointer;
+  margin-top: 4px;
+}
+/* ── CITY BUTTONS ── */
+.city-btn {
+  padding: 14px 8px; background: var(--card);
+  border: 2px solid var(--border); border-radius: 4px;
+  color: var(--text); font-family: var(--body); font-size: 15px;
+  font-weight: 600; cursor: pointer; transition: all 0.12s; text-align: center;
+}
+.city-btn:active, .city-btn.selected { background: rgba(232,80,10,0.12); border-color: var(--orange); color: var(--orange); }
+
+/* ── DELIVERY SEARCH RESULTS ── */
+.search-result-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 14px; background: var(--card);
+  border: 1.5px solid var(--border); border-radius: 4px;
+  cursor: pointer; margin-bottom: 6px; transition: border-color 0.12s;
+}
+.search-result-item:active { border-color: var(--orange); }
+.search-result-thumb {
+  width: 44px; height: 44px; border-radius: 3px;
+  object-fit: cover; flex-shrink: 0; background: #111;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; color: var(--muted);
+}
+.search-result-thumb img { width: 100%; height: 100%; object-fit: cover; border-radius: 3px; }
+.search-result-info { flex: 1; }
+.search-result-name { font-weight: 600; font-size: 14px; }
+.search-result-meta { font-family: var(--mono); font-size: 10px; color: var(--muted); letter-spacing: 0.08em; margin-top: 2px; }
+.search-result-stock { font-family: var(--display); font-size: 20px; color: var(--green); flex-shrink: 0; }
+.search-result-stock.low { color: var(--amber); }
+.search-result-stock.out { color: var(--red); }
+
+.new-item-btn {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 14px; background: transparent;
+  border: 2px dashed var(--orange); border-radius: 4px;
+  cursor: pointer; margin-bottom: 6px; color: var(--orange);
+  font-family: var(--body); font-size: 14px; font-weight: 600; width: 100%;
+}
+
+/* ── DELIVERY LIST ── */
+.delivery-list-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 14px; background: var(--card);
+  border: 1px solid var(--border); border-radius: 4px; margin-bottom: 6px;
+}
+.delivery-list-id   { font-family: var(--display); font-size: 18px; color: var(--orange); width: 50px; flex-shrink: 0; }
+.delivery-list-name { flex: 1; font-size: 13px; font-weight: 600; line-height: 1.3; }
+.delivery-list-cat  { font-size: 11px; color: var(--muted); }
+.delivery-list-qty  { font-family: var(--display); font-size: 22px; color: var(--blue); flex-shrink: 0; }
+.delivery-list-type { font-family: var(--mono); font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; padding: 2px 6px; border-radius: 2px; flex-shrink: 0; }
+.delivery-list-type.new    { background: rgba(26,106,186,0.15); color: var(--blue); }
+.delivery-list-type.return { background: rgba(26,158,74,0.15);  color: var(--green); }
+.delivery-list-remove { background: transparent; border: none; color: var(--muted); font-size: 16px; cursor: pointer; padding: 2px; flex-shrink: 0; }
 </style>
 </head>
 <body>
@@ -324,6 +412,20 @@ textarea.form-input { resize: vertical; min-height: 80px; font-size: 15px; line-
   </div>
 </div>
 
+<!-- PHOTO OPTIONS -->
+<div class="photo-options-sheet" id="photo-options-sheet" onclick="closePhotoOptions(event)">
+  <div class="photo-options-inner">
+    <div class="photo-options-title">Add Photo</div>
+    <button class="photo-option-btn" onclick="triggerPhotoCamera()">
+      <span class="photo-option-icon">📷</span>Take Photo
+    </button>
+    <button class="photo-option-btn" onclick="triggerPhotoLibrary()">
+      <span class="photo-option-icon">🖼️</span>Choose from Library
+    </button>
+    <button class="photo-cancel-btn" onclick="closePhotoOptions()">Cancel</button>
+  </div>
+</div>
+
 <!-- LOADING -->
 <div class="screen active" id="screen-loading">
   <div class="screen-body" style="align-items:center;justify-content:center;gap:20px;">
@@ -333,26 +435,195 @@ textarea.form-input { resize: vertical; min-height: 80px; font-size: 15px; line-
   </div>
 </div>
 
-<!-- SESSION START -->
+<!-- SESSION SWITCHBOARD -->
 <div class="screen" id="screen-session">
   <div class="app-header"><div class="logo">Vinyl <em>Media</em></div></div>
-  <div class="screen-body" style="justify-content:center;">
-    <div style="font-family:var(--display);font-size:32px;letter-spacing:0.04em;line-height:1.2;margin-bottom:4px;">Start a New<br>Load Session</div>
-    <div style="font-size:14px;color:var(--muted);line-height:1.6;margin-bottom:20px;">Name the event you're loading for. This creates a new tab in your Sheet for this load.</div>
+  <div class="screen-body" style="justify-content:center;gap:16px;">
+
+    <!-- Location display / picker -->
+    <div id="session-location-display" style="display:none;">
+      <div style="font-family:var(--mono);font-size:9px;letter-spacing:0.18em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;">Storage Location</div>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <span style="font-size:20px;">📍</span>
+        <span style="font-family:var(--display);font-size:28px;letter-spacing:0.04em;" id="session-loc-name">—</span>
+      </div>
+    </div>
+
+    <!-- City picker (shown when no location param) -->
+    <div id="session-city-picker" style="display:none;">
+      <div style="font-family:var(--mono);font-size:9px;letter-spacing:0.18em;text-transform:uppercase;color:var(--muted);margin-bottom:10px;">Which storage location?</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+        <button class="city-btn" onclick="selectCity('Sydney')">🏙 Sydney</button>
+        <button class="city-btn" onclick="selectCity('Melbourne')">🏙 Melbourne</button>
+        <button class="city-btn" onclick="selectCity('Brisbane')">🏙 Brisbane</button>
+        <button class="city-btn" onclick="selectCity('Adelaide')">🏙 Adelaide</button>
+      </div>
+    </div>
+
+    <div class="divider">What are you here to do?</div>
+
+    <!-- Who -->
+    <div>
+      <div style="font-family:var(--mono);font-size:9px;letter-spacing:0.18em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;">Who are you?</div>
+      <div class="who-grid" id="session-who-grid">
+        <button class="who-btn" onclick="selectSessionWho(this)">Jacob</button>
+        <button class="who-btn" onclick="selectSessionWho(this)">+ Add name</button>
+      </div>
+      <input class="form-input" type="text" id="session-who-custom" placeholder="Enter name" style="display:none;margin-top:8px;" />
+    </div>
+
+    <!-- Mode buttons -->
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      <button class="action-btn takeout" onclick="startMode('loadout')">
+        <div class="action-icon">📦</div>
+        <div class="action-text"><div class="action-title">Load Out</div><div class="action-sub">Build a load list for an event</div></div>
+        <div class="action-arrow">›</div>
+      </button>
+      <button class="action-btn" style="border-color:var(--blue);" onclick="startMode('delivery')">
+        <div class="action-icon">🚚</div>
+        <div class="action-text"><div class="action-title">Receive Delivery</div><div class="action-sub">Log new stock from a supplier</div></div>
+        <div class="action-arrow">›</div>
+      </button>
+      <button class="action-btn return" onclick="startMode('checkin')">
+        <div class="action-icon">✅</div>
+        <div class="action-text"><div class="action-title">Check Items In</div><div class="action-sub">Return items to storage</div></div>
+        <div class="action-arrow">›</div>
+      </button>
+      <button class="action-btn" onclick="startMode('browse')">
+        <div class="action-icon">🔍</div>
+        <div class="action-text"><div class="action-title">Browse Inventory</div><div class="action-sub">Search and view stock levels</div></div>
+        <div class="action-arrow">›</div>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- LOAD OUT — event name -->
+<div class="screen" id="screen-loadout-setup">
+  <div class="app-header"><div class="logo">Vinyl <em>Media</em></div></div>
+  <div class="screen-body" style="justify-content:center;gap:16px;">
+    <div style="font-family:var(--display);font-size:32px;letter-spacing:0.04em;line-height:1.2;">Load Out<br><span style="color:var(--orange)" id="loadout-loc-label">—</span></div>
     <div class="form-group">
       <div class="form-label">Event Name</div>
       <input class="form-input" type="text" id="session-event" placeholder="e.g. NRMA Hospo Suite — Jun 2025" />
     </div>
-    <div style="font-family:var(--mono);font-size:9px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);margin-top:8px;">Who's running this session?</div>
-    <div class="who-grid" style="margin-top:8px;" id="session-who-grid">
-      <button class="who-btn" onclick="selectSessionWho(this)">Jacob</button>
-      <button class="who-btn" onclick="selectSessionWho(this)">+ Add name</button>
-    </div>
-    <input class="form-input" type="text" id="session-who-custom" placeholder="Enter name" style="display:none;margin-top:8px;" />
   </div>
   <div class="action-area">
-    <button class="btn-primary" onclick="startSession()">Start Session</button>
-    <button class="btn-secondary" onclick="skipSession()">Skip — just scanning, no load</button>
+    <button class="btn-primary" onclick="startSession()">Start Load Out</button>
+    <button class="btn-secondary" onclick="showScreen('screen-session')">← Back</button>
+  </div>
+</div>
+
+<!-- DELIVERY SETUP -->
+<div class="screen" id="screen-delivery-setup">
+  <div class="app-header"><div class="logo">Vinyl <em>Media</em></div></div>
+  <div class="screen-body" style="justify-content:center;gap:16px;">
+    <div style="font-family:var(--display);font-size:32px;letter-spacing:0.04em;line-height:1.2;">Receive Delivery<br><span style="color:var(--orange)" id="delivery-loc-label">—</span></div>
+    <div class="form-group">
+      <div class="form-label">Supplier Name</div>
+      <input class="form-input" type="text" id="delivery-supplier" placeholder="e.g. Staging Direct" autocomplete="off" />
+    </div>
+    <div class="form-group">
+      <div class="form-label">Notes (optional)</div>
+      <textarea class="form-input" id="delivery-notes-header" placeholder="e.g. Invoice #1234, partial delivery, damaged on arrival…" style="min-height:60px;"></textarea>
+    </div>
+  </div>
+  <div class="action-area">
+    <button class="btn-primary" style="background:var(--blue);" onclick="startDelivery()">Start Receiving</button>
+    <button class="btn-secondary" onclick="showScreen('screen-session')">← Back</button>
+  </div>
+</div>
+
+<!-- DELIVERY ITEM INTAKE -->
+<div class="screen" id="screen-delivery">
+  <div class="app-header">
+    <div class="logo">Vinyl <em>Media</em></div>
+    <div class="header-right">
+      <div style="font-family:var(--mono);font-size:10px;color:var(--orange);letter-spacing:0.08em;" id="delivery-count-badge">0 items</div>
+    </div>
+  </div>
+  <div class="screen-body">
+    <div style="font-family:var(--display);font-size:22px;letter-spacing:0.04em;color:var(--muted);">
+      Receiving from <span style="color:var(--text)" id="delivery-supplier-display">—</span>
+    </div>
+
+    <!-- Search existing -->
+    <div class="form-group">
+      <div class="form-label">Search existing item or type new name</div>
+      <input class="form-input" type="text" id="delivery-search" placeholder="e.g. Crowd Barrier" autocomplete="off" oninput="searchInventory(this.value)" />
+    </div>
+
+    <!-- Search results -->
+    <div id="delivery-search-results" style="display:none;"></div>
+
+    <!-- Selected item or new item form -->
+    <div id="delivery-item-form" style="display:none;">
+      <div class="id-display" id="delivery-item-card" style="margin-bottom:0;"></div>
+      <div class="form-section" style="margin-top:12px;">
+        <div class="form-group" id="delivery-cat-group" style="display:none;">
+          <div class="form-label">Category / Group</div>
+          <div style="display:flex;gap:8px;">
+            <select class="form-input" id="delivery-cat" style="flex:1;"><option value="">— Select or add new —</option></select>
+            <button type="button" onclick="promptNewCategory()" style="flex-shrink:0;padding:0 14px;background:var(--card);border:1.5px solid var(--border);border-radius:4px;color:var(--orange);font-family:var(--mono);font-size:11px;letter-spacing:0.1em;text-transform:uppercase;cursor:pointer;white-space:nowrap;">+ New</button>
+          </div>
+        </div>
+        <div class="form-group">
+          <div class="form-label">Quantity Arriving</div>
+          <div class="qty-control">
+            <button class="qty-btn" onclick="adjustQty('delivery-qty',-1)">−</button>
+            <input class="qty-val" type="number" id="delivery-qty" value="1" min="1" oninput="clampQty(this)" />
+            <button class="qty-btn" onclick="adjustQty('delivery-qty',1)">+</button>
+          </div>
+        </div>
+        <div class="form-group">
+          <div class="form-label">Notes (optional)</div>
+          <input class="form-input" type="text" id="delivery-item-notes" placeholder="e.g. Missing tag, damaged corner…" autocomplete="off" />
+        </div>
+        <div class="divider">Photos</div>
+        <div class="photos-area">
+          <div class="photos-grid" id="delivery-photos-grid">
+            <div class="add-photo-btn" onclick="showPhotoOptions('delivery')">
+              <span class="add-photo-icon">📷</span><span>Add</span>
+            </div>
+          </div>
+        </div>
+        <input type="file" id="photo-input-delivery-camera"  accept="image/*" capture="environment" onchange="handlePhotos(this,'delivery')" style="display:none;" />
+        <input type="file" id="photo-input-delivery-library" accept="image/*" multiple            onchange="handlePhotos(this,'delivery')" style="display:none;" />
+      </div>
+      <div style="display:flex;gap:8px;margin-top:8px;">
+        <button class="btn-primary" id="btn-delivery-add" onclick="addDeliveryItem()" style="flex:1;">+ Add to Delivery</button>
+        <button class="btn-secondary" onclick="clearDeliveryItemForm()" style="width:80px;flex-shrink:0;">Clear</button>
+      </div>
+    </div>
+
+    <!-- Delivery list so far -->
+    <div id="delivery-list-section" style="display:none;">
+      <div class="divider">Added so far</div>
+      <div id="delivery-list"></div>
+    </div>
+  </div>
+  <div class="action-area">
+    <button class="btn-primary" style="background:var(--blue);" id="btn-delivery-submit" onclick="submitDelivery()">Submit Delivery</button>
+    <button class="btn-secondary" onclick="showScreen('screen-session')">← Cancel</button>
+  </div>
+</div>
+
+<!-- BROWSE / SEARCH INVENTORY -->
+<div class="screen" id="screen-browse">
+  <div class="app-header">
+    <div class="logo">Vinyl <em>Media</em></div>
+    <div class="header-right"><div style="font-family:var(--mono);font-size:10px;color:var(--muted);" id="browse-loc-badge">—</div></div>
+  </div>
+  <div class="screen-body">
+    <div class="form-group">
+      <input class="form-input" type="text" id="browse-search" placeholder="Search items…" oninput="browseSearch(this.value)" autocomplete="off" />
+    </div>
+    <div id="browse-results">
+      <div style="text-align:center;padding:40px 20px;color:var(--muted);font-family:var(--mono);font-size:10px;letter-spacing:0.12em;text-transform:uppercase;">Type to search inventory</div>
+    </div>
+  </div>
+  <div class="action-area">
+    <button class="btn-secondary" onclick="showScreen('screen-session')">← Back</button>
   </div>
 </div>
 
@@ -377,6 +648,81 @@ textarea.form-input { resize: vertical; min-height: 80px; font-size: 15px; line-
   </div>
   <div class="action-area">
     <button class="btn-primary" onclick="submitManualId()">Look Up</button>
+    <button class="btn-secondary" onclick="showNoTagScreen()">Register item without NFC tag</button>
+  </div>
+</div>
+
+<!-- NO-TAG REGISTRATION -->
+<div class="screen" id="screen-notag">
+  <div class="app-header">
+    <div class="logo">Vinyl <em>Media</em></div>
+    <div class="header-right">
+      <button class="load-fab" id="fab-notag" onclick="openLoadSheet()">
+        <span class="load-fab-icon">📦</span><span>List</span>
+        <span class="load-fab-count" id="fab-count-notag">0</span>
+      </button>
+    </div>
+  </div>
+  <div class="screen-body">
+    <div class="status-pill pill-new"><div class="status-dot"></div>No Tag</div>
+    <div class="id-display" style="border-left-color:var(--muted);">
+      <div class="id-label">Untagged Item</div>
+      <div class="id-value" style="font-size:28px;letter-spacing:0.02em;" id="notag-id-preview">—</div>
+    </div>
+    <div style="font-size:13px;color:var(--muted);line-height:1.6;">
+      Use this for items like beanbags, bollards, or bulk goods that aren't individually tagged. Set the quantity to cover the full count.
+    </div>
+    <div class="divider">Item Details</div>
+    <div class="form-section">
+      <div class="form-group">
+        <div class="form-label">Item Name</div>
+        <input class="form-input" type="text" id="notag-name" placeholder="e.g. Beanbag" autocomplete="off" oninput="updateNoTagPreview()" />
+      </div>
+      <div class="form-group">
+        <div class="form-label">Category / Group</div>
+        <div style="display:flex;gap:8px;">
+          <select class="form-input" id="notag-cat" onchange="handleNoTagCatSelect(this)" style="flex:1;">
+            <option value="">— Select or add new —</option>
+          </select>
+          <button type="button" onclick="promptNewCategory()" style="flex-shrink:0;padding:0 14px;background:var(--card);border:1.5px solid var(--border);border-radius:4px;color:var(--orange);font-family:var(--mono);font-size:11px;letter-spacing:0.1em;text-transform:uppercase;cursor:pointer;white-space:nowrap;">+ New</button>
+        </div>
+        <div id="notag-cat-display" style="font-family:var(--mono);font-size:11px;color:var(--orange);letter-spacing:0.1em;margin-top:4px;display:none;"></div>
+      </div>
+      <div class="form-group">
+        <div class="form-label">Total Quantity</div>
+        <div class="qty-control">
+          <button class="qty-btn" onclick="adjustQty('notag-qty',-1)">−</button>
+          <input class="qty-val" type="number" id="notag-qty" value="1" min="1" oninput="clampQty(this)" />
+          <button class="qty-btn" onclick="adjustQty('notag-qty',1)">+</button>
+        </div>
+      </div>
+      <div class="form-group">
+        <div class="form-label">Notes</div>
+        <textarea class="form-input" id="notag-notes" placeholder="e.g. Stored in blue bags at rear of unit"></textarea>
+      </div>
+    </div>
+    <div class="divider">Photos</div>
+    <div class="photos-area">
+      <div class="photos-grid" id="notag-photos-grid">
+        <div class="add-photo-btn" onclick="showPhotoOptions('notag')">
+          <span class="add-photo-icon">📷</span><span>Add</span>
+        </div>
+      </div>
+    </div>
+    <input type="file" id="photo-input-notag-camera"  accept="image/*" capture="environment" onchange="handlePhotos(this,'notag')" style="display:none;" />
+    <input type="file" id="photo-input-notag-library" accept="image/*" multiple            onchange="handlePhotos(this,'notag')" style="display:none;" />
+    <div class="divider">Location</div>
+    <div class="loc-strip">
+      <div class="loc-icon">📍</div>
+      <div><div class="loc-label">Detected Location</div><div class="loc-val loading" id="loc-notag">Getting GPS…</div></div>
+    </div>
+    <div class="divider">Who's registering</div>
+    <div class="who-grid" id="who-grid-notag"></div>
+    <input class="form-input" type="text" id="custom-who-notag" placeholder="Enter name" style="display:none;margin-top:4px;" />
+  </div>
+  <div class="action-area">
+    <button class="btn-primary" id="btn-notag" onclick="submitNoTag()">Register Item</button>
+    <button class="btn-secondary" onclick="showScreen('screen-manual')">← Back</button>
   </div>
 </div>
 
@@ -430,12 +776,13 @@ textarea.form-input { resize: vertical; min-height: 80px; font-size: 15px; line-
     <div class="divider">Photos</div>
     <div class="photos-area">
       <div class="photos-grid" id="new-photos-grid">
-        <div class="add-photo-btn" onclick="triggerPhoto('new')">
+        <div class="add-photo-btn" onclick="showPhotoOptions('new')">
           <span class="add-photo-icon">📷</span><span>Add</span>
         </div>
       </div>
     </div>
-    <input type="file" id="photo-input-new" accept="image/*" capture="environment" multiple onchange="handlePhotos(this,'new')" style="display:none;" />
+    <input type="file" id="photo-input-new-camera"  accept="image/*" capture="environment" onchange="handlePhotos(this,'new')" style="display:none;" />
+    <input type="file" id="photo-input-new-library" accept="image/*" multiple            onchange="handlePhotos(this,'new')" style="display:none;" />
     <div class="divider">Location</div>
     <div class="loc-strip">
       <div class="loc-icon">📍</div>
@@ -607,12 +954,13 @@ textarea.form-input { resize: vertical; min-height: 80px; font-size: 15px; line-
     <div class="divider">Damage Photos</div>
     <div class="photos-area">
       <div class="photos-grid" id="damage-photos-grid">
-        <div class="add-photo-btn" onclick="triggerPhoto('damage')">
+        <div class="add-photo-btn" onclick="showPhotoOptions('damage')">
           <span class="add-photo-icon">📷</span><span>Add</span>
         </div>
       </div>
     </div>
-    <input type="file" id="photo-input-damage" accept="image/*" capture="environment" multiple onchange="handlePhotos(this,'damage')" style="display:none;" />
+    <input type="file" id="photo-input-damage-camera"  accept="image/*" capture="environment" onchange="handlePhotos(this,'damage')" style="display:none;" />
+    <input type="file" id="photo-input-damage-library" accept="image/*" multiple            onchange="handlePhotos(this,'damage')" style="display:none;" />
     <div class="divider">Details</div>
     <div class="form-section">
       <div class="form-group">
@@ -653,12 +1001,13 @@ textarea.form-input { resize: vertical; min-height: 80px; font-size: 15px; line-
     <div class="divider">New Photos</div>
     <div class="photos-area">
       <div class="photos-grid" id="updatephoto-photos-grid">
-        <div class="add-photo-btn" onclick="triggerPhoto('updatephoto')">
+        <div class="add-photo-btn" onclick="showPhotoOptions('updatephoto')">
           <span class="add-photo-icon">📷</span><span>Add</span>
         </div>
       </div>
     </div>
-    <input type="file" id="photo-input-updatephoto" accept="image/*" capture="environment" multiple onchange="handlePhotos(this,'updatephoto')" style="display:none;" />
+    <input type="file" id="photo-input-updatephoto-camera"  accept="image/*" capture="environment" onchange="handlePhotos(this,'updatephoto')" style="display:none;" />
+    <input type="file" id="photo-input-updatephoto-library" accept="image/*" multiple            onchange="handlePhotos(this,'updatephoto')" style="display:none;" />
     <div style="font-size:12px;color:var(--muted);line-height:1.6;">Photos added here will be appended to the item's record.</div>
   </div>
   <div class="action-area">
@@ -739,10 +1088,23 @@ const TEAM = ['Jacob'];
 
 let S = {
   itemId: null, item: null, gps: null,
-  sessionEvent: null, sessionWho: null,
+  sessionMode: null,        // 'loadout' | 'delivery' | 'checkin' | 'browse'
+  sessionLocation: null,    // 'Sydney' | 'Melbourne' | 'Brisbane' | 'Adelaide'
+  sessionEvent: null,
+  sessionWho: null,
   damageOnReturn: false, severity: null,
-  currentCategory: null,
-  photos: { new: [], damage: [], updatephoto: [] },
+  currentCategory: null, currentNoTagCategory: null,
+  photos: { new: [], damage: [], updatephoto: [], notag: [], delivery: [] },
+  // delivery state
+  delivery: {
+    supplier: '', notes: '',
+    items: [],               // accumulated delivery items
+    selectedItem: null,      // existing inventory item chosen from search
+    isNewItem: false,
+    pendingName: '',
+  },
+  // browse cache
+  inventoryCache: [],
 };
 
 let loadList = [];
@@ -754,25 +1116,43 @@ function init() {
   buildWhoGrids();
   getGPS();
   populateCatDropdown();
-  S.currentCategory = null;
 
-  const params = new URLSearchParams(window.location.search);
-  const id = (params.get('id') || '').toUpperCase().trim();
+  const params   = new URLSearchParams(window.location.search);
+  const id       = (params.get('id')       || '').toUpperCase().trim();
+  const location = (params.get('location') || '').trim();
+  const group    = (params.get('group')    || '').trim();
 
-  if (!id) {
+  // Pre-set location from URL param
+  if (location) {
+    S.sessionLocation = location;
+    document.getElementById('session-loc-name').textContent = location;
+    document.getElementById('session-location-display').style.display = 'block';
+    document.getElementById('session-city-picker').style.display = 'none';
+  } else {
+    document.getElementById('session-location-display').style.display = 'none';
+    document.getElementById('session-city-picker').style.display = 'block';
+  }
+
+  if (group) {
+    // Group/category tag — go straight to browse filtered by group
+    S.sessionLocation = location || null;
+    showBrowse(group);
+    return;
+  }
+
+  if (id) {
+    S.itemId = id;
+    // Show session switchboard first, then route after mode chosen
     showScreen('screen-session');
     return;
   }
-  S.itemId = id;
-  if (S.sessionEvent !== null) {
-    lookupAndRoute(id);
-  } else {
-    showScreen('screen-session');
-  }
+
+  showScreen('screen-session');
 }
 
+
 // ══════════════════════════════════════════
-// SESSION
+// SESSION SWITCHBOARD
 // ══════════════════════════════════════════
 let sessionWhoSelected = null;
 
@@ -794,26 +1174,365 @@ function getSessionWho() {
   return sessionWhoSelected || TEAM[0];
 }
 
+function selectCity(city) {
+  document.querySelectorAll('.city-btn').forEach(b => b.classList.remove('selected'));
+  event.target.classList.add('selected');
+  S.sessionLocation = city;
+}
+
+function startMode(mode) {
+  if (!S.sessionLocation) { toast('Select a storage location first', true); return; }
+  S.sessionWho  = getSessionWho();
+  S.sessionMode = mode;
+
+  if (mode === 'loadout') {
+    document.getElementById('loadout-loc-label').textContent = S.sessionLocation;
+    showScreen('screen-loadout-setup');
+  } else if (mode === 'delivery') {
+    document.getElementById('delivery-loc-label').textContent = S.sessionLocation;
+    showScreen('screen-delivery-setup');
+  } else if (mode === 'checkin') {
+    // Go straight to manual/scan screen in checkin mode
+    proceedToScan();
+  } else if (mode === 'browse') {
+    showBrowse();
+  }
+}
+
 function startSession() {
   const ev = document.getElementById('session-event').value.trim();
   if (!ev) { toast('Enter an event name', true); return; }
   S.sessionEvent = ev;
-  S.sessionWho   = getSessionWho();
   document.getElementById('load-event-display').textContent = ev;
-  proceedAfterSession();
+  proceedToScan();
 }
 
 function skipSession() {
   S.sessionEvent = 'No Event';
-  S.sessionWho   = TEAM[0];
   document.getElementById('load-event-display').textContent = 'No Event';
-  proceedAfterSession();
+  proceedToScan();
 }
 
-function proceedAfterSession() {
+function proceedToScan() {
   if (S.itemId) { showScreen('screen-loading'); lookupAndRoute(S.itemId); }
   else showScreen('screen-manual');
 }
+
+// ══════════════════════════════════════════
+// DELIVERY FLOW
+// ══════════════════════════════════════════
+function startDelivery() {
+  const supplier = document.getElementById('delivery-supplier').value.trim();
+  if (!supplier) { toast('Enter supplier name', true); return; }
+  S.delivery.supplier = supplier;
+  S.delivery.notes    = document.getElementById('delivery-notes-header').value.trim();
+  S.delivery.items    = [];
+  S.photos.delivery   = [];
+  clearDeliveryItemForm();
+  document.getElementById('delivery-supplier-display').textContent = supplier;
+  document.getElementById('delivery-count-badge').textContent = '0 items';
+  document.getElementById('delivery-list-section').style.display = 'none';
+  document.getElementById('delivery-list').innerHTML = '';
+  showScreen('screen-delivery');
+}
+
+let searchDebounce;
+async function searchInventory(query) {
+  clearTimeout(searchDebounce);
+  const results = document.getElementById('delivery-search-results');
+  const form    = document.getElementById('delivery-item-form');
+
+  if (!query.trim()) {
+    results.style.display = 'none';
+    form.style.display    = 'none';
+    return;
+  }
+
+  searchDebounce = setTimeout(async () => {
+    results.style.display = 'block';
+    results.innerHTML = `<div style="font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:0.1em;text-transform:uppercase;padding:8px 0;">Searching…</div>`;
+
+    try {
+      const resp = await fetch(`${CONFIG.SCRIPT_URL}?action=search&q=${encodeURIComponent(query)}`);
+      const data = await resp.json();
+      const items = data.items || [];
+      renderDeliverySearchResults(items, query);
+    } catch(e) {
+      // Fallback to cached results if available
+      if (S.inventoryCache.length > 0) {
+        const filtered = S.inventoryCache.filter(i =>
+          i.name.toLowerCase().includes(query.toLowerCase()) ||
+          i.id.toLowerCase().includes(query.toLowerCase())
+        );
+        renderDeliverySearchResults(filtered, query);
+      } else {
+        results.innerHTML = `<div class="new-item-btn" onclick="selectNewDeliveryItem('${query.replace(/'/g,"\\'")}')"><span style="font-size:20px;">➕</span> Add "${query}" as new item</div>`;
+      }
+    }
+  }, 300);
+}
+
+function renderDeliverySearchResults(items, query) {
+  const results = document.getElementById('delivery-search-results');
+  let html = '';
+
+  if (items.length > 0) {
+    items.slice(0, 5).forEach(item => {
+      const inStorage = (item.totalQty || 0) - (item.qtyOut || 0);
+      const stockClass = inStorage <= 0 ? 'out' : inStorage < 3 ? 'low' : '';
+      const thumb = item.photoUrls && item.photoUrls[0]
+        ? `<div class="search-result-thumb"><img src="${item.photoUrls[0]}" /></div>`
+        : `<div class="search-result-thumb">📦</div>`;
+      html += `
+        <div class="search-result-item" onclick="selectExistingDeliveryItem(${JSON.stringify(JSON.stringify(item))})">
+          ${thumb}
+          <div class="search-result-info">
+            <div class="search-result-name">${item.name}</div>
+            <div class="search-result-meta">${item.id} · ${item.category || '—'} · ${item.location || '—'}</div>
+          </div>
+          <div class="search-result-stock ${stockClass}">${inStorage}/${item.totalQty || '?'}</div>
+        </div>`;
+    });
+  }
+
+  html += `<div class="new-item-btn" onclick="selectNewDeliveryItem('${query.replace(/'/g,"\\'")}')"><span style="font-size:20px;">➕</span> Add "${query}" as new item</div>`;
+  results.innerHTML = html;
+}
+
+function selectExistingDeliveryItem(itemJson) {
+  const item = JSON.parse(itemJson);
+  S.delivery.selectedItem = item;
+  S.delivery.isNewItem    = false;
+  S.delivery.pendingName  = item.name;
+  document.getElementById('delivery-search-results').style.display = 'none';
+  document.getElementById('delivery-search').value = item.name;
+
+  const card = document.getElementById('delivery-item-card');
+  const thumb = item.photoUrls && item.photoUrls[0]
+    ? `<img src="${item.photoUrls[0]}" style="width:48px;height:48px;object-fit:cover;border-radius:3px;flex-shrink:0;" />`
+    : `<span style="font-size:28px;">📦</span>`;
+  card.innerHTML = `
+    <div style="display:flex;align-items:center;gap:12px;">
+      ${thumb}
+      <div>
+        <div class="id-label">Existing Item</div>
+        <div style="font-family:var(--display);font-size:22px;letter-spacing:0.04em;">${item.name}</div>
+        <div style="font-family:var(--mono);font-size:10px;color:var(--muted);">${item.id} · ${item.category}</div>
+      </div>
+    </div>`;
+
+  document.getElementById('delivery-cat-group').style.display  = 'none';
+  document.getElementById('delivery-item-form').style.display  = 'flex';
+  document.getElementById('delivery-item-form').style.flexDirection = 'column';
+  document.getElementById('delivery-item-form').style.gap = '12px';
+  document.getElementById('delivery-qty').value = 1;
+  document.getElementById('delivery-item-notes').value = '';
+  S.photos.delivery = [];
+  renderPhotoGrid('delivery');
+}
+
+function selectNewDeliveryItem(name) {
+  S.delivery.selectedItem = null;
+  S.delivery.isNewItem    = true;
+  S.delivery.pendingName  = name;
+  document.getElementById('delivery-search-results').style.display = 'none';
+  document.getElementById('delivery-search').value = name;
+
+  const card = document.getElementById('delivery-item-card');
+  card.innerHTML = `
+    <div class="id-label">New Item</div>
+    <div style="font-family:var(--display);font-size:22px;letter-spacing:0.04em;color:var(--orange);">${name}</div>
+    <div style="font-size:12px;color:var(--muted);margin-top:2px;">Will be added to master inventory</div>`;
+
+  populateCatDropdown();
+  document.getElementById('delivery-cat-group').style.display = 'block';
+  document.getElementById('delivery-item-form').style.display  = 'flex';
+  document.getElementById('delivery-item-form').style.flexDirection = 'column';
+  document.getElementById('delivery-item-form').style.gap = '12px';
+  document.getElementById('delivery-qty').value = 1;
+  document.getElementById('delivery-item-notes').value = '';
+  S.photos.delivery = [];
+  renderPhotoGrid('delivery');
+}
+
+async function addDeliveryItem() {
+  const qty   = parseInt(document.getElementById('delivery-qty').value) || 1;
+  const notes = document.getElementById('delivery-item-notes').value.trim();
+  const btn   = document.getElementById('btn-delivery-add');
+
+  btn.disabled = true; btn.textContent = 'Adding…';
+
+  if (S.delivery.isNewItem) {
+    const cat = document.getElementById('delivery-cat').value;
+    if (!cat) { toast('Select a category', true); btn.disabled = false; btn.textContent = '+ Add to Delivery'; return; }
+
+    // Generate ID
+    const id = S.delivery.pendingName.toUpperCase().replace(/\s+/g,'-').substring(0,10) + '-NOTAG';
+
+    const payload = {
+      action: 'register', id,
+      name: S.delivery.pendingName, category: cat,
+      totalQty: qty, notes: notes + (notes ? ' | ' : '') + `Received from ${S.delivery.supplier}`,
+      who: S.sessionWho, gpsLabel: S.sessionLocation,
+      gpsLat: S.gps?.lat||'', gpsLng: S.gps?.lng||'', gpsAcc: S.gps?.accuracy||'',
+      photos: S.photos.delivery.map(p => p.base64),
+      timestamp: new Date().toISOString(),
+    };
+    await postToScript(payload);
+
+    S.delivery.items.push({ id, name: S.delivery.pendingName, category: cat, qty, type: 'New Stock', notes });
+
+  } else if (S.delivery.selectedItem) {
+    const item = S.delivery.selectedItem;
+    const payload = {
+      action: 'return', id: item.id, qty,
+      notes: notes + (notes ? ' | ' : '') + `Received from ${S.delivery.supplier}`,
+      who: S.sessionWho, gpsLabel: S.sessionLocation,
+      gpsLat: S.gps?.lat||'', gpsLng: S.gps?.lng||'', gpsAcc: S.gps?.accuracy||'',
+      timestamp: new Date().toISOString(),
+    };
+    await postToScript(payload);
+
+    S.delivery.items.push({ id: item.id, name: item.name, category: item.category, qty, type: 'Return', notes });
+  } else {
+    toast('Select or add an item first', true);
+    btn.disabled = false; btn.textContent = '+ Add to Delivery';
+    return;
+  }
+
+  btn.disabled = false; btn.textContent = '+ Add to Delivery';
+  renderDeliveryList();
+  clearDeliveryItemForm();
+  toast(`Added ✓`);
+}
+
+function clearDeliveryItemForm() {
+  document.getElementById('delivery-search').value = '';
+  document.getElementById('delivery-search-results').style.display = 'none';
+  document.getElementById('delivery-item-form').style.display = 'none';
+  S.delivery.selectedItem = null;
+  S.delivery.isNewItem    = false;
+  S.delivery.pendingName  = '';
+  S.photos.delivery = [];
+}
+
+function renderDeliveryList() {
+  const list    = document.getElementById('delivery-list');
+  const section = document.getElementById('delivery-list-section');
+  const badge   = document.getElementById('delivery-count-badge');
+  const items   = S.delivery.items;
+
+  badge.textContent = `${items.length} item${items.length !== 1 ? 's' : ''}`;
+
+  if (items.length === 0) { section.style.display = 'none'; return; }
+  section.style.display = 'block';
+
+  list.innerHTML = items.map((r, i) => `
+    <div class="delivery-list-row">
+      <div class="delivery-list-id">${r.id.substring(0,6)}</div>
+      <div class="delivery-list-name">${r.name}<div class="delivery-list-cat">${r.category}</div></div>
+      <div class="delivery-list-qty">×${r.qty}</div>
+      <div class="delivery-list-type ${r.type === 'New Stock' ? 'new' : 'return'}">${r.type}</div>
+      <button class="delivery-list-remove" onclick="removeDeliveryItem(${i})">✕</button>
+    </div>`).join('');
+}
+
+function removeDeliveryItem(i) {
+  S.delivery.items.splice(i, 1);
+  renderDeliveryList();
+}
+
+async function submitDelivery() {
+  if (S.delivery.items.length === 0) { toast('Add at least one item', true); return; }
+
+  const btn = document.getElementById('btn-delivery-submit');
+  btn.disabled = true; btn.textContent = 'Submitting…';
+
+  const payload = {
+    action:   'submitdelivery',
+    supplier: S.delivery.supplier,
+    notes:    S.delivery.notes,
+    location: S.sessionLocation,
+    who:      S.sessionWho,
+    items:    S.delivery.items,
+    timestamp: new Date().toISOString(),
+  };
+  const result = await postToScript(payload);
+  btn.disabled = false; btn.textContent = 'Submit Delivery';
+
+  if (result.success) {
+    S.delivery.items = [];
+    showSuccessScreen('delivery', '', S.delivery.supplier);
+  } else {
+    toast(result.error || 'Submission failed', true);
+  }
+}
+
+// ══════════════════════════════════════════
+// BROWSE / SEARCH
+// ══════════════════════════════════════════
+async function showBrowse(groupFilter) {
+  document.getElementById('browse-loc-badge').textContent = S.sessionLocation || 'All locations';
+  document.getElementById('browse-search').value = groupFilter || '';
+  showScreen('screen-browse');
+
+  // Load inventory cache
+  try {
+    const resp = await fetch(`${CONFIG.SCRIPT_URL}?action=search&q=`);
+    const data = await resp.json();
+    S.inventoryCache = data.items || [];
+    if (groupFilter) browseSearch(groupFilter);
+    else renderBrowseResults(S.inventoryCache);
+  } catch(e) {
+    document.getElementById('browse-results').innerHTML =
+      `<div style="text-align:center;padding:40px;color:var(--muted);font-family:var(--mono);font-size:10px;">Could not load inventory</div>`;
+  }
+}
+
+function browseSearch(query) {
+  const items = S.inventoryCache.filter(i =>
+    !query || i.name.toLowerCase().includes(query.toLowerCase()) ||
+    (i.category||'').toLowerCase().includes(query.toLowerCase()) ||
+    i.id.toLowerCase().includes(query.toLowerCase())
+  );
+  renderBrowseResults(items);
+}
+
+function renderBrowseResults(items) {
+  const el = document.getElementById('browse-results');
+  if (items.length === 0) {
+    el.innerHTML = `<div style="text-align:center;padding:40px;color:var(--muted);font-family:var(--mono);font-size:10px;letter-spacing:0.12em;text-transform:uppercase;">No items found</div>`;
+    return;
+  }
+  el.innerHTML = items.map(item => {
+    const inStorage = (item.totalQty || 0) - (item.qtyOut || 0);
+    const stockClass = inStorage <= 0 ? 'out' : inStorage < 3 ? 'low' : '';
+    const thumb = item.photoUrls && item.photoUrls[0]
+      ? `<div class="search-result-thumb"><img src="${item.photoUrls[0]}" /></div>`
+      : `<div class="search-result-thumb">📦</div>`;
+    return `
+      <div class="search-result-item" onclick="browseSelectItem('${item.id}')">
+        ${thumb}
+        <div class="search-result-info">
+          <div class="search-result-name">${item.name}</div>
+          <div class="search-result-meta">${item.id} · ${item.category||'—'} · ${item.location||'—'}</div>
+        </div>
+        <div class="search-result-stock ${stockClass}">${inStorage}/${item.totalQty||'?'}</div>
+      </div>`;
+  }).join('');
+}
+
+function browseSelectItem(id) {
+  S.itemId = id;
+  showScreen('screen-loading');
+  lookupAndRoute(id);
+}
+
+function proceedToScan() {
+  if (S.itemId) { showScreen('screen-loading'); lookupAndRoute(S.itemId); }
+  else showScreen('screen-manual');
+}
+
 
 // ══════════════════════════════════════════
 // ROUTING
@@ -1225,8 +1944,33 @@ function updateFabs() {
 // ══════════════════════════════════════════
 // PHOTOS
 // ══════════════════════════════════════════
-function triggerPhoto(ctx) {
-  document.getElementById(`photo-input-${ctx}`).click();
+let _photoCtx = null;
+
+function showPhotoOptions(ctx) {
+  _photoCtx = ctx;
+  document.getElementById('photo-options-sheet').classList.add('open');
+}
+
+function closePhotoOptions(e) {
+  if (e && e.target !== document.getElementById('photo-options-sheet')) return;
+  document.getElementById('photo-options-sheet').classList.remove('open');
+  _photoCtx = null;
+}
+
+function triggerPhotoCamera() {
+  document.getElementById('photo-options-sheet').classList.remove('open');
+  if (!_photoCtx) return;
+  const id = `photo-input-${_photoCtx}-camera`;
+  const el = document.getElementById(id);
+  if (el) el.click();
+}
+
+function triggerPhotoLibrary() {
+  document.getElementById('photo-options-sheet').classList.remove('open');
+  if (!_photoCtx) return;
+  const id = `photo-input-${_photoCtx}-library`;
+  const el = document.getElementById(id);
+  if (el) el.click();
 }
 
 function handlePhotos(input, ctx) {
@@ -1235,6 +1979,7 @@ function handlePhotos(input, ctx) {
     reader.onload = e => {
       S.photos[ctx].push({ base64: e.target.result, name: file.name });
       renderPhotoGrid(ctx);
+      updateLocDisplay(`loc-${ctx === 'notag' ? 'notag' : ctx}`);
     };
     reader.readAsDataURL(file);
   });
@@ -1242,15 +1987,18 @@ function handlePhotos(input, ctx) {
 }
 
 function renderPhotoGrid(ctx) {
-  const gridId = ctx === 'new' ? 'new-photos-grid' : ctx === 'damage' ? 'damage-photos-grid' : 'updatephoto-photos-grid';
-  const grid = document.getElementById(gridId);
+  const gridIds = {
+    new: 'new-photos-grid', damage: 'damage-photos-grid',
+    updatephoto: 'updatephoto-photos-grid', notag: 'notag-photos-grid',
+  };
+  const grid = document.getElementById(gridIds[ctx]);
   if (!grid) return;
   const thumbs = S.photos[ctx].map((p, i) => `
     <div class="photo-thumb-wrap">
       <img src="${p.base64}" />
       <button class="photo-remove" onclick="removePhoto('${ctx}',${i})">✕</button>
     </div>`).join('');
-  grid.innerHTML = thumbs + `<div class="add-photo-btn" onclick="triggerPhoto('${ctx}')"><span class="add-photo-icon">📷</span><span>Add</span></div>`;
+  grid.innerHTML = thumbs + `<div class="add-photo-btn" onclick="showPhotoOptions('${ctx}')"><span class="add-photo-icon">📷</span><span>Add</span></div>`;
 }
 
 function removePhoto(ctx, i) {
@@ -1259,9 +2007,76 @@ function removePhoto(ctx, i) {
 }
 
 // ══════════════════════════════════════════
+// NO-TAG REGISTRATION
+// ══════════════════════════════════════════
+function updateNoTagPreview() {
+  const name = document.getElementById('notag-name').value.trim().toUpperCase().replace(/\s+/g, '-') || '—';
+  document.getElementById('notag-id-preview').textContent = name;
+}
+
+function handleNoTagCatSelect(sel) {
+  if (!sel.value) return;
+  S.currentNoTagCategory = sel.value;
+  const disp = document.getElementById('notag-cat-display');
+  if (disp) { disp.textContent = sel.value; disp.style.display = 'block'; }
+}
+
+function showNoTagScreen() {
+  S.photos.notag = [];
+  S.currentNoTagCategory = null;
+  renderPhotoGrid('notag');
+  populateCatDropdown();
+  buildWhoGrid('notag');
+  updateLocDisplay('loc-notag');
+  document.getElementById('notag-name').value = '';
+  document.getElementById('notag-notes').value = '';
+  document.getElementById('notag-qty').value = 1;
+  document.getElementById('notag-id-preview').textContent = '—';
+  const disp = document.getElementById('notag-cat-display');
+  if (disp) { disp.style.display = 'none'; disp.textContent = ''; }
+  updateFabs();
+  showScreen('screen-notag');
+}
+
+async function submitNoTag() {
+  const name = document.getElementById('notag-name').value.trim();
+  const cat  = S.currentNoTagCategory || '';
+  const qty  = parseInt(document.getElementById('notag-qty').value) || 1;
+  const notes = document.getElementById('notag-notes').value.trim();
+  const who   = getWho('notag');
+
+  if (!name) { toast('Item name required', true); return; }
+  if (!cat)  { toast('Add a category first', true); return; }
+
+  // Generate a pseudo-ID from name
+  const id = name.toUpperCase().replace(/\s+/g, '-').substring(0, 10) + '-NOTAG';
+
+  const btn = document.getElementById('btn-notag');
+  btn.disabled = true; btn.textContent = 'Submitting…';
+
+  const payload = {
+    action: 'register', id, name, category: cat,
+    totalQty: qty, notes, who,
+    gpsLat:   S.gps?.lat      || '',
+    gpsLng:   S.gps?.lng      || '',
+    gpsAcc:   S.gps?.accuracy || '',
+    gpsLabel: S.gps?.label    || '',
+    photos:   S.photos.notag.map(p => p.base64),
+    noTag:    true,
+    timestamp: new Date().toISOString(),
+  };
+
+  const result = await postToScript(payload);
+  btn.disabled = false; btn.textContent = 'Register Item';
+
+  if (result.success) showSuccessScreen('register', id, name);
+  else toast(result.error || 'Submission failed', true);
+}
+
+// ══════════════════════════════════════════
 // WHO SELECTORS
 // ══════════════════════════════════════════
-const SCREENS_WITH_WHO = ['new','takeout','return','damage'];
+const SCREENS_WITH_WHO = ['new','takeout','return','damage','notag'];
 
 function buildWhoGrids() {
   SCREENS_WITH_WHO.forEach(ctx => buildWhoGrid(ctx));
@@ -1323,13 +2138,13 @@ function getGPS() {
         S.gps.label = `${S.gps.lat}, ${S.gps.lng}`;
       }
       const txt = `${S.gps.label} (±${S.gps.accuracy}m)`;
-      ['loc-new','loc-takeout','loc-return'].forEach(elId => {
+      ['loc-new','loc-takeout','loc-return','loc-notag'].forEach(elId => {
         const el = document.getElementById(elId);
         if (el) { el.textContent = txt; el.className = 'loc-val'; }
       });
     },
     () => {
-      ['loc-new','loc-takeout','loc-return'].forEach(elId => {
+      ['loc-new','loc-takeout','loc-return','loc-notag'].forEach(elId => {
         const el = document.getElementById(elId);
         if (el) { el.textContent = 'Location unavailable'; el.className = 'loc-val error'; }
       });
@@ -1374,11 +2189,11 @@ function saveCategories(cats) {
 
 function populateCatDropdown() {
   const cats = loadCategories();
-  ['new-cat','edit-cat'].forEach(selId => {
+  ['new-cat','edit-cat','notag-cat'].forEach(selId => {
     const sel = document.getElementById(selId);
     if (!sel) return;
     const cur = sel.value;
-    sel.innerHTML = selId === 'new-cat' ? `<option value="">— Select or add new —</option>` : '';
+    sel.innerHTML = (selId === 'new-cat' || selId === 'notag-cat') ? `<option value="">— Select or add new —</option>` : '';
     cats.forEach(c => {
       const opt = document.createElement('option');
       opt.value = c; opt.textContent = c;
@@ -1421,6 +2236,7 @@ const SUCCESS_MAP = {
   photo:    { icon:'📷', title:'Updated',     cls:'',       detail:(id,n)=>`Photos updated for ${id}.` },
   edit:     { icon:'✏️', title:'Saved',        cls:'',       detail:(id,n)=>`Details updated for ${n}.` },
   load:     { icon:'🚛', title:'Submitted',   cls:'',       detail:(id,n)=>`Load list submitted for "${n}".` },
+  delivery: { icon:'🚚', title:'Received',    cls:'',       detail:(id,n)=>`Delivery from ${n} logged. New tab created in Sheet.` },
 };
 
 function showSuccessScreen(type, id, name) {
