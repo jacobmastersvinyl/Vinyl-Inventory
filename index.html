@@ -27,11 +27,9 @@
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 html, body { height: 100%; background: var(--bg); color: var(--text); font-family: var(--body); overscroll-behavior: none; }
 
-/* ── SCREENS ── */
 .screen { display: none; flex-direction: column; min-height: 100dvh; }
 .screen.active { display: flex; }
 
-/* ── HEADER ── */
 .app-header {
   background: var(--surface);
   border-bottom: 1px solid var(--border);
@@ -49,54 +47,27 @@ html, body { height: 100%; background: var(--bg); color: var(--text); font-famil
 .header-right { display: flex; align-items: center; gap: 10px; }
 .header-id { font-family: var(--mono); font-size: 12px; color: var(--muted); letter-spacing: 0.08em; }
 
-/* Load list floating button */
 .load-fab {
-  display: none;
-  align-items: center;
-  gap: 6px;
-  background: var(--orange);
-  border: none;
-  border-radius: 100px;
-  padding: 6px 12px 6px 8px;
-  color: #fff;
-  font-family: var(--mono);
-  font-size: 11px;
-  letter-spacing: 0.08em;
-  cursor: pointer;
-  font-weight: 500;
+  display: none; align-items: center; gap: 6px;
+  background: var(--orange); border: none; border-radius: 100px;
+  padding: 6px 12px 6px 8px; color: #fff;
+  font-family: var(--mono); font-size: 11px; letter-spacing: 0.08em;
+  cursor: pointer; font-weight: 500;
 }
 .load-fab.visible { display: flex; }
 .load-fab-icon { font-size: 14px; }
-.load-fab-count {
-  background: rgba(255,255,255,0.25);
-  border-radius: 100px;
-  padding: 1px 6px;
-  font-size: 10px;
-}
+.load-fab-count { background: rgba(255,255,255,0.25); border-radius: 100px; padding: 1px 6px; font-size: 10px; }
 
-/* ── SCROLL BODY ── */
 .screen-body {
-  flex: 1;
-  overflow-y: auto;
-  padding: 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  padding-bottom: 120px;
+  flex: 1; overflow-y: auto; padding: 20px;
+  display: flex; flex-direction: column; gap: 14px; padding-bottom: 120px;
 }
 
-/* ── STATUS PILL ── */
 .status-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 5px 12px;
-  border-radius: 100px;
-  font-family: var(--mono);
-  font-size: 10px;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  align-self: flex-start;
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 5px 12px; border-radius: 100px;
+  font-family: var(--mono); font-size: 10px; letter-spacing: 0.1em;
+  text-transform: uppercase; align-self: flex-start;
 }
 .pill-new    { background: rgba(232,80,10,0.15);  color: var(--orange); border: 1px solid rgba(232,80,10,0.3); }
 .pill-in     { background: rgba(26,158,74,0.15);  color: var(--green);  border: 1px solid rgba(26,158,74,0.3); }
@@ -104,467 +75,242 @@ html, body { height: 100%; background: var(--bg); color: var(--text); font-famil
 .pill-damage { background: rgba(212,130,10,0.15); color: var(--amber);  border: 1px solid rgba(212,130,10,0.3); }
 .status-dot  { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
 
-/* ── ID DISPLAY ── */
 .id-display {
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-left: 4px solid var(--orange);
-  border-radius: 4px;
-  padding: 14px 16px;
+  background: var(--card); border: 1px solid var(--border);
+  border-left: 4px solid var(--orange); border-radius: 4px; padding: 14px 16px;
 }
 .id-label { font-family: var(--mono); font-size: 9px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--muted); margin-bottom: 2px; }
 .id-value { font-family: var(--display); font-size: 48px; letter-spacing: 0.04em; line-height: 1; }
 .id-sub   { font-size: 13px; color: var(--muted); margin-top: 3px; font-style: italic; }
 
-/* ── DAMAGE BANNER ── */
 .damage-banner {
-  background: rgba(212,130,10,0.12);
-  border: 1px solid rgba(212,130,10,0.35);
-  border-radius: 4px;
-  padding: 12px 14px;
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
+  background: rgba(212,130,10,0.12); border: 1px solid rgba(212,130,10,0.35);
+  border-radius: 4px; padding: 12px 14px; display: flex; align-items: flex-start; gap: 10px;
 }
 .damage-banner-icon { font-size: 18px; flex-shrink: 0; }
 .damage-banner-text { font-size: 13px; line-height: 1.5; color: var(--amber); }
 .damage-banner-text strong { display: block; font-size: 12px; font-family: var(--mono); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 2px; }
 
-/* ── ACTION MENU ── */
 .action-menu { display: flex; flex-direction: column; gap: 8px; }
 .action-btn {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  background: var(--card);
-  border: 1.5px solid var(--border);
-  border-radius: 4px;
-  padding: 16px;
-  cursor: pointer;
+  display: flex; align-items: center; gap: 14px;
+  background: var(--card); border: 1.5px solid var(--border); border-radius: 4px;
+  padding: 16px; cursor: pointer; text-align: left; width: 100%; color: var(--text);
   transition: border-color 0.12s, background 0.12s;
-  text-align: left;
-  width: 100%;
-  color: var(--text);
 }
 .action-btn:active { background: #222; }
-.action-btn.takeout:active  { border-color: var(--orange); }
-.action-btn.return:active   { border-color: var(--green); }
-.action-btn.damage:active   { border-color: var(--amber); }
-.action-btn.photo:active    { border-color: var(--blue); }
-.action-btn.edit:active     { border-color: var(--muted); }
-
-.action-icon { font-size: 24px; flex-shrink: 0; width: 32px; text-align: center; }
-.action-text { flex: 1; }
+.action-btn.takeout:active { border-color: var(--orange); }
+.action-btn.return:active  { border-color: var(--green); }
+.action-btn.damage:active  { border-color: var(--amber); }
+.action-btn.photo:active   { border-color: var(--blue); }
+.action-btn.edit:active    { border-color: var(--muted); }
+.action-icon  { font-size: 24px; flex-shrink: 0; width: 32px; text-align: center; }
+.action-text  { flex: 1; }
 .action-title { font-family: var(--display); font-size: 20px; letter-spacing: 0.04em; line-height: 1; }
 .action-sub   { font-size: 12px; color: var(--muted); margin-top: 2px; }
 .action-arrow { color: var(--muted); font-size: 18px; }
 
-/* ── ITEM CARD ── */
-.item-card {
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  overflow: hidden;
-}
+.item-card { background: var(--card); border: 1px solid var(--border); border-radius: 4px; overflow: hidden; }
 .item-photos-scroll {
-  display: flex;
-  overflow-x: auto;
-  gap: 2px;
-  scroll-snap-type: x mandatory;
-  -webkit-overflow-scrolling: touch;
+  display: flex; overflow-x: auto; gap: 2px;
+  scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch;
 }
-.item-photos-scroll img {
-  flex-shrink: 0;
-  width: 100%;
-  max-height: 180px;
-  object-fit: cover;
-  scroll-snap-align: start;
-}
+.item-photos-scroll img { flex-shrink: 0; width: 100%; max-height: 180px; object-fit: cover; scroll-snap-align: start; }
 .item-photo-empty {
-  height: 80px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #111;
-  color: var(--muted);
-  font-family: var(--mono);
-  font-size: 10px;
-  letter-spacing: 0.12em;
+  height: 80px; display: flex; align-items: center; justify-content: center;
+  background: #111; color: var(--muted); font-family: var(--mono); font-size: 10px; letter-spacing: 0.12em;
 }
 .item-meta { padding: 12px 14px; display: flex; flex-direction: column; gap: 5px; }
-.meta-row { display: flex; justify-content: space-between; align-items: baseline; }
-.meta-key { font-family: var(--mono); font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); }
-.meta-val { font-size: 13px; font-weight: 600; }
+.meta-row  { display: flex; justify-content: space-between; align-items: baseline; }
+.meta-key  { font-family: var(--mono); font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); }
+.meta-val  { font-size: 13px; font-weight: 600; }
 .meta-val.green { color: var(--green); }
 .meta-val.red   { color: var(--red); }
 .meta-val.amber { color: var(--amber); }
 
-/* ── FORMS ── */
 .form-section { display: flex; flex-direction: column; gap: 12px; }
 .form-group   { display: flex; flex-direction: column; gap: 5px; }
 .form-label   { font-family: var(--mono); font-size: 9px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--muted); }
 
 .form-input {
-  background: var(--card);
-  border: 1.5px solid var(--border);
-  border-radius: 4px;
-  color: var(--text);
-  font-family: var(--body);
-  font-size: 16px;
-  padding: 13px 14px;
-  outline: none;
-  width: 100%;
-  transition: border-color 0.12s;
-  -webkit-appearance: none;
+  background: var(--card); border: 1.5px solid var(--border); border-radius: 4px;
+  color: var(--text); font-family: var(--body); font-size: 16px;
+  padding: 13px 14px; outline: none; width: 100%;
+  transition: border-color 0.12s; -webkit-appearance: none;
 }
 .form-input:focus { border-color: var(--orange); }
 .form-input.large { font-family: var(--display); font-size: 36px; letter-spacing: 0.04em; text-transform: uppercase; text-align: center; }
-
 select.form-input {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236b6560' stroke-width='1.5' fill='none'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 14px center;
-  padding-right: 36px;
-  cursor: pointer;
+  background-repeat: no-repeat; background-position: right 14px center; padding-right: 36px; cursor: pointer;
 }
 select.form-input option { background: var(--card); }
-
 textarea.form-input { resize: vertical; min-height: 80px; font-size: 15px; line-height: 1.5; }
 
-/* Severity selector */
 .severity-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
 .severity-btn {
-  padding: 12px 6px;
-  background: var(--card);
-  border: 2px solid var(--border);
-  border-radius: 4px;
-  color: var(--muted);
-  font-family: var(--mono);
-  font-size: 10px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  cursor: pointer;
-  text-align: center;
-  line-height: 1.4;
-  transition: all 0.12s;
+  padding: 12px 6px; background: var(--card); border: 2px solid var(--border);
+  border-radius: 4px; color: var(--muted); font-family: var(--mono); font-size: 10px;
+  letter-spacing: 0.08em; text-transform: uppercase; cursor: pointer;
+  text-align: center; line-height: 1.4; transition: all 0.12s;
 }
 .severity-btn.sel-minor  { background: rgba(26,107,186,0.15); border-color: var(--blue);  color: var(--blue); }
 .severity-btn.sel-repair { background: rgba(212,130,10,0.15); border-color: var(--amber); color: var(--amber); }
 .severity-btn.sel-out    { background: rgba(192,32,32,0.15);  border-color: var(--red);   color: var(--red); }
 
-/* Who buttons */
 .who-grid { display: flex; flex-wrap: wrap; gap: 8px; }
 .who-btn {
-  padding: 9px 14px;
-  background: var(--card);
-  border: 2px solid var(--border);
-  border-radius: 100px;
-  color: var(--muted);
-  font-family: var(--body);
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.12s;
+  padding: 9px 14px; background: var(--card); border: 2px solid var(--border);
+  border-radius: 100px; color: var(--muted); font-family: var(--body);
+  font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.12s;
 }
 .who-btn.selected { background: rgba(232,80,10,0.12); border-color: var(--orange); color: var(--orange); }
 
-/* ── PHOTO MULTI-UPLOAD ── */
 .photos-area { display: flex; flex-direction: column; gap: 8px; }
 .photos-grid { display: flex; flex-wrap: wrap; gap: 8px; }
-.photo-thumb {
-  width: 80px; height: 80px;
-  border-radius: 4px;
-  object-fit: cover;
-  position: relative;
-  flex-shrink: 0;
-}
-.photo-thumb-wrap {
-  position: relative;
-  width: 80px; height: 80px;
-  flex-shrink: 0;
-}
+.photo-thumb-wrap { position: relative; width: 80px; height: 80px; flex-shrink: 0; }
 .photo-thumb-wrap img { width: 100%; height: 100%; object-fit: cover; border-radius: 4px; }
 .photo-remove {
-  position: absolute;
-  top: -6px; right: -6px;
-  width: 18px; height: 18px;
-  background: var(--red);
-  border: none;
-  border-radius: 50%;
-  color: #fff;
-  font-size: 11px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
-  line-height: 1;
+  position: absolute; top: -6px; right: -6px; width: 18px; height: 18px;
+  background: var(--red); border: none; border-radius: 50%; color: #fff;
+  font-size: 11px; cursor: pointer; display: flex; align-items: center;
+  justify-content: center; padding: 0; line-height: 1;
 }
 .add-photo-btn {
-  width: 80px; height: 80px;
-  background: var(--card);
-  border: 2px dashed var(--border);
-  border-radius: 4px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  cursor: pointer;
-  color: var(--muted);
-  font-family: var(--mono);
-  font-size: 9px;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  flex-shrink: 0;
+  width: 80px; height: 80px; background: var(--card); border: 2px dashed var(--border);
+  border-radius: 4px; display: flex; flex-direction: column; align-items: center;
+  justify-content: center; gap: 4px; cursor: pointer; color: var(--muted);
+  font-family: var(--mono); font-size: 9px; letter-spacing: 0.1em;
+  text-transform: uppercase; flex-shrink: 0;
 }
 .add-photo-btn:active { border-color: var(--orange); }
 .add-photo-icon { font-size: 22px; }
-#photo-input-multi { display: none; }
 
-/* ── QUANTITY INPUT ── */
 .qty-control {
-  display: flex;
-  align-items: center;
-  gap: 0;
-  background: var(--card);
-  border: 1.5px solid var(--border);
-  border-radius: 4px;
-  overflow: hidden;
+  display: flex; align-items: center; background: var(--card);
+  border: 1.5px solid var(--border); border-radius: 4px; overflow: hidden;
 }
 .qty-btn {
-  width: 54px;
-  height: 54px;
-  background: transparent;
-  border: none;
-  color: var(--text);
-  font-size: 24px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  transition: background 0.1s;
+  width: 54px; height: 54px; background: transparent; border: none;
+  color: var(--text); font-size: 24px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; transition: background 0.1s;
 }
 .qty-btn:active { background: #333; }
 .qty-val {
-  flex: 1;
-  text-align: center;
-  font-family: var(--display);
-  font-size: 36px;
-  letter-spacing: 0.04em;
-  color: var(--text);
-  border: none;
-  background: transparent;
-  outline: none;
-  width: 100%;
+  flex: 1; text-align: center; font-family: var(--display); font-size: 36px;
+  letter-spacing: 0.04em; color: var(--text); border: none;
+  background: transparent; outline: none; width: 100%;
 }
 
-/* ── LOCATION STRIP ── */
 .loc-strip {
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  padding: 11px 14px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
+  background: var(--card); border: 1px solid var(--border); border-radius: 4px;
+  padding: 11px 14px; display: flex; align-items: center; gap: 10px;
 }
-.loc-icon { font-size: 18px; flex-shrink: 0; }
+.loc-icon  { font-size: 18px; flex-shrink: 0; }
 .loc-label { font-family: var(--mono); font-size: 9px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--muted); }
-.loc-val { font-size: 12px; font-weight: 500; margin-top: 1px; word-break: break-all; }
+.loc-val   { font-size: 12px; font-weight: 500; margin-top: 1px; word-break: break-all; }
 .loc-val.loading { color: var(--muted); font-style: italic; }
 .loc-val.error   { color: var(--red); }
 
-/* ── DIVIDER ── */
 .divider {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-family: var(--mono);
-  font-size: 9px;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-  color: var(--muted);
+  display: flex; align-items: center; gap: 10px;
+  font-family: var(--mono); font-size: 9px; letter-spacing: 0.2em;
+  text-transform: uppercase; color: var(--muted);
 }
 .divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
 
-/* ── ACTION AREA (bottom) ── */
 .action-area {
-  padding: 14px 20px 32px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  flex-shrink: 0;
-  background: var(--bg);
-  border-top: 1px solid var(--border);
+  padding: 14px 20px 32px; display: flex; flex-direction: column; gap: 8px;
+  flex-shrink: 0; background: var(--bg); border-top: 1px solid var(--border);
 }
 .btn-primary {
-  width: 100%; padding: 17px;
-  background: var(--orange); border: none; border-radius: 4px;
-  color: #fff; font-family: var(--display); font-size: 20px;
-  letter-spacing: 0.08em; cursor: pointer;
-  transition: opacity 0.12s, transform 0.08s;
-  -webkit-appearance: none;
+  width: 100%; padding: 17px; background: var(--orange); border: none; border-radius: 4px;
+  color: #fff; font-family: var(--display); font-size: 20px; letter-spacing: 0.08em;
+  cursor: pointer; transition: opacity 0.12s, transform 0.08s; -webkit-appearance: none;
 }
-.btn-primary:active { opacity: 0.85; transform: scale(0.99); }
+.btn-primary:active   { opacity: 0.85; transform: scale(0.99); }
 .btn-primary:disabled { opacity: 0.3; cursor: not-allowed; }
-.btn-primary.green  { background: var(--green); }
-.btn-primary.red    { background: var(--red); }
-.btn-primary.amber  { background: var(--amber); }
+.btn-primary.green { background: var(--green); }
+.btn-primary.amber { background: var(--amber); }
 .btn-secondary {
-  width: 100%; padding: 13px;
-  background: transparent; border: 1.5px solid var(--border); border-radius: 4px;
+  width: 100%; padding: 13px; background: transparent;
+  border: 1.5px solid var(--border); border-radius: 4px;
   color: var(--muted); font-family: var(--mono); font-size: 11px;
   letter-spacing: 0.12em; text-transform: uppercase; cursor: pointer;
   transition: all 0.12s; -webkit-appearance: none;
 }
 .btn-secondary:active { border-color: var(--text); color: var(--text); }
 
-/* ── LOAD LIST SHEET ── */
 .load-sheet {
-  position: fixed;
-  inset: 0;
-  z-index: 200;
-  display: none;
-  flex-direction: column;
-  background: var(--bg);
+  position: fixed; inset: 0; z-index: 200;
+  display: none; flex-direction: column; background: var(--bg);
 }
 .load-sheet.open { display: flex; }
 .load-sheet-header {
-  background: var(--surface);
-  border-bottom: 1px solid var(--border);
-  padding: 16px 20px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+  background: var(--surface); border-bottom: 1px solid var(--border);
+  padding: 16px 20px; display: flex; align-items: center; justify-content: space-between;
 }
 .load-sheet-title { font-family: var(--display); font-size: 26px; letter-spacing: 0.06em; }
 .load-sheet-close {
   background: transparent; border: 1px solid var(--border); border-radius: 4px;
-  color: var(--muted); padding: 6px 12px; font-family: var(--mono); font-size: 11px;
-  letter-spacing: 0.1em; text-transform: uppercase; cursor: pointer;
+  color: var(--muted); padding: 6px 12px; font-family: var(--mono);
+  font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; cursor: pointer;
 }
 .load-event-name {
-  padding: 14px 20px;
-  border-bottom: 1px solid var(--border);
-  font-family: var(--mono);
-  font-size: 11px;
-  letter-spacing: 0.1em;
-  color: var(--orange);
-  display: flex;
-  align-items: center;
-  gap: 8px;
+  padding: 14px 20px; border-bottom: 1px solid var(--border);
+  font-family: var(--mono); font-size: 11px; letter-spacing: 0.1em;
+  color: var(--orange); display: flex; align-items: center; gap: 8px;
 }
 .load-event-name span { color: var(--muted); }
 .load-items { flex: 1; overflow-y: auto; }
 .load-item-row {
-  display: flex;
-  align-items: center;
-  padding: 14px 20px;
-  border-bottom: 1px solid var(--border);
-  gap: 12px;
+  display: flex; align-items: center; padding: 14px 20px;
+  border-bottom: 1px solid var(--border); gap: 12px;
 }
-.load-item-id {
-  font-family: var(--display);
-  font-size: 22px;
-  letter-spacing: 0.04em;
-  color: var(--orange);
-  width: 60px;
-  flex-shrink: 0;
-}
+.load-item-id   { font-family: var(--display); font-size: 22px; letter-spacing: 0.04em; color: var(--orange); width: 60px; flex-shrink: 0; }
 .load-item-name { flex: 1; font-size: 14px; font-weight: 600; line-height: 1.3; }
 .load-item-cat  { font-size: 11px; color: var(--muted); margin-top: 2px; }
-.load-item-qty  {
-  font-family: var(--display);
-  font-size: 28px;
-  letter-spacing: 0.04em;
-  color: var(--text);
-  width: 48px;
-  text-align: right;
-  flex-shrink: 0;
-}
-.load-item-remove {
-  background: transparent; border: none; color: var(--muted);
-  font-size: 18px; cursor: pointer; padding: 4px; flex-shrink: 0;
-}
-.load-empty {
-  padding: 60px 24px;
-  text-align: center;
-  color: var(--muted);
-  font-family: var(--mono);
-  font-size: 11px;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-}
-.load-footer {
-  padding: 14px 20px 32px;
-  border-top: 1px solid var(--border);
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-.load-summary {
-  display: flex;
-  justify-content: space-between;
-  font-family: var(--mono);
-  font-size: 11px;
-  letter-spacing: 0.1em;
-  color: var(--muted);
-  padding-bottom: 10px;
-}
+.load-item-qty  { font-family: var(--display); font-size: 28px; color: var(--text); width: 48px; text-align: right; flex-shrink: 0; }
+.load-item-remove { background: transparent; border: none; color: var(--muted); font-size: 18px; cursor: pointer; padding: 4px; flex-shrink: 0; }
+.load-empty { padding: 60px 24px; text-align: center; color: var(--muted); font-family: var(--mono); font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; }
+.load-footer { padding: 14px 20px 32px; border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: 8px; }
+.load-summary { display: flex; justify-content: space-between; font-family: var(--mono); font-size: 11px; letter-spacing: 0.1em; color: var(--muted); padding-bottom: 10px; }
 .load-summary strong { color: var(--text); }
 
-/* ── SUCCESS ── */
-.success-wrap {
-  flex: 1; display: flex; flex-direction: column;
-  align-items: center; justify-content: center;
-  padding: 40px 24px; text-align: center; gap: 14px;
-}
+.success-wrap { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px 24px; text-align: center; gap: 14px; }
 .success-icon  { font-size: 60px; }
 .success-title { font-family: var(--display); font-size: 42px; letter-spacing: 0.06em; color: var(--green); }
 .success-title.orange { color: var(--orange); }
 .success-title.amber  { color: var(--amber); }
-.success-id    { font-family: var(--mono); font-size: 13px; color: var(--muted); letter-spacing: 0.1em; }
+.success-id     { font-family: var(--mono); font-size: 13px; color: var(--muted); letter-spacing: 0.1em; }
 .success-detail { font-size: 14px; color: var(--muted); line-height: 1.65; max-width: 280px; }
 
-/* ── SPINNER ── */
-.spinner {
-  width: 34px; height: 34px;
-  border: 3px solid var(--border); border-top-color: var(--orange);
-  border-radius: 50%; animation: spin 0.7s linear infinite; margin: 0 auto;
-}
+.spinner { width: 34px; height: 34px; border: 3px solid var(--border); border-top-color: var(--orange); border-radius: 50%; animation: spin 0.7s linear infinite; margin: 0 auto; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
-/* ── TOAST ── */
 #toast {
   position: fixed; bottom: 24px; left: 50%;
   transform: translateX(-50%) translateY(80px);
-  background: #fff; color: #0a0a0a;
-  padding: 11px 20px; border-radius: 100px;
+  background: #fff; color: #0a0a0a; padding: 11px 20px; border-radius: 100px;
   font-family: var(--mono); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase;
   white-space: nowrap; transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1);
   z-index: 999; pointer-events: none;
 }
-#toast.show { transform: translateX(-50%) translateY(0); }
-#toast.error { background: var(--red); color: #fff; }
+#toast.show    { transform: translateX(-50%) translateY(0); }
+#toast.error   { background: var(--red);   color: #fff; }
 #toast.success { background: var(--green); color: #fff; }
 </style>
 </head>
 <body>
 
-<!-- ════════════════════════════
-     LOAD LIST SHEET (overlay)
-════════════════════════════ -->
+<!-- LOAD LIST OVERLAY -->
 <div class="load-sheet" id="load-sheet">
   <div class="load-sheet-header">
     <div class="load-sheet-title">📦 Load List</div>
     <button class="load-sheet-close" onclick="closeLoadSheet()">Close</button>
   </div>
-  <div class="load-event-name">
-    <span>Event:</span>
-    <span id="load-event-display">—</span>
-  </div>
+  <div class="load-event-name"><span>Event:</span><span id="load-event-display">—</span></div>
   <div class="load-items" id="load-items-list">
     <div class="load-empty">No items added yet.<br>Scan items and tap Take Out.</div>
   </div>
@@ -578,9 +324,7 @@ textarea.form-input { resize: vertical; min-height: 80px; font-size: 15px; line-
   </div>
 </div>
 
-<!-- ════════════════════════════
-     SCREEN: LOADING
-════════════════════════════ -->
+<!-- LOADING -->
 <div class="screen active" id="screen-loading">
   <div class="screen-body" style="align-items:center;justify-content:center;gap:20px;">
     <div class="logo">Vinyl <em>Media</em></div>
@@ -589,27 +333,17 @@ textarea.form-input { resize: vertical; min-height: 80px; font-size: 15px; line-
   </div>
 </div>
 
-<!-- ════════════════════════════
-     SCREEN: START SESSION
-════════════════════════════ -->
+<!-- SESSION START -->
 <div class="screen" id="screen-session">
-  <div class="app-header">
-    <div class="logo">Vinyl <em>Media</em></div>
-  </div>
+  <div class="app-header"><div class="logo">Vinyl <em>Media</em></div></div>
   <div class="screen-body" style="justify-content:center;">
-    <div style="font-family:var(--display);font-size:32px;letter-spacing:0.04em;line-height:1.2;margin-bottom:4px;">
-      Start a New<br>Load Session
-    </div>
-    <div style="font-size:14px;color:var(--muted);line-height:1.6;margin-bottom:20px;">
-      Name the event you're loading for. This creates a new tab in your Sheet for this load.
-    </div>
+    <div style="font-family:var(--display);font-size:32px;letter-spacing:0.04em;line-height:1.2;margin-bottom:4px;">Start a New<br>Load Session</div>
+    <div style="font-size:14px;color:var(--muted);line-height:1.6;margin-bottom:20px;">Name the event you're loading for. This creates a new tab in your Sheet for this load.</div>
     <div class="form-group">
       <div class="form-label">Event Name</div>
-      <input class="form-input" type="text" id="session-event" placeholder="e.g. NRMA Hospo Suite" />
+      <input class="form-input" type="text" id="session-event" placeholder="e.g. NRMA Hospo Suite — Jun 2025" />
     </div>
-    <div style="font-family:var(--mono);font-size:9px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);margin-top:8px;">
-      Who's running this session?
-    </div>
+    <div style="font-family:var(--mono);font-size:9px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);margin-top:8px;">Who's running this session?</div>
     <div class="who-grid" style="margin-top:8px;" id="session-who-grid">
       <button class="who-btn" onclick="selectSessionWho(this)">Jacob</button>
       <button class="who-btn" onclick="selectSessionWho(this)">+ Add name</button>
@@ -622,16 +356,13 @@ textarea.form-input { resize: vertical; min-height: 80px; font-size: 15px; line-
   </div>
 </div>
 
-<!-- ════════════════════════════
-     SCREEN: MANUAL ID ENTRY
-════════════════════════════ -->
+<!-- MANUAL ID -->
 <div class="screen" id="screen-manual">
   <div class="app-header">
     <div class="logo">Vinyl <em>Media</em></div>
     <div class="header-right">
       <button class="load-fab" id="fab-manual" onclick="openLoadSheet()">
-        <span class="load-fab-icon">📦</span>
-        <span>List</span>
+        <span class="load-fab-icon">📦</span><span>List</span>
         <span class="load-fab-count" id="fab-count-manual">0</span>
       </button>
     </div>
@@ -649,29 +380,24 @@ textarea.form-input { resize: vertical; min-height: 80px; font-size: 15px; line-
   </div>
 </div>
 
-<!-- ════════════════════════════
-     SCREEN: NEW ITEM
-════════════════════════════ -->
+<!-- NEW ITEM -->
 <div class="screen" id="screen-new">
   <div class="app-header">
     <div class="logo">Vinyl <em>Media</em></div>
     <div class="header-right">
       <div class="header-id" id="new-header-id"></div>
       <button class="load-fab" id="fab-new" onclick="openLoadSheet()">
-        <span class="load-fab-icon">📦</span>
-        <span>List</span>
+        <span class="load-fab-icon">📦</span><span>List</span>
         <span class="load-fab-count" id="fab-count-new">0</span>
       </button>
     </div>
   </div>
   <div class="screen-body">
     <div class="status-pill pill-new"><div class="status-dot"></div>New Item</div>
-
     <div class="id-display">
       <div class="id-label">Item ID</div>
       <div class="id-value" id="new-id-val"></div>
     </div>
-
     <div class="divider">Item Details</div>
     <div class="form-section">
       <div class="form-group">
@@ -691,9 +417,9 @@ textarea.form-input { resize: vertical; min-height: 80px; font-size: 15px; line-
       <div class="form-group">
         <div class="form-label">Total Quantity Owned</div>
         <div class="qty-control">
-          <button class="qty-btn" onclick="adjustQty('new-owned-qty', -1)">−</button>
+          <button class="qty-btn" onclick="adjustQty('new-owned-qty',-1)">−</button>
           <input class="qty-val" type="number" id="new-owned-qty" value="1" min="1" oninput="clampQty(this)" />
-          <button class="qty-btn" onclick="adjustQty('new-owned-qty', 1)">+</button>
+          <button class="qty-btn" onclick="adjustQty('new-owned-qty',1)">+</button>
         </div>
       </div>
       <div class="form-group">
@@ -701,18 +427,15 @@ textarea.form-input { resize: vertical; min-height: 80px; font-size: 15px; line-
         <textarea class="form-input" id="new-notes" placeholder="Any details worth noting…"></textarea>
       </div>
     </div>
-
     <div class="divider">Photos</div>
     <div class="photos-area">
       <div class="photos-grid" id="new-photos-grid">
         <div class="add-photo-btn" onclick="triggerPhoto('new')">
-          <span class="add-photo-icon">📷</span>
-          <span>Add</span>
+          <span class="add-photo-icon">📷</span><span>Add</span>
         </div>
       </div>
     </div>
     <input type="file" id="photo-input-new" accept="image/*" capture="environment" multiple onchange="handlePhotos(this,'new')" style="display:none;" />
-
     <div class="divider">Location</div>
     <div class="loc-strip">
       <div class="loc-icon">📍</div>
@@ -721,7 +444,6 @@ textarea.form-input { resize: vertical; min-height: 80px; font-size: 15px; line-
         <div class="loc-val loading" id="loc-new">Getting GPS…</div>
       </div>
     </div>
-
     <div class="divider">Who's registering</div>
     <div class="who-grid" id="who-grid-new"></div>
     <input class="form-input" type="text" id="custom-who-new" placeholder="Enter name" style="display:none;margin-top:4px;" />
@@ -732,77 +454,55 @@ textarea.form-input { resize: vertical; min-height: 80px; font-size: 15px; line-
   </div>
 </div>
 
-<!-- ════════════════════════════
-     SCREEN: EXISTING — ACTION MENU
-════════════════════════════ -->
+<!-- EXISTING ITEM -->
 <div class="screen" id="screen-existing">
   <div class="app-header">
     <div class="logo">Vinyl <em>Media</em></div>
     <div class="header-right">
       <div class="header-id" id="exist-header-id"></div>
       <button class="load-fab" id="fab-exist" onclick="openLoadSheet()">
-        <span class="load-fab-icon">📦</span>
-        <span>List</span>
+        <span class="load-fab-icon">📦</span><span>List</span>
         <span class="load-fab-count" id="fab-count-exist">0</span>
       </button>
     </div>
   </div>
   <div class="screen-body">
     <div class="status-pill" id="exist-status-pill"><div class="status-dot"></div><span id="exist-status-text"></span></div>
-
     <div id="exist-damage-banner" style="display:none;"></div>
-
     <div class="id-display">
       <div class="id-label">Item ID</div>
       <div class="id-value" id="exist-id-val"></div>
       <div class="id-sub" id="exist-name-sub"></div>
     </div>
-
     <div class="item-card">
       <div id="exist-photos-area"></div>
       <div class="item-meta" id="exist-meta"></div>
     </div>
-
     <div class="divider">Actions</div>
     <div class="action-menu">
       <button class="action-btn takeout" onclick="showTakeOut()">
         <div class="action-icon">📦</div>
-        <div class="action-text">
-          <div class="action-title">Take Items Out</div>
-          <div class="action-sub">Add to active load list</div>
-        </div>
+        <div class="action-text"><div class="action-title">Take Items Out</div><div class="action-sub">Add to active load list</div></div>
         <div class="action-arrow">›</div>
       </button>
       <button class="action-btn return" onclick="showReturn()">
         <div class="action-icon">📥</div>
-        <div class="action-text">
-          <div class="action-title">Return Items</div>
-          <div class="action-sub">Log back into storage</div>
-        </div>
+        <div class="action-text"><div class="action-title">Return Items</div><div class="action-sub">Log back into storage</div></div>
         <div class="action-arrow">›</div>
       </button>
       <button class="action-btn damage" onclick="showDamage()">
         <div class="action-icon">⚠️</div>
-        <div class="action-text">
-          <div class="action-title">Log Damage</div>
-          <div class="action-sub">Photo + description + severity</div>
-        </div>
+        <div class="action-text"><div class="action-title">Log Damage</div><div class="action-sub">Photo + description + severity</div></div>
         <div class="action-arrow">›</div>
       </button>
       <button class="action-btn photo" onclick="showUpdatePhoto()">
         <div class="action-icon">📷</div>
-        <div class="action-text">
-          <div class="action-title">Update Photo</div>
-          <div class="action-sub">Replace or add item photos</div>
-        </div>
+        <div class="action-text"><div class="action-title">Update Photo</div><div class="action-sub">Replace or add item photos</div></div>
         <div class="action-arrow">›</div>
       </button>
       <button class="action-btn edit" onclick="showEdit()">
         <div class="action-icon">✏️</div>
-        <div class="action-text">
-          <div class="action-title">Edit Details</div>
-          <div class="action-sub">Name, category, location, notes</div>
-        </div>
+        <div class="action-text"><div class="action-title">Edit Details</div><div class="action-sub">Name, category, notes</div></div>
         <div class="action-arrow">›</div>
       </button>
     </div>
@@ -812,15 +512,11 @@ textarea.form-input { resize: vertical; min-height: 80px; font-size: 15px; line-
   </div>
 </div>
 
-<!-- ════════════════════════════
-     SCREEN: TAKE OUT
-════════════════════════════ -->
+<!-- TAKE OUT -->
 <div class="screen" id="screen-takeout">
   <div class="app-header">
     <div class="logo">Vinyl <em>Media</em></div>
-    <div class="header-right">
-      <div class="header-id" id="takeout-header-id"></div>
-    </div>
+    <div class="header-right"><div class="header-id" id="takeout-header-id"></div></div>
   </div>
   <div class="screen-body">
     <div class="id-display">
@@ -831,9 +527,9 @@ textarea.form-input { resize: vertical; min-height: 80px; font-size: 15px; line-
     <div class="form-group">
       <div class="form-label">How many are you taking?</div>
       <div class="qty-control">
-        <button class="qty-btn" onclick="adjustQty('takeout-qty', -1)">−</button>
-        <input class="qty-val" type="number" id="takeout-qty" value="1" min="1" />
-        <button class="qty-btn" onclick="adjustQty('takeout-qty', 1)">+</button>
+        <button class="qty-btn" onclick="adjustQty('takeout-qty',-1)">−</button>
+        <input class="qty-val" type="number" id="takeout-qty" value="1" min="1" oninput="clampQty(this)" />
+        <button class="qty-btn" onclick="adjustQty('takeout-qty',1)">+</button>
       </div>
     </div>
     <div class="divider">Who's taking</div>
@@ -841,27 +537,20 @@ textarea.form-input { resize: vertical; min-height: 80px; font-size: 15px; line-
     <input class="form-input" type="text" id="custom-who-takeout" placeholder="Enter name" style="display:none;margin-top:4px;" />
     <div class="loc-strip">
       <div class="loc-icon">📍</div>
-      <div>
-        <div class="loc-label">GPS</div>
-        <div class="loc-val loading" id="loc-takeout">Getting GPS…</div>
-      </div>
+      <div><div class="loc-label">GPS</div><div class="loc-val loading" id="loc-takeout">Getting GPS…</div></div>
     </div>
   </div>
   <div class="action-area">
-    <button class="btn-primary" onclick="submitTakeOut()">Add to Load List</button>
+    <button class="btn-primary" id="btn-takeout" onclick="submitTakeOut()">Add to Load List</button>
     <button class="btn-secondary" onclick="showScreen('screen-existing')">← Back</button>
   </div>
 </div>
 
-<!-- ════════════════════════════
-     SCREEN: RETURN
-════════════════════════════ -->
+<!-- RETURN -->
 <div class="screen" id="screen-return">
   <div class="app-header">
     <div class="logo">Vinyl <em>Media</em></div>
-    <div class="header-right">
-      <div class="header-id" id="return-header-id"></div>
-    </div>
+    <div class="header-right"><div class="header-id" id="return-header-id"></div></div>
   </div>
   <div class="screen-body">
     <div class="id-display">
@@ -872,9 +561,9 @@ textarea.form-input { resize: vertical; min-height: 80px; font-size: 15px; line-
     <div class="form-group">
       <div class="form-label">How many are you returning?</div>
       <div class="qty-control">
-        <button class="qty-btn" onclick="adjustQty('return-qty', -1)">−</button>
-        <input class="qty-val" type="number" id="return-qty" value="1" min="1" />
-        <button class="qty-btn" onclick="adjustQty('return-qty', 1)">+</button>
+        <button class="qty-btn" onclick="adjustQty('return-qty',-1)">−</button>
+        <input class="qty-val" type="number" id="return-qty" value="1" min="1" oninput="clampQty(this)" />
+        <button class="qty-btn" onclick="adjustQty('return-qty',1)">+</button>
       </div>
     </div>
     <div class="form-group">
@@ -893,27 +582,20 @@ textarea.form-input { resize: vertical; min-height: 80px; font-size: 15px; line-
     <input class="form-input" type="text" id="custom-who-return" placeholder="Enter name" style="display:none;margin-top:4px;" />
     <div class="loc-strip">
       <div class="loc-icon">📍</div>
-      <div>
-        <div class="loc-label">GPS</div>
-        <div class="loc-val loading" id="loc-return">Getting GPS…</div>
-      </div>
+      <div><div class="loc-label">GPS</div><div class="loc-val loading" id="loc-return">Getting GPS…</div></div>
     </div>
   </div>
   <div class="action-area">
-    <button class="btn-primary green" onclick="submitReturn()">Confirm Return</button>
+    <button class="btn-primary green" id="btn-return" onclick="submitReturn()">Confirm Return</button>
     <button class="btn-secondary" onclick="showScreen('screen-existing')">← Back</button>
   </div>
 </div>
 
-<!-- ════════════════════════════
-     SCREEN: DAMAGE LOG
-════════════════════════════ -->
+<!-- DAMAGE -->
 <div class="screen" id="screen-damage">
   <div class="app-header">
     <div class="logo">Vinyl <em>Media</em></div>
-    <div class="header-right">
-      <div class="header-id" id="damage-header-id"></div>
-    </div>
+    <div class="header-right"><div class="header-id" id="damage-header-id"></div></div>
   </div>
   <div class="screen-body">
     <div class="status-pill pill-damage"><div class="status-dot"></div>Logging Damage</div>
@@ -926,8 +608,7 @@ textarea.form-input { resize: vertical; min-height: 80px; font-size: 15px; line-
     <div class="photos-area">
       <div class="photos-grid" id="damage-photos-grid">
         <div class="add-photo-btn" onclick="triggerPhoto('damage')">
-          <span class="add-photo-icon">📷</span>
-          <span>Add</span>
+          <span class="add-photo-icon">📷</span><span>Add</span>
         </div>
       </div>
     </div>
@@ -936,7 +617,7 @@ textarea.form-input { resize: vertical; min-height: 80px; font-size: 15px; line-
     <div class="form-section">
       <div class="form-group">
         <div class="form-label">Description</div>
-        <textarea class="form-input" id="damage-desc" placeholder="Describe the damage — be specific. e.g. Bent corner post, cracked base, torn fabric panel…"></textarea>
+        <textarea class="form-input" id="damage-desc" placeholder="Describe the damage — e.g. Bent corner post, cracked base, torn fabric panel…"></textarea>
       </div>
       <div class="form-group">
         <div class="form-label">Severity</div>
@@ -952,14 +633,12 @@ textarea.form-input { resize: vertical; min-height: 80px; font-size: 15px; line-
     <input class="form-input" type="text" id="custom-who-damage" placeholder="Enter name" style="display:none;margin-top:4px;" />
   </div>
   <div class="action-area">
-    <button class="btn-primary amber" onclick="submitDamage()">Submit Damage Report</button>
+    <button class="btn-primary amber" id="btn-damage" onclick="submitDamage()">Submit Damage Report</button>
     <button class="btn-secondary" onclick="showScreen('screen-existing')">← Back</button>
   </div>
 </div>
 
-<!-- ════════════════════════════
-     SCREEN: UPDATE PHOTO
-════════════════════════════ -->
+<!-- UPDATE PHOTO -->
 <div class="screen" id="screen-photo">
   <div class="app-header">
     <div class="logo">Vinyl <em>Media</em></div>
@@ -975,23 +654,20 @@ textarea.form-input { resize: vertical; min-height: 80px; font-size: 15px; line-
     <div class="photos-area">
       <div class="photos-grid" id="updatephoto-photos-grid">
         <div class="add-photo-btn" onclick="triggerPhoto('updatephoto')">
-          <span class="add-photo-icon">📷</span>
-          <span>Add</span>
+          <span class="add-photo-icon">📷</span><span>Add</span>
         </div>
       </div>
     </div>
     <input type="file" id="photo-input-updatephoto" accept="image/*" capture="environment" multiple onchange="handlePhotos(this,'updatephoto')" style="display:none;" />
-    <div style="font-size:12px;color:var(--muted);line-height:1.6;">Photos added here will be appended to the item's record. Existing photos are kept unless you edit directly in the Sheet.</div>
+    <div style="font-size:12px;color:var(--muted);line-height:1.6;">Photos added here will be appended to the item's record.</div>
   </div>
   <div class="action-area">
-    <button class="btn-primary" onclick="submitUpdatePhoto()">Save Photos</button>
+    <button class="btn-primary" id="btn-updatephoto" onclick="submitUpdatePhoto()">Save Photos</button>
     <button class="btn-secondary" onclick="showScreen('screen-existing')">← Back</button>
   </div>
 </div>
 
-<!-- ════════════════════════════
-     SCREEN: EDIT DETAILS
-════════════════════════════ -->
+<!-- EDIT -->
 <div class="screen" id="screen-edit">
   <div class="app-header">
     <div class="logo">Vinyl <em>Media</em></div>
@@ -1009,22 +685,13 @@ textarea.form-input { resize: vertical; min-height: 80px; font-size: 15px; line-
       </div>
       <div class="form-group">
         <div class="form-label">Category</div>
-        <select class="form-input" id="edit-cat">
-          <option>Signage</option><option>Timing</option><option>Barriers</option>
-          <option>Marquee</option><option>Audio / AV</option><option>Cables</option>
-          <option>Apparel</option><option>Bag / Case</option><option>Furniture</option>
-          <option>Safety</option><option>Staging</option><option>Misc</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <div class="form-label">Storage Location</div>
-        <input class="form-input" type="text" id="edit-location" autocomplete="off" />
+        <select class="form-input" id="edit-cat"></select>
       </div>
       <div class="form-group">
         <div class="form-label">Total Quantity Owned</div>
         <div class="qty-control">
           <button class="qty-btn" onclick="adjustQty('edit-owned-qty',-1)">−</button>
-          <input class="qty-val" type="number" id="edit-owned-qty" value="1" min="1" />
+          <input class="qty-val" type="number" id="edit-owned-qty" value="1" min="1" oninput="clampQty(this)" />
           <button class="qty-btn" onclick="adjustQty('edit-owned-qty',1)">+</button>
         </div>
       </div>
@@ -1035,19 +702,17 @@ textarea.form-input { resize: vertical; min-height: 80px; font-size: 15px; line-
     </div>
   </div>
   <div class="action-area">
-    <button class="btn-primary" onclick="submitEdit()">Save Changes</button>
+    <button class="btn-primary" id="btn-edit" onclick="submitEdit()">Save Changes</button>
     <button class="btn-secondary" onclick="showScreen('screen-existing')">← Cancel</button>
   </div>
 </div>
 
-<!-- ════════════════════════════
-     SCREEN: SUCCESS
-════════════════════════════ -->
+<!-- SUCCESS -->
 <div class="screen" id="screen-success">
   <div class="success-wrap">
-    <div class="success-icon"  id="success-icon">✅</div>
-    <div class="success-title" id="success-title">Done</div>
-    <div class="success-id"    id="success-id"></div>
+    <div class="success-icon"   id="success-icon">✅</div>
+    <div class="success-title"  id="success-title">Done</div>
+    <div class="success-id"     id="success-id"></div>
     <div class="success-detail" id="success-detail"></div>
   </div>
   <div class="action-area">
@@ -1060,7 +725,7 @@ textarea.form-input { resize: vertical; min-height: 80px; font-size: 15px; line-
 
 <script>
 // ══════════════════════════════════════════
-// CONFIG — fill in after deploying
+// CONFIG
 // ══════════════════════════════════════════
 const CONFIG = {
   SCRIPT_URL: 'https://script.google.com/macros/s/AKfycbwxhZiH_yrNp7oTWSht6qu7y5sWkKXnMTVAQyEXklnYXEbMQgYhacfhKU4ipJQ-rY6g8g/exec',
@@ -1073,19 +738,14 @@ const CONFIG = {
 const TEAM = ['Jacob'];
 
 let S = {
-  itemId:       null,
-  item:         null,       // existing item data from sheet
-  gps:          null,
-  sessionEvent: null,
-  sessionWho:   null,
-  damageOnReturn: false,
-  severity:     null,
-  // photo arrays per context
+  itemId: null, item: null, gps: null,
+  sessionEvent: null, sessionWho: null,
+  damageOnReturn: false, severity: null,
+  currentCategory: null,
   photos: { new: [], damage: [], updatephoto: [] },
 };
 
-// Load list — persists across scans
-let loadList = []; // [{ id, name, category, qty, who }]
+let loadList = [];
 
 // ══════════════════════════════════════════
 // INIT
@@ -1100,24 +760,19 @@ function init() {
   const id = (params.get('id') || '').toUpperCase().trim();
 
   if (!id) {
-    // No tag scanned — go to session start
     showScreen('screen-session');
     return;
   }
-
   S.itemId = id;
-
-  // If session already started, skip session screen
   if (S.sessionEvent !== null) {
     lookupAndRoute(id);
   } else {
-    // Store pending id, show session screen
     showScreen('screen-session');
   }
 }
 
 // ══════════════════════════════════════════
-// SESSION START
+// SESSION
 // ══════════════════════════════════════════
 let sessionWhoSelected = null;
 
@@ -1126,8 +781,7 @@ function selectSessionWho(btn) {
   btn.classList.add('selected');
   const custom = document.getElementById('session-who-custom');
   if (btn.textContent.includes('Add name')) {
-    custom.style.display = 'block';
-    custom.focus();
+    custom.style.display = 'block'; custom.focus();
     sessionWhoSelected = '__custom__';
   } else {
     custom.style.display = 'none';
@@ -1157,13 +811,8 @@ function skipSession() {
 }
 
 function proceedAfterSession() {
-  // If we have a pending item ID from URL, look it up
-  if (S.itemId) {
-    showScreen('screen-loading');
-    lookupAndRoute(S.itemId);
-  } else {
-    showScreen('screen-manual');
-  }
+  if (S.itemId) { showScreen('screen-loading'); lookupAndRoute(S.itemId); }
+  else showScreen('screen-manual');
 }
 
 // ══════════════════════════════════════════
@@ -1186,15 +835,14 @@ async function lookupAndRoute(id) {
     S.item = null;
     populateNewScreen(id);
     showScreen('screen-new');
-    toast('Offline — working locally', true);
+    toast('Could not reach server — check connection', true);
   }
 }
 
 function submitManualId() {
   const raw = document.getElementById('manual-id').value.toUpperCase().trim();
   if (!raw || !/^[A-Z]\d{1,2}$/.test(raw)) {
-    toast('Format: letter + number (e.g. B12)', true);
-    return;
+    toast('Format: letter + number (e.g. B12)', true); return;
   }
   S.itemId = raw;
   S.photos = { new: [], damage: [], updatephoto: [] };
@@ -1203,12 +851,17 @@ function submitManualId() {
 }
 
 // ══════════════════════════════════════════
-// NEW ITEM SCREEN
+// NEW ITEM
 // ══════════════════════════════════════════
 function populateNewScreen(id) {
   document.getElementById('new-header-id').textContent = id;
   document.getElementById('new-id-val').textContent = id;
   S.photos.new = [];
+  S.currentCategory = null;
+  const disp = document.getElementById('new-cat-display');
+  if (disp) { disp.style.display = 'none'; disp.textContent = ''; }
+  const sel = document.getElementById('new-cat');
+  if (sel) sel.value = '';
   renderPhotoGrid('new');
   updateFabs();
 }
@@ -1229,10 +882,10 @@ async function submitNew() {
   const payload = {
     action: 'register', id: S.itemId, name, category: cat,
     totalQty: qty, notes, who,
-    gpsLat:   S.gps?.lat   || '',
-    gpsLng:   S.gps?.lng   || '',
+    gpsLat:   S.gps?.lat      || '',
+    gpsLng:   S.gps?.lng      || '',
     gpsAcc:   S.gps?.accuracy || '',
-    gpsLabel: S.gps?.label || '',
+    gpsLabel: S.gps?.label    || '',
     photos:   S.photos.new.map(p => p.base64),
     timestamp: new Date().toISOString(),
   };
@@ -1240,57 +893,45 @@ async function submitNew() {
   const result = await postToScript(payload);
   btn.disabled = false; btn.textContent = 'Register Item';
   if (result.success) showSuccessScreen('register', S.itemId, name);
-  else toast(result.error || 'Submission failed — check console', true);
+  else toast(result.error || 'Submission failed', true);
 }
 
 // ══════════════════════════════════════════
-// EXISTING ITEM SCREEN
+// EXISTING ITEM
 // ══════════════════════════════════════════
 function populateExistingScreen(id, item) {
   document.getElementById('exist-header-id').textContent = id;
   document.getElementById('exist-id-val').textContent = id;
   document.getElementById('exist-name-sub').textContent = item.name || '';
 
-  // Status pill
   const pill = document.getElementById('exist-status-pill');
   const statusTxt = document.getElementById('exist-status-text');
   const st = (item.status || 'in').toLowerCase();
   pill.className = `status-pill ${st === 'in' ? 'pill-in' : 'pill-out'}`;
   statusTxt.textContent = st === 'in' ? 'In Storage' : 'Out';
 
-  // Damage banner
   const banner = document.getElementById('exist-damage-banner');
   if (item.damageFlagged) {
     banner.style.display = 'flex';
-    banner.innerHTML = `
-      <div class="damage-banner">
-        <div class="damage-banner-icon">⚠️</div>
-        <div class="damage-banner-text">
-          <strong>Damage Flag Active</strong>
-          ${item.damageNote || 'This item has a logged damage report. Check before use.'}
-        </div>
-      </div>`;
+    banner.innerHTML = `<div class="damage-banner"><div class="damage-banner-icon">⚠️</div><div class="damage-banner-text"><strong>Damage Flag Active</strong>${item.damageNote || 'This item has a logged damage report.'}</div></div>`;
   } else {
     banner.style.display = 'none';
   }
 
-  // Photos
   const photosArea = document.getElementById('exist-photos-area');
   if (item.photoUrls && item.photoUrls.length > 0) {
-    photosArea.innerHTML = `<div class="item-photos-scroll">${item.photoUrls.map(u=>`<img src="${u}" />`).join('')}</div>`;
+    photosArea.innerHTML = `<div class="item-photos-scroll">${item.photoUrls.map(u => `<img src="${u}" />`).join('')}</div>`;
   } else {
     photosArea.innerHTML = `<div class="item-photo-empty">No photos on record</div>`;
   }
 
-  // Meta
-  const inStorage = (item.totalQty||0) - (item.qtyOut||0);
+  const inStorage = (item.totalQty || 0) - (item.qtyOut || 0);
   document.getElementById('exist-meta').innerHTML = `
     <div class="meta-row"><span class="meta-key">Category</span><span class="meta-val">${item.category||'—'}</span></div>
     <div class="meta-row"><span class="meta-key">In Storage</span><span class="meta-val ${inStorage>0?'green':'red'}">${inStorage} / ${item.totalQty||'?'}</span></div>
     <div class="meta-row"><span class="meta-key">Location</span><span class="meta-val">${item.location||'—'}</span></div>
     <div class="meta-row"><span class="meta-key">Last Scanned</span><span class="meta-val">${item.lastScan||'—'}</span></div>
-    <div class="meta-row"><span class="meta-key">By</span><span class="meta-val">${item.lastWho||'—'}</span></div>
-  `;
+    <div class="meta-row"><span class="meta-key">By</span><span class="meta-val">${item.lastWho||'—'}</span></div>`;
 
   updateFabs();
 }
@@ -1299,11 +940,10 @@ function populateExistingScreen(id, item) {
 // TAKE OUT
 // ══════════════════════════════════════════
 function showTakeOut() {
-  const id   = S.itemId;
-  const name = S.item?.name || '';
+  const id = S.itemId;
   document.getElementById('takeout-header-id').textContent = id;
   document.getElementById('takeout-id-val').textContent = id;
-  document.getElementById('takeout-name-sub').textContent = name;
+  document.getElementById('takeout-name-sub').textContent = S.item?.name || '';
   document.getElementById('takeout-qty').value = 1;
   buildWhoGrid('takeout');
   updateLocDisplay('loc-takeout');
@@ -1311,31 +951,29 @@ function showTakeOut() {
 }
 
 async function submitTakeOut() {
-  const qty = parseInt(document.getElementById('takeout-qty').value) || 1;
-  const who = getWho('takeout');
-  const id  = S.itemId;
+  const qty  = parseInt(document.getElementById('takeout-qty').value) || 1;
+  const who  = getWho('takeout');
+  const id   = S.itemId;
   const name = S.item?.name || id;
   const cat  = S.item?.category || '';
 
-  // Add to local load list
+  const btn = document.getElementById('btn-takeout');
+  btn.disabled = true; btn.textContent = 'Adding…';
+
   const existing = loadList.find(r => r.id === id);
-  if (existing) {
-    existing.qty += qty;
-  } else {
-    loadList.push({ id, name, category: cat, qty, who });
-  }
+  if (existing) { existing.qty += qty; }
+  else { loadList.push({ id, name, category: cat, qty, who }); }
   updateFabs();
 
-  // Post to script
   const payload = {
     action: 'takeout', id, qty, who,
-    gpsLat: S.gps?.lat||'', gpsLng: S.gps?.lng||'', gpsAcc: S.gps?.accuracy||'',
-    event: S.sessionEvent,
-    timestamp: new Date().toISOString(),
+    gpsLat: S.gps?.lat||'', gpsLng: S.gps?.lng||'', gpsLabel: S.gps?.label||'',
+    event: S.sessionEvent, timestamp: new Date().toISOString(),
   };
   await postToScript(payload);
 
-  toast(`${id} ×${qty} added to list ✓`, false);
+  btn.disabled = false; btn.textContent = 'Add to Load List';
+  toast(`${id} ×${qty} added to list ✓`);
   showScreen('screen-manual');
 }
 
@@ -1343,11 +981,10 @@ async function submitTakeOut() {
 // RETURN
 // ══════════════════════════════════════════
 function showReturn() {
-  const id   = S.itemId;
-  const name = S.item?.name || '';
+  const id = S.itemId;
   document.getElementById('return-header-id').textContent = id;
   document.getElementById('return-id-val').textContent = id;
-  document.getElementById('return-name-sub').textContent = name;
+  document.getElementById('return-name-sub').textContent = S.item?.name || '';
   document.getElementById('return-qty').value = 1;
   document.getElementById('return-notes').value = '';
   S.damageOnReturn = false;
@@ -1370,7 +1007,9 @@ async function submitReturn() {
   const who   = getWho('return');
   const id    = S.itemId;
 
-  // Remove from load list
+  const btn = document.getElementById('btn-return');
+  btn.disabled = true; btn.textContent = 'Confirming…';
+
   const idx = loadList.findIndex(r => r.id === id);
   if (idx > -1) {
     loadList[idx].qty -= qty;
@@ -1380,17 +1019,15 @@ async function submitReturn() {
 
   const payload = {
     action: 'return', id, qty, notes, who,
-    gpsLat: S.gps?.lat||'', gpsLng: S.gps?.lng||'', gpsAcc: S.gps?.accuracy||'',
+    gpsLat: S.gps?.lat||'', gpsLng: S.gps?.lng||'', gpsLabel: S.gps?.label||'',
     timestamp: new Date().toISOString(),
   };
   const result = await postToScript(payload);
+  btn.disabled = false; btn.textContent = 'Confirm Return';
 
   if (result.success) {
-    if (S.damageOnReturn) {
-      showDamage();
-    } else {
-      showSuccessScreen('return', id, S.item?.name || id);
-    }
+    if (S.damageOnReturn) { showDamage(); }
+    else { showSuccessScreen('return', id, S.item?.name || id); }
   } else {
     toast(result.error || 'Return failed', true);
   }
@@ -1400,18 +1037,17 @@ async function submitReturn() {
 // DAMAGE
 // ══════════════════════════════════════════
 function showDamage() {
-  const id   = S.itemId;
-  const name = S.item?.name || '';
+  const id = S.itemId;
   document.getElementById('damage-header-id').textContent = id;
   document.getElementById('damage-id-val').textContent = id;
-  document.getElementById('damage-name-sub').textContent = name;
+  document.getElementById('damage-name-sub').textContent = S.item?.name || '';
   document.getElementById('damage-desc').value = '';
   S.severity = null;
   S.photos.damage = [];
   renderPhotoGrid('damage');
-  ['sev-minor','sev-repair','sev-out'].forEach(id => {
-    const btn = document.getElementById(id);
-    if (btn) btn.className = 'severity-btn';
+  ['sev-minor','sev-repair','sev-out'].forEach(sid => {
+    const b = document.getElementById(sid);
+    if (b) b.className = 'severity-btn';
   });
   buildWhoGrid('damage');
   showScreen('screen-damage');
@@ -1429,19 +1065,24 @@ async function submitDamage() {
   const who  = getWho('damage');
   const id   = S.itemId;
 
-  if (!desc)        { toast('Describe the damage', true); return; }
-  if (!S.severity)  { toast('Select a severity level', true); return; }
+  if (!desc)       { toast('Describe the damage', true); return; }
+  if (!S.severity) { toast('Select a severity level', true); return; }
+
+  const btn = document.getElementById('btn-damage');
+  btn.disabled = true; btn.textContent = 'Submitting…';
 
   const payload = {
     action: 'damage', id, name: S.item?.name||'', description: desc,
     severity: S.severity, who,
-    gpsLat: S.gps?.lat||'', gpsLng: S.gps?.lng||'', gpsAcc: S.gps?.accuracy||'',
-    photos: S.photos.damage.map(p=>p.base64),
+    gpsLat: S.gps?.lat||'', gpsLng: S.gps?.lng||'', gpsLabel: S.gps?.label||'',
+    photos: S.photos.damage.map(p => p.base64),
     timestamp: new Date().toISOString(),
   };
   const result = await postToScript(payload);
+  btn.disabled = false; btn.textContent = 'Submit Damage Report';
+
   if (result.success) showSuccessScreen('damage', id, S.item?.name||id);
-  else toast(result.error||'Error', true);
+  else toast(result.error || 'Submission failed', true);
 }
 
 // ══════════════════════════════════════════
@@ -1460,58 +1101,56 @@ function showUpdatePhoto() {
 async function submitUpdatePhoto() {
   if (S.photos.updatephoto.length === 0) { toast('Add at least one photo', true); return; }
 
-  // Lock button immediately to prevent double-tap
-  const btn = document.querySelector('#screen-photo .btn-primary');
-  if (btn) { btn.disabled = true; btn.textContent = 'Uploading…'; }
+  const btn = document.getElementById('btn-updatephoto');
+  btn.disabled = true; btn.textContent = 'Uploading…';
 
   const payload = {
     action: 'updatephoto', id: S.itemId,
-    photos: S.photos.updatephoto.map(p=>p.base64),
+    photos: S.photos.updatephoto.map(p => p.base64),
     timestamp: new Date().toISOString(),
   };
-const btn = document.querySelector('#screen-damage .btn-primary');
-  if (btn) { btn.disabled = true; btn.textContent = 'Submitting…'; }
-
   const result = await postToScript(payload);
+  btn.disabled = false; btn.textContent = 'Save Photos';
 
-  if (btn) { btn.disabled = false; btn.textContent = 'Submit Damage Report'; }
-
-  if (result.success) showSuccessScreen('damage', id, S.item?.name||id);
-  else toast(result.error||'Submission failed', true);
+  if (result.success) showSuccessScreen('photo', S.itemId, S.item?.name||S.itemId);
+  else toast(result.error || 'Upload failed', true);
+}
 
 // ══════════════════════════════════════════
-// EDIT DETAILS
+// EDIT
 // ══════════════════════════════════════════
 function showEdit() {
   const id   = S.itemId;
   const item = S.item || {};
   document.getElementById('edit-header-id').textContent = id;
   document.getElementById('edit-id-val').textContent = id;
-  document.getElementById('edit-name').value     = item.name     || '';
-  document.getElementById('edit-location').value = item.location || '';
-  document.getElementById('edit-notes').value    = item.notes    || '';
+  document.getElementById('edit-name').value = item.name || '';
+  document.getElementById('edit-notes').value = item.notes || '';
   document.getElementById('edit-owned-qty').value = item.totalQty || 1;
+  populateCatDropdown();
   const catSel = document.getElementById('edit-cat');
-  for (let i=0;i<catSel.options.length;i++) {
-    if (catSel.options[i].value === item.category) { catSel.selectedIndex = i; break; }
-  }
+  if (catSel && item.category) catSel.value = item.category;
   showScreen('screen-edit');
 }
 
 async function submitEdit() {
+  const btn = document.getElementById('btn-edit');
+  btn.disabled = true; btn.textContent = 'Saving…';
+
   const payload = {
     action:   'edit',
     id:       S.itemId,
     name:     document.getElementById('edit-name').value.trim(),
     category: document.getElementById('edit-cat').value,
-    location: document.getElementById('edit-location').value.trim(),
     notes:    document.getElementById('edit-notes').value.trim(),
-    totalQty: parseInt(document.getElementById('edit-owned-qty').value)||1,
+    totalQty: parseInt(document.getElementById('edit-owned-qty').value) || 1,
     timestamp: new Date().toISOString(),
   };
   const result = await postToScript(payload);
+  btn.disabled = false; btn.textContent = 'Save Changes';
+
   if (result.success) showSuccessScreen('edit', S.itemId, payload.name);
-  else toast(result.error||'Error', true);
+  else toast(result.error || 'Save failed', true);
 }
 
 // ══════════════════════════════════════════
@@ -1531,30 +1170,31 @@ function renderLoadList() {
   if (loadList.length === 0) {
     list.innerHTML = `<div class="load-empty">No items added yet.<br>Scan items and tap Take Out.</div>`;
   } else {
-    list.innerHTML = loadList.map((r,i) => `
+    list.innerHTML = loadList.map((r, i) => `
       <div class="load-item-row">
         <div class="load-item-id">${r.id}</div>
-        <div class="load-item-name">
-          ${r.name}
-          <div class="load-item-cat">${r.category}</div>
-        </div>
+        <div class="load-item-name">${r.name}<div class="load-item-cat">${r.category}</div></div>
         <div class="load-item-qty">×${r.qty}</div>
         <button class="load-item-remove" onclick="removeLoadItem(${i})">✕</button>
       </div>`).join('');
   }
-  const total = loadList.reduce((a,r)=>a+r.qty,0);
+  const total = loadList.reduce((a, r) => a + r.qty, 0);
   document.getElementById('load-count').textContent = loadList.length;
   document.getElementById('load-units').textContent = total;
 }
 
 function removeLoadItem(i) {
-  loadList.splice(i,1);
+  loadList.splice(i, 1);
   renderLoadList();
   updateFabs();
 }
 
 async function submitLoad() {
   if (loadList.length === 0) { toast('Load list is empty', true); return; }
+
+  const submitBtn = document.querySelector('#load-sheet .btn-primary');
+  if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Submitting…'; }
+
   const payload = {
     action: 'submitload',
     event:  S.sessionEvent,
@@ -1563,37 +1203,34 @@ async function submitLoad() {
     timestamp: new Date().toISOString(),
   };
   const result = await postToScript(payload);
+
+  if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = '✓ Confirm & Submit Load'; }
   closeLoadSheet();
+
   if (result.success) {
     loadList = [];
     updateFabs();
     showSuccessScreen('load', '', S.sessionEvent);
   } else {
-    toast(result.error||'Load submission failed', true);
+    toast(result.error || 'Load submission failed', true);
   }
 }
 
 function updateFabs() {
   const count = loadList.length;
-  const show  = count > 0;
-  document.querySelectorAll('.load-fab').forEach(f => {
-    f.classList.toggle('visible', show);
-  });
-  document.querySelectorAll('.load-fab-count').forEach(el => {
-    el.textContent = count;
-  });
+  document.querySelectorAll('.load-fab').forEach(f => f.classList.toggle('visible', count > 0));
+  document.querySelectorAll('.load-fab-count').forEach(el => { el.textContent = count; });
 }
 
 // ══════════════════════════════════════════
-// PHOTOS — multi upload
+// PHOTOS
 // ══════════════════════════════════════════
 function triggerPhoto(ctx) {
   document.getElementById(`photo-input-${ctx}`).click();
 }
 
 function handlePhotos(input, ctx) {
-  const files = Array.from(input.files);
-  files.forEach(file => {
+  Array.from(input.files).forEach(file => {
     const reader = new FileReader();
     reader.onload = e => {
       S.photos[ctx].push({ base64: e.target.result, name: file.name });
@@ -1605,24 +1242,19 @@ function handlePhotos(input, ctx) {
 }
 
 function renderPhotoGrid(ctx) {
-  const gridId = ctx === 'new' ? 'new-photos-grid'
-               : ctx === 'damage' ? 'damage-photos-grid'
-               : 'updatephoto-photos-grid';
+  const gridId = ctx === 'new' ? 'new-photos-grid' : ctx === 'damage' ? 'damage-photos-grid' : 'updatephoto-photos-grid';
   const grid = document.getElementById(gridId);
-  const thumbs = S.photos[ctx].map((p,i) => `
+  if (!grid) return;
+  const thumbs = S.photos[ctx].map((p, i) => `
     <div class="photo-thumb-wrap">
       <img src="${p.base64}" />
       <button class="photo-remove" onclick="removePhoto('${ctx}',${i})">✕</button>
     </div>`).join('');
-  grid.innerHTML = thumbs + `
-    <div class="add-photo-btn" onclick="triggerPhoto('${ctx}')">
-      <span class="add-photo-icon">📷</span>
-      <span>Add</span>
-    </div>`;
+  grid.innerHTML = thumbs + `<div class="add-photo-btn" onclick="triggerPhoto('${ctx}')"><span class="add-photo-icon">📷</span><span>Add</span></div>`;
 }
 
 function removePhoto(ctx, i) {
-  S.photos[ctx].splice(i,1);
+  S.photos[ctx].splice(i, 1);
   renderPhotoGrid(ctx);
 }
 
@@ -1641,7 +1273,6 @@ function buildWhoGrid(ctx) {
   grid.innerHTML = TEAM.map(name =>
     `<button class="who-btn" onclick="selectWho(this,'${ctx}')">${name}</button>`
   ).join('') + `<button class="who-btn" onclick="selectWho(this,'${ctx}')">+ Other</button>`;
-  // Auto-select first
   const first = grid.querySelector('.who-btn');
   if (first) first.classList.add('selected');
 }
@@ -1652,7 +1283,7 @@ function selectWho(btn, ctx) {
   btn.classList.add('selected');
   const custom = document.getElementById(`custom-who-${ctx}`);
   if (btn.textContent.includes('Other')) {
-    custom.style.display = 'block'; custom.focus();
+    if (custom) { custom.style.display = 'block'; custom.focus(); }
   } else {
     if (custom) custom.style.display = 'none';
   }
@@ -1669,37 +1300,37 @@ function getWho(ctx) {
 }
 
 // ══════════════════════════════════════════
-// GPS
+// GPS + REVERSE GEOCODE
 // ══════════════════════════════════════════
 function getGPS() {
   if (!navigator.geolocation) return;
   navigator.geolocation.getCurrentPosition(
     async pos => {
       S.gps = {
-        lat: pos.coords.latitude.toFixed(6),
-        lng: pos.coords.longitude.toFixed(6),
-        accuracy: Math.round(pos.coords.accuracy)
+        lat:      pos.coords.latitude.toFixed(6),
+        lng:      pos.coords.longitude.toFixed(6),
+        accuracy: Math.round(pos.coords.accuracy),
+        label:    null,
       };
-      // Reverse geocode to suburb + city
       try {
         const r = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${S.gps.lat}&lon=${S.gps.lng}&format=json`);
         const d = await r.json();
         const a = d.address || {};
         const suburb = a.suburb || a.neighbourhood || a.village || a.town || '';
-        const city   = a.city || a.state_district || a.county || '';
+        const city   = a.city   || a.state_district || a.county || '';
         S.gps.label  = [suburb, city].filter(Boolean).join(', ') || `${S.gps.lat}, ${S.gps.lng}`;
       } catch(e) {
         S.gps.label = `${S.gps.lat}, ${S.gps.lng}`;
       }
       const txt = `${S.gps.label} (±${S.gps.accuracy}m)`;
-      ['loc-new','loc-takeout','loc-return'].forEach(id => {
-        const el = document.getElementById(id);
+      ['loc-new','loc-takeout','loc-return'].forEach(elId => {
+        const el = document.getElementById(elId);
         if (el) { el.textContent = txt; el.className = 'loc-val'; }
       });
     },
     () => {
-      ['loc-new','loc-takeout','loc-return'].forEach(id => {
-        const el = document.getElementById(id);
+      ['loc-new','loc-takeout','loc-return'].forEach(elId => {
+        const el = document.getElementById(elId);
         if (el) { el.textContent = 'Location unavailable'; el.className = 'loc-val error'; }
       });
     },
@@ -1709,41 +1340,95 @@ function getGPS() {
 
 function updateLocDisplay(elId) {
   const el = document.getElementById(elId);
-  if (!el) return;
-  if (S.gps) {
-    el.textContent = `${S.gps.label || S.gps.lat + ', ' + S.gps.lng} (±${S.gps.accuracy}m)`;
-    el.className = 'loc-val';
-  }
+  if (!el || !S.gps) return;
+  el.textContent = `${S.gps.label || S.gps.lat + ', ' + S.gps.lng} (±${S.gps.accuracy}m)`;
+  el.className = 'loc-val';
 }
 
 // ══════════════════════════════════════════
-// QTY CONTROL
+// QTY
 // ══════════════════════════════════════════
 function adjustQty(inputId, delta) {
   const input = document.getElementById(inputId);
-  const val = Math.max(1, (parseInt(input.value)||1) + delta);
-  input.value = val;
+  input.value = Math.max(1, (parseInt(input.value) || 1) + delta);
+}
+
+function clampQty(input) {
+  const v = parseInt(input.value);
+  if (isNaN(v) || v < 1) input.value = 1;
+}
+
+// ══════════════════════════════════════════
+// CATEGORIES
+// ══════════════════════════════════════════
+const CAT_KEY = 'vinyl_categories';
+
+function loadCategories() {
+  try { return JSON.parse(localStorage.getItem(CAT_KEY) || '[]'); }
+  catch(e) { return []; }
+}
+
+function saveCategories(cats) {
+  try { localStorage.setItem(CAT_KEY, JSON.stringify(cats)); } catch(e) {}
+}
+
+function populateCatDropdown() {
+  const cats = loadCategories();
+  ['new-cat','edit-cat'].forEach(selId => {
+    const sel = document.getElementById(selId);
+    if (!sel) return;
+    const cur = sel.value;
+    sel.innerHTML = selId === 'new-cat' ? `<option value="">— Select or add new —</option>` : '';
+    cats.forEach(c => {
+      const opt = document.createElement('option');
+      opt.value = c; opt.textContent = c;
+      sel.appendChild(opt);
+    });
+    if (cur) sel.value = cur;
+  });
+}
+
+function handleCatSelect(sel) {
+  if (!sel.value) return;
+  S.currentCategory = sel.value;
+  const disp = document.getElementById('new-cat-display');
+  if (disp) { disp.textContent = sel.value; disp.style.display = 'block'; }
+}
+
+function promptNewCategory() {
+  const name = prompt('New category name (e.g. NRMA, Barriers, Audio):');
+  if (!name || !name.trim()) return;
+  const trimmed = name.trim();
+  const cats = loadCategories();
+  if (!cats.includes(trimmed)) { cats.push(trimmed); saveCategories(cats); }
+  populateCatDropdown();
+  S.currentCategory = trimmed;
+  const sel  = document.getElementById('new-cat');
+  const disp = document.getElementById('new-cat-display');
+  if (sel)  sel.value = trimmed;
+  if (disp) { disp.textContent = trimmed; disp.style.display = 'block'; }
+  toast(`Category "${trimmed}" ready`);
 }
 
 // ══════════════════════════════════════════
 // SUCCESS
 // ══════════════════════════════════════════
 const SUCCESS_MAP = {
-  register: { icon:'📦', title:'Registered',  titleClass:'orange', detail: (id,n) => `${n} (${id}) added to master inventory.` },
-  takeout:  { icon:'📤', title:'Added',        titleClass:'orange', detail: (id,n) => `${id} added to load list.` },
-  return:   { icon:'✅', title:'Returned',     titleClass:'',       detail: (id,n) => `${n} logged back into storage.` },
-  damage:   { icon:'⚠️', title:'Flagged',      titleClass:'amber',  detail: (id,n) => `Damage report logged for ${id}. Item flagged in inventory.` },
-  photo:    { icon:'📷', title:'Updated',      titleClass:'',       detail: (id,n) => `Photos updated for ${id}.` },
-  edit:     { icon:'✏️', title:'Saved',         titleClass:'',       detail: (id,n) => `Details updated for ${n}.` },
-  load:     { icon:'🚛', title:'Submitted',    titleClass:'',       detail: (id,n) => `Load list submitted for "${n}". New tab created in Sheet.` },
+  register: { icon:'📦', title:'Registered', cls:'orange', detail:(id,n)=>`${n} (${id}) added to master inventory.` },
+  takeout:  { icon:'📤', title:'Added',       cls:'orange', detail:(id,n)=>`${id} added to load list.` },
+  return:   { icon:'✅', title:'Returned',    cls:'',       detail:(id,n)=>`${n} logged back into storage.` },
+  damage:   { icon:'⚠️', title:'Flagged',     cls:'amber',  detail:(id,n)=>`Damage report logged for ${id}.` },
+  photo:    { icon:'📷', title:'Updated',     cls:'',       detail:(id,n)=>`Photos updated for ${id}.` },
+  edit:     { icon:'✏️', title:'Saved',        cls:'',       detail:(id,n)=>`Details updated for ${n}.` },
+  load:     { icon:'🚛', title:'Submitted',   cls:'',       detail:(id,n)=>`Load list submitted for "${n}".` },
 };
 
 function showSuccessScreen(type, id, name) {
-  const m = SUCCESS_MAP[type] || { icon:'✅', title:'Done', titleClass:'', detail:()=>'' };
-  document.getElementById('success-icon').textContent  = m.icon;
-  document.getElementById('success-title').textContent = m.title;
-  document.getElementById('success-title').className   = `success-title ${m.titleClass}`;
-  document.getElementById('success-id').textContent    = id ? `ID: ${id}` : '';
+  const m = SUCCESS_MAP[type] || { icon:'✅', title:'Done', cls:'', detail:()=>'' };
+  document.getElementById('success-icon').textContent   = m.icon;
+  document.getElementById('success-title').textContent  = m.title;
+  document.getElementById('success-title').className    = `success-title ${m.cls}`;
+  document.getElementById('success-id').textContent     = id ? `ID: ${id}` : '';
   document.getElementById('success-detail').textContent = m.detail(id, name);
   showScreen('screen-success');
 }
@@ -1753,10 +1438,10 @@ function showSuccessScreen(type, id, name) {
 // ══════════════════════════════════════════
 async function postToScript(payload) {
   if (!CONFIG.SCRIPT_URL || CONFIG.SCRIPT_URL.includes('YOUR_APPS_SCRIPT')) {
-    return { success: false, error: 'Script URL not configured in CONFIG.' };
+    return { success: false, error: 'Script URL not configured.' };
   }
   try {
-    const resp = await fetch(CONFIG.SCRIPT_URL, { method:'POST', body: JSON.stringify(payload) });
+    const resp = await fetch(CONFIG.SCRIPT_URL, { method: 'POST', body: JSON.stringify(payload) });
     if (!resp.ok) return { success: false, error: `Server error ${resp.status}` };
     return await resp.json();
   } catch(e) {
@@ -1770,98 +1455,22 @@ async function postToScript(payload) {
 function showScreen(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
-  window.scrollTo(0,0);
+  window.scrollTo(0, 0);
 }
 
 // ══════════════════════════════════════════
 // TOAST
 // ══════════════════════════════════════════
 let toastTimer;
-function toast(msg, isError=false, isSuccess=false) {
+function toast(msg, isError=false) {
   const el = document.getElementById('toast');
   el.textContent = msg;
-  el.className = 'show' + (isError?' error':'') + (isSuccess?' success':'');
+  el.className = 'show' + (isError ? ' error' : '');
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(()=>{ el.className=''; }, 3000);
+  toastTimer = setTimeout(() => { el.className = ''; }, 3000);
 }
 
-// ══════════════════════════════════════════
-// CATEGORY MANAGEMENT
-// ══════════════════════════════════════════
-const CAT_STORAGE_KEY = 'vinyl_categories';
-
-function loadCategories() {
-  try {
-    const stored = localStorage.getItem(CAT_STORAGE_KEY);
-    return stored ? JSON.parse(stored) : [];
-  } catch(e) { return []; }
-}
-
-function saveCategories(cats) {
-  try { localStorage.setItem(CAT_STORAGE_KEY, JSON.stringify(cats)); } catch(e) {}
-}
-
-function populateCatDropdown() {
-  const cats = loadCategories();
-  const sel  = document.getElementById('new-cat');
-  if (!sel) return;
-  sel.innerHTML = `<option value="">— Select or add new —</option>`;
-  cats.forEach(c => {
-    const opt = document.createElement('option');
-    opt.value = c; opt.textContent = c;
-    sel.appendChild(opt);
-  });
-  // Also populate edit-cat
-  const editSel = document.getElementById('edit-cat');
-  if (editSel) {
-    const cur = editSel.value;
-    editSel.innerHTML = '';
-    cats.forEach(c => {
-      const opt = document.createElement('option');
-      opt.value = c; opt.textContent = c;
-      editSel.appendChild(opt);
-    });
-    editSel.value = cur;
-  }
-}
-
-function handleCatSelect(sel) {
-  if (sel.value) {
-    S.currentCategory = sel.value;
-    const disp = document.getElementById('new-cat-display');
-    disp.textContent = sel.value;
-    disp.style.display = 'block';
-  }
-}
-
-function promptNewCategory() {
-  const name = prompt('New category name (e.g. NRMA, Signage, Barriers):');
-  if (!name || !name.trim()) return;
-  const trimmed = name.trim();
-  const cats = loadCategories();
-  if (!cats.includes(trimmed)) {
-    cats.push(trimmed);
-    saveCategories(cats);
-    populateCatDropdown();
-    toast(`"${trimmed}" added`, false);
-  }
-  // Select it
-  S.currentCategory = trimmed;
-  const sel = document.getElementById('new-cat');
-  if (sel) sel.value = trimmed;
-  const disp = document.getElementById('new-cat-display');
-  if (disp) { disp.textContent = trimmed; disp.style.display = 'block'; }
-}
-
-// ══════════════════════════════════════════
-// QTY — allow direct typing too
-// ══════════════════════════════════════════
-function clampQty(input) {
-  const v = parseInt(input.value);
-  if (isNaN(v) || v < 1) input.value = 1;
-}
-
-// ── GO ──
+// GO
 init();
 </script>
 </body>
