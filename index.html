@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#0a0a0a">
-<title>Vinyl Media — Storage</title>
+<title>Funkified — Storage</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@400;500&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -429,7 +429,7 @@ textarea.form-input { resize: vertical; min-height: 80px; font-size: 15px; line-
 <!-- LOADING -->
 <div class="screen active" id="screen-loading">
   <div class="screen-body" style="align-items:center;justify-content:center;gap:20px;">
-    <div class="logo">Vinyl <em>Media</em></div>
+    <div class="logo">Funkified</div>
     <div class="spinner"></div>
     <div style="font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:0.14em;text-transform:uppercase;">Reading tag…</div>
   </div>
@@ -437,28 +437,8 @@ textarea.form-input { resize: vertical; min-height: 80px; font-size: 15px; line-
 
 <!-- SESSION SWITCHBOARD -->
 <div class="screen" id="screen-session">
-  <div class="app-header"><div class="logo">Vinyl <em>Media</em></div></div>
+  <div class="app-header"><div class="logo">Funkified</div></div>
   <div class="screen-body" style="justify-content:center;gap:16px;">
-
-    <!-- Location display / picker -->
-    <div id="session-location-display" style="display:none;">
-      <div style="font-family:var(--mono);font-size:9px;letter-spacing:0.18em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;">Storage Location</div>
-      <div style="display:flex;align-items:center;gap:10px;">
-        <span style="font-size:20px;">📍</span>
-        <span style="font-family:var(--display);font-size:28px;letter-spacing:0.04em;" id="session-loc-name">—</span>
-      </div>
-    </div>
-
-    <!-- City picker (shown when no location param) -->
-    <div id="session-city-picker" style="display:none;">
-      <div style="font-family:var(--mono);font-size:9px;letter-spacing:0.18em;text-transform:uppercase;color:var(--muted);margin-bottom:10px;">Which storage location?</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-        <button class="city-btn" onclick="selectCity('Sydney')">🏙 Sydney</button>
-        <button class="city-btn" onclick="selectCity('Melbourne')">🏙 Melbourne</button>
-        <button class="city-btn" onclick="selectCity('Brisbane')">🏙 Brisbane</button>
-        <button class="city-btn" onclick="selectCity('Adelaide')">🏙 Adelaide</button>
-      </div>
-    </div>
 
     <div class="divider">What are you here to do?</div>
 
@@ -476,17 +456,17 @@ textarea.form-input { resize: vertical; min-height: 80px; font-size: 15px; line-
     <div style="display:flex;flex-direction:column;gap:8px;">
       <button class="action-btn takeout" onclick="startMode('loadout')">
         <div class="action-icon">📦</div>
-        <div class="action-text"><div class="action-title">Load Out</div><div class="action-sub">Build a load list for an event</div></div>
+        <div class="action-text"><div class="action-title">Equipment List</div><div class="action-sub">Build an equipment list for a job</div></div>
         <div class="action-arrow">›</div>
       </button>
       <button class="action-btn" style="border-color:var(--blue);" onclick="startMode('delivery')">
-        <div class="action-icon">🚚</div>
-        <div class="action-text"><div class="action-title">Receive Delivery</div><div class="action-sub">Log new stock from a supplier</div></div>
+        <div class="action-icon">➕</div>
+        <div class="action-text"><div class="action-title">New Item</div><div class="action-sub">Register new items into inventory</div></div>
         <div class="action-arrow">›</div>
       </button>
       <button class="action-btn return" onclick="startMode('checkin')">
         <div class="action-icon">✅</div>
-        <div class="action-text"><div class="action-title">Check Items In</div><div class="action-sub">Return items to storage</div></div>
+        <div class="action-text"><div class="action-title">Incoming</div><div class="action-sub">Return items to storage</div></div>
         <div class="action-arrow">›</div>
       </button>
       <button class="action-btn" onclick="startMode('browse')">
@@ -500,9 +480,9 @@ textarea.form-input { resize: vertical; min-height: 80px; font-size: 15px; line-
 
 <!-- LOAD OUT — event name -->
 <div class="screen" id="screen-loadout-setup">
-  <div class="app-header"><div class="logo">Vinyl <em>Media</em></div></div>
+  <div class="app-header"><div class="logo">Funkified</div></div>
   <div class="screen-body" style="justify-content:center;gap:16px;">
-    <div style="font-family:var(--display);font-size:32px;letter-spacing:0.04em;line-height:1.2;">Load Out<br><span style="color:var(--orange)" id="loadout-loc-label">—</span></div>
+    <div style="font-family:var(--display);font-size:32px;letter-spacing:0.04em;line-height:1.2;">Equipment List<br><span style="color:var(--orange)" id="loadout-loc-label">Sydney</span></div>
     <div class="form-group">
       <div class="form-label">Event Name</div>
       <input class="form-input" type="text" id="session-event" placeholder="e.g. NRMA Hospo Suite — Jun 2025" />
@@ -516,9 +496,9 @@ textarea.form-input { resize: vertical; min-height: 80px; font-size: 15px; line-
 
 <!-- DELIVERY SETUP -->
 <div class="screen" id="screen-delivery-setup">
-  <div class="app-header"><div class="logo">Vinyl <em>Media</em></div></div>
+  <div class="app-header"><div class="logo">Funkified</div></div>
   <div class="screen-body" style="justify-content:center;gap:16px;">
-    <div style="font-family:var(--display);font-size:32px;letter-spacing:0.04em;line-height:1.2;">Receive Delivery<br><span style="color:var(--orange)" id="delivery-loc-label">—</span></div>
+    <div style="font-family:var(--display);font-size:32px;letter-spacing:0.04em;line-height:1.2;">New Item<br><span style="color:var(--orange)" id="delivery-loc-label">Sydney</span></div>
     <div class="form-group">
       <div class="form-label">Supplier Name</div>
       <input class="form-input" type="text" id="delivery-supplier" placeholder="e.g. Staging Direct" autocomplete="off" />
@@ -537,7 +517,7 @@ textarea.form-input { resize: vertical; min-height: 80px; font-size: 15px; line-
 <!-- DELIVERY ITEM INTAKE -->
 <div class="screen" id="screen-delivery">
   <div class="app-header">
-    <div class="logo">Vinyl <em>Media</em></div>
+    <div class="logo">Funkified</div>
     <div class="header-right">
       <div style="font-family:var(--mono);font-size:10px;color:var(--orange);letter-spacing:0.08em;" id="delivery-count-badge">0 items</div>
     </div>
@@ -611,7 +591,7 @@ textarea.form-input { resize: vertical; min-height: 80px; font-size: 15px; line-
 <!-- BROWSE / SEARCH INVENTORY -->
 <div class="screen" id="screen-browse">
   <div class="app-header">
-    <div class="logo">Vinyl <em>Media</em></div>
+    <div class="logo">Funkified</div>
     <div class="header-right"><div style="font-family:var(--mono);font-size:10px;color:var(--muted);" id="browse-loc-badge">—</div></div>
   </div>
   <div class="screen-body">
@@ -630,7 +610,7 @@ textarea.form-input { resize: vertical; min-height: 80px; font-size: 15px; line-
 <!-- MANUAL ID -->
 <div class="screen" id="screen-manual">
   <div class="app-header">
-    <div class="logo">Vinyl <em>Media</em></div>
+    <div class="logo">Funkified</div>
     <div class="header-right">
       <button class="load-fab" id="fab-manual" onclick="openLoadSheet()">
         <span class="load-fab-icon">📦</span><span>List</span>
@@ -640,10 +620,10 @@ textarea.form-input { resize: vertical; min-height: 80px; font-size: 15px; line-
   </div>
   <div class="screen-body" style="justify-content:center;gap:16px;">
     <div style="font-family:var(--mono);font-size:9px;letter-spacing:0.2em;text-transform:uppercase;color:var(--muted);">Enter Item ID</div>
-    <input class="form-input large" type="text" id="manual-id" placeholder="B12" maxlength="4" />
+    <input class="form-input large" type="text" id="manual-id" placeholder="A1" maxlength="10" />
     <div style="font-size:12px;color:var(--muted);text-align:center;line-height:1.7;">
-      Letter + Number &nbsp;•&nbsp; e.g. A1, B12, Z99<br>
-      <span style="color:#444;">or tap your NFC tag to auto-open</span>
+      e.g. A1, B12, VM001<br>
+      <span style="color:#444;">or tap your NFC tag to scan automatically</span>
     </div>
   </div>
   <div class="action-area">
@@ -655,7 +635,7 @@ textarea.form-input { resize: vertical; min-height: 80px; font-size: 15px; line-
 <!-- NO-TAG REGISTRATION -->
 <div class="screen" id="screen-notag">
   <div class="app-header">
-    <div class="logo">Vinyl <em>Media</em></div>
+    <div class="logo">Funkified</div>
     <div class="header-right">
       <button class="load-fab" id="fab-notag" onclick="openLoadSheet()">
         <span class="load-fab-icon">📦</span><span>List</span>
@@ -729,7 +709,7 @@ textarea.form-input { resize: vertical; min-height: 80px; font-size: 15px; line-
 <!-- NEW ITEM -->
 <div class="screen" id="screen-new">
   <div class="app-header">
-    <div class="logo">Vinyl <em>Media</em></div>
+    <div class="logo">Funkified</div>
     <div class="header-right">
       <div class="header-id" id="new-header-id"></div>
       <button class="load-fab" id="fab-new" onclick="openLoadSheet()">
@@ -740,10 +720,21 @@ textarea.form-input { resize: vertical; min-height: 80px; font-size: 15px; line-
   </div>
   <div class="screen-body">
     <div class="status-pill pill-new"><div class="status-dot"></div>New Item</div>
-    <div class="id-display">
+
+    <!-- Static ID display (used when ID comes from NFC tag URL) -->
+    <div class="id-display" id="new-id-display">
       <div class="id-label">Item ID</div>
       <div class="id-value" id="new-id-val"></div>
     </div>
+
+    <!-- Editable ID input (used when coming from ?id=NEW — type the code written on the tag) -->
+    <div id="new-id-input-wrap" style="display:none;">
+      <div class="form-group">
+        <div class="form-label">Item ID — type the code written on the tag</div>
+        <input class="form-input large" type="text" id="new-id-input" placeholder="e.g. A1, B12" maxlength="10" autocomplete="off" autocapitalize="characters" style="text-transform:uppercase;" oninput="this.value=this.value.toUpperCase()" />
+      </div>
+    </div>
+
     <div class="divider">Item Details</div>
     <div class="form-section">
       <div class="form-group">
@@ -797,14 +788,14 @@ textarea.form-input { resize: vertical; min-height: 80px; font-size: 15px; line-
   </div>
   <div class="action-area">
     <button class="btn-primary" id="btn-register" onclick="submitNew()">Register Item</button>
-    <button class="btn-secondary" onclick="showScreen('screen-manual')">← Back</button>
+    <button class="btn-secondary" id="btn-register-back" onclick="showScreen('screen-manual')">← Back</button>
   </div>
 </div>
 
 <!-- EXISTING ITEM -->
 <div class="screen" id="screen-existing">
   <div class="app-header">
-    <div class="logo">Vinyl <em>Media</em></div>
+    <div class="logo">Funkified</div>
     <div class="header-right">
       <div class="header-id" id="exist-header-id"></div>
       <button class="load-fab" id="fab-exist" onclick="openLoadSheet()">
@@ -862,7 +853,7 @@ textarea.form-input { resize: vertical; min-height: 80px; font-size: 15px; line-
 <!-- TAKE OUT -->
 <div class="screen" id="screen-takeout">
   <div class="app-header">
-    <div class="logo">Vinyl <em>Media</em></div>
+    <div class="logo">Funkified</div>
     <div class="header-right"><div class="header-id" id="takeout-header-id"></div></div>
   </div>
   <div class="screen-body">
@@ -896,7 +887,7 @@ textarea.form-input { resize: vertical; min-height: 80px; font-size: 15px; line-
 <!-- RETURN -->
 <div class="screen" id="screen-return">
   <div class="app-header">
-    <div class="logo">Vinyl <em>Media</em></div>
+    <div class="logo">Funkified</div>
     <div class="header-right"><div class="header-id" id="return-header-id"></div></div>
   </div>
   <div class="screen-body">
@@ -941,7 +932,7 @@ textarea.form-input { resize: vertical; min-height: 80px; font-size: 15px; line-
 <!-- DAMAGE -->
 <div class="screen" id="screen-damage">
   <div class="app-header">
-    <div class="logo">Vinyl <em>Media</em></div>
+    <div class="logo">Funkified</div>
     <div class="header-right"><div class="header-id" id="damage-header-id"></div></div>
   </div>
   <div class="screen-body">
@@ -989,7 +980,7 @@ textarea.form-input { resize: vertical; min-height: 80px; font-size: 15px; line-
 <!-- UPDATE PHOTO -->
 <div class="screen" id="screen-photo">
   <div class="app-header">
-    <div class="logo">Vinyl <em>Media</em></div>
+    <div class="logo">Funkified</div>
     <div class="header-right"><div class="header-id" id="photo-header-id"></div></div>
   </div>
   <div class="screen-body">
@@ -1019,7 +1010,7 @@ textarea.form-input { resize: vertical; min-height: 80px; font-size: 15px; line-
 <!-- EDIT -->
 <div class="screen" id="screen-edit">
   <div class="app-header">
-    <div class="logo">Vinyl <em>Media</em></div>
+    <div class="logo">Funkified</div>
     <div class="header-right"><div class="header-id" id="edit-header-id"></div></div>
   </div>
   <div class="screen-body">
@@ -1065,8 +1056,9 @@ textarea.form-input { resize: vertical; min-height: 80px; font-size: 15px; line-
     <div class="success-detail" id="success-detail"></div>
   </div>
   <div class="action-area">
-    <button class="btn-primary" onclick="showScreen('screen-manual')">Scan Another</button>
-    <button class="btn-secondary" onclick="openLoadSheet()">View Load List</button>
+    <!-- Primary action changes based on context -->
+    <button class="btn-primary" id="success-primary-btn" onclick="showScreen('screen-manual')">Scan Another</button>
+    <button class="btn-secondary" id="success-secondary-btn" onclick="openLoadSheet()">View Equipment List</button>
   </div>
 </div>
 
@@ -1094,6 +1086,7 @@ let S = {
   sessionWho: null,
   damageOnReturn: false, severity: null,
   currentCategory: null, currentNoTagCategory: null,
+  _fromNewMode: false,
   photos: { new: [], damage: [], updatephoto: [], notag: [], delivery: [] },
   // delivery state
   delivery: {
@@ -1110,40 +1103,88 @@ let S = {
 let loadList = [];
 
 // ══════════════════════════════════════════
+// SESSION PERSISTENCE (survives NFC page reloads)
+// ══════════════════════════════════════════
+const SESSION_KEY  = 'vinyl_session';
+const LOADLIST_KEY = 'vinyl_loadlist';
+
+function saveSession() {
+  try {
+    sessionStorage.setItem(SESSION_KEY, JSON.stringify({
+      sessionMode:     S.sessionMode,
+      sessionLocation: S.sessionLocation,
+      sessionEvent:    S.sessionEvent,
+      sessionWho:      S.sessionWho,
+    }));
+    sessionStorage.setItem(LOADLIST_KEY, JSON.stringify(loadList));
+  } catch(e) {}
+}
+
+function restoreSession() {
+  try {
+    const saved     = JSON.parse(sessionStorage.getItem(SESSION_KEY)  || 'null');
+    const savedList = JSON.parse(sessionStorage.getItem(LOADLIST_KEY) || '[]');
+    if (saved && saved.sessionMode) {
+      S.sessionMode     = saved.sessionMode;
+      S.sessionLocation = saved.sessionLocation;
+      S.sessionEvent    = saved.sessionEvent;
+      S.sessionWho      = saved.sessionWho;
+      loadList = Array.isArray(savedList) ? savedList : [];
+      document.getElementById('load-event-display').textContent = S.sessionEvent || '—';
+      updateFabs();
+      return true;
+    }
+    return false;
+  } catch(e) { return false; }
+}
+
+function clearSession() {
+  try {
+    sessionStorage.removeItem(SESSION_KEY);
+    sessionStorage.removeItem(LOADLIST_KEY);
+  } catch(e) {}
+}
+
+// ══════════════════════════════════════════
 // INIT
 // ══════════════════════════════════════════
 function init() {
+  // Location is always Sydney for now
+  S.sessionLocation = 'Sydney';
+
   buildWhoGrids();
   getGPS();
   populateCatDropdown();
 
-  const params   = new URLSearchParams(window.location.search);
-  const id       = (params.get('id')       || '').toUpperCase().trim();
-  const location = (params.get('location') || '').trim();
-  const group    = (params.get('group')    || '').trim();
-
-  // Pre-set location from URL param
-  if (location) {
-    S.sessionLocation = location;
-    document.getElementById('session-loc-name').textContent = location;
-    document.getElementById('session-location-display').style.display = 'block';
-    document.getElementById('session-city-picker').style.display = 'none';
-  } else {
-    document.getElementById('session-location-display').style.display = 'none';
-    document.getElementById('session-city-picker').style.display = 'block';
-  }
+  const params = new URLSearchParams(window.location.search);
+  const id     = (params.get('id') || '').toUpperCase().trim();
+  const group  = (params.get('group') || '').trim();
 
   if (group) {
-    // Group/category tag — go straight to browse filtered by group
-    S.sessionLocation = location || null;
     showBrowse(group);
+    return;
+  }
+
+  // ?id=NEW — NFC tags all encode this URL.
+  // Skip session setup, go straight to the quick-register form.
+  if (id === 'NEW') {
+    S.sessionWho = TEAM[0];
+    showNewItemDirect();
     return;
   }
 
   if (id) {
     S.itemId = id;
-    // Show session switchboard first, then route after mode chosen
-    showScreen('screen-session');
+    // If there's an active session saved (e.g. mid equipment list, NFC tapped a new tag),
+    // restore it and go straight to item lookup — skip the session switchboard.
+    const restored = restoreSession();
+    if (restored) {
+      showScreen('screen-loading');
+      lookupAndRoute(id);
+    } else {
+      // No active session — show switchboard first (ID stored, used after mode is chosen)
+      showScreen('screen-session');
+    }
     return;
   }
 
@@ -1181,18 +1222,15 @@ function selectCity(city) {
 }
 
 function startMode(mode) {
-  if (!S.sessionLocation) { toast('Select a storage location first', true); return; }
   S.sessionWho  = getSessionWho();
   S.sessionMode = mode;
 
   if (mode === 'loadout') {
-    document.getElementById('loadout-loc-label').textContent = S.sessionLocation;
     showScreen('screen-loadout-setup');
   } else if (mode === 'delivery') {
-    document.getElementById('delivery-loc-label').textContent = S.sessionLocation;
     showScreen('screen-delivery-setup');
   } else if (mode === 'checkin') {
-    // Go straight to manual/scan screen in checkin mode
+    saveSession();
     proceedToScan();
   } else if (mode === 'browse') {
     showBrowse();
@@ -1204,6 +1242,7 @@ function startSession() {
   if (!ev) { toast('Enter an event name', true); return; }
   S.sessionEvent = ev;
   document.getElementById('load-event-display').textContent = ev;
+  saveSession();
   proceedToScan();
 }
 
@@ -1560,8 +1599,8 @@ async function lookupAndRoute(id) {
 
 function submitManualId() {
   const raw = document.getElementById('manual-id').value.toUpperCase().trim();
-  if (!raw || !/^[A-Z]\d{1,2}$/.test(raw)) {
-    toast('Format: letter + number (e.g. B12)', true); return;
+  if (!raw || !/^[A-Z0-9][A-Z0-9-]{0,9}$/.test(raw)) {
+    toast('Enter a valid ID (e.g. A1, B12, VM001)', true); return;
   }
   S.itemId = raw;
   S.photos = { new: [], damage: [], updatephoto: [] };
@@ -1572,20 +1611,63 @@ function submitManualId() {
 // ══════════════════════════════════════════
 // NEW ITEM
 // ══════════════════════════════════════════
+
+// Called from init() when ?id=NEW is detected — skip session, go straight to form
+function showNewItemDirect() {
+  S.itemId = 'NEW';
+  S.photos.new = [];
+  S.currentCategory = null;
+  populateCatDropdown();
+  buildWhoGrid('new');
+  updateLocDisplay('loc-new');
+
+  // Show editable ID input, hide static display
+  document.getElementById('new-id-display').style.display = 'none';
+  document.getElementById('new-id-input-wrap').style.display = 'block';
+  document.getElementById('new-id-input').value = '';
+  document.getElementById('new-name').value = '';
+  document.getElementById('new-notes').value = '';
+  document.getElementById('new-owned-qty').value = 1;
+  const disp = document.getElementById('new-cat-display');
+  if (disp) { disp.style.display = 'none'; disp.textContent = ''; }
+  const sel = document.getElementById('new-cat');
+  if (sel) sel.value = '';
+  renderPhotoGrid('new');
+  // Back button goes back to session screen in NEW mode
+  document.getElementById('btn-register-back').onclick = () => showScreen('screen-session');
+  updateFabs();
+  showScreen('screen-new');
+}
+
 function populateNewScreen(id) {
+  S.itemId = id;
   document.getElementById('new-header-id').textContent = id;
   document.getElementById('new-id-val').textContent = id;
+
+  // Show static ID display, hide editable input
+  document.getElementById('new-id-display').style.display = 'block';
+  document.getElementById('new-id-input-wrap').style.display = 'none';
+
   S.photos.new = [];
   S.currentCategory = null;
   const disp = document.getElementById('new-cat-display');
   if (disp) { disp.style.display = 'none'; disp.textContent = ''; }
   const sel = document.getElementById('new-cat');
   if (sel) sel.value = '';
+  document.getElementById('btn-register-back').onclick = () => showScreen('screen-manual');
   renderPhotoGrid('new');
   updateFabs();
 }
 
 async function submitNew() {
+  // If in NEW mode, read the ID from the editable input
+  let itemId = S.itemId;
+  if (itemId === 'NEW') {
+    const entered = document.getElementById('new-id-input').value.toUpperCase().trim();
+    if (!entered) { toast('Enter the ID written on the tag', true); return; }
+    itemId = entered;
+  }
+
   const name  = document.getElementById('new-name').value.trim();
   const cat   = S.currentCategory || '';
   const qty   = parseInt(document.getElementById('new-owned-qty').value) || 1;
@@ -1599,20 +1681,25 @@ async function submitNew() {
   btn.disabled = true; btn.textContent = 'Submitting…';
 
   const payload = {
-    action: 'register', id: S.itemId, name, category: cat,
+    action: 'register', id: itemId, name, category: cat,
     totalQty: qty, notes, who,
     gpsLat:   S.gps?.lat      || '',
     gpsLng:   S.gps?.lng      || '',
     gpsAcc:   S.gps?.accuracy || '',
-    gpsLabel: S.gps?.label    || '',
+    gpsLabel: S.gps?.label    || S.sessionLocation || 'Sydney',
     photos:   S.photos.new.map(p => p.base64),
     timestamp: new Date().toISOString(),
   };
 
   const result = await postToScript(payload);
   btn.disabled = false; btn.textContent = 'Register Item';
-  if (result.success) showSuccessScreen('register', S.itemId, name);
-  else toast(result.error || 'Submission failed', true);
+  if (result.success) {
+    // Track whether we came from NEW mode so success screen shows right button
+    S._fromNewMode = (S.itemId === 'NEW');
+    showSuccessScreen('register', itemId, name);
+  } else {
+    toast(result.error || 'Submission failed', true);
+  }
 }
 
 // ══════════════════════════════════════════
@@ -1683,6 +1770,7 @@ async function submitTakeOut() {
   if (existing) { existing.qty += qty; }
   else { loadList.push({ id, name, category: cat, qty, who }); }
   updateFabs();
+  saveSession();
 
   const payload = {
     action: 'takeout', id, qty, who,
@@ -1906,6 +1994,7 @@ function removeLoadItem(i) {
   loadList.splice(i, 1);
   renderLoadList();
   updateFabs();
+  saveSession();
 }
 
 async function submitLoad() {
@@ -1928,6 +2017,7 @@ async function submitLoad() {
 
   if (result.success) {
     loadList = [];
+    clearSession();
     updateFabs();
     showSuccessScreen('load', '', S.sessionEvent);
   } else {
@@ -2246,6 +2336,20 @@ function showSuccessScreen(type, id, name) {
   document.getElementById('success-title').className    = `success-title ${m.cls}`;
   document.getElementById('success-id').textContent     = id ? `ID: ${id}` : '';
   document.getElementById('success-detail').textContent = m.detail(id, name);
+
+  // If we just registered via ?id=NEW, offer Register Another (resets the same form)
+  const primaryBtn   = document.getElementById('success-primary-btn');
+  const secondaryBtn = document.getElementById('success-secondary-btn');
+  if (S._fromNewMode && type === 'register') {
+    primaryBtn.textContent = '+ Register Another';
+    primaryBtn.onclick = () => { S._fromNewMode = false; showNewItemDirect(); };
+    secondaryBtn.style.display = 'none';
+  } else {
+    primaryBtn.textContent = 'Scan Another';
+    primaryBtn.onclick = () => showScreen('screen-manual');
+    secondaryBtn.style.display = '';
+  }
+
   showScreen('screen-success');
 }
 
