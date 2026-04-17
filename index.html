@@ -300,6 +300,27 @@ textarea.form-input { resize: vertical; min-height: 80px; font-size: 15px; line-
 #toast.show    { transform: translateX(-50%) translateY(0); }
 #toast.error   { background: var(--red);   color: #fff; }
 #toast.success { background: var(--green); color: #fff; }
+#toast.queued  { background: var(--amber); color: #fff; }
+
+/* ── OFFLINE STATUS BAR ── */
+#offline-bar {
+  display: none;
+  position: fixed; top: 0; left: 0; right: 0;
+  z-index: 1000;
+  background: var(--amber);
+  color: #fff;
+  font-family: var(--mono); font-size: 10px; letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 6px 16px;
+  align-items: center; justify-content: space-between; gap: 8px;
+}
+#offline-bar.visible { display: flex; }
+#offline-bar-msg { flex: 1; }
+#offline-bar-sync {
+  background: rgba(255,255,255,0.25); border: none; border-radius: 100px;
+  color: #fff; font-family: var(--mono); font-size: 10px; letter-spacing: 0.1em;
+  padding: 2px 10px; cursor: pointer;
+}
 /* ── PHOTO OPTIONS SHEET ── */
 .photo-options-sheet {
   position: fixed; inset: 0; z-index: 300;
@@ -424,6 +445,12 @@ textarea.form-input { resize: vertical; min-height: 80px; font-size: 15px; line-
     </button>
     <button class="photo-cancel-btn" onclick="closePhotoOptions()">Cancel</button>
   </div>
+</div>
+
+<!-- OFFLINE STATUS BAR -->
+<div id="offline-bar">
+  <span id="offline-bar-msg">📡 Offline — submissions queued</span>
+  <button id="offline-bar-sync" onclick="syncOfflineQueue(true)">Sync now</button>
 </div>
 
 <!-- LOADING -->
@@ -1146,6 +1173,86 @@ function clearSession() {
 }
 
 // ══════════════════════════════════════════
+// OFFLINE QUEUE
+// ══════════════════════════════════════════
+const QUEUE_KEY = 'vinyl_offline_queue';
+
+function getOfflineQueue() {
+  try { return JSON.parse(localStorage.getItem(QUEUE_KEY) || '[]'); }
+  catch(e) { return []; }
+}
+
+function saveOfflineQueue(q) {
+  try { localStorage.setItem(QUEUE_KEY, JSON.stringify(q)); }
+  catch(e) {}
+}
+
+function queuePayload(payload) {
+  const q = getOfflineQueue();
+  q.push({ ...payload, _queuedAt: new Date().toISOString() });
+  saveOfflineQueue(q);
+  updateOfflineBar();
+}
+
+function updateOfflineBar() {
+  const bar  = document.getElementById('offline-bar');
+  const msg  = document.getElementById('offline-bar-msg');
+  const syncBtn = document.getElementById('offline-bar-sync');
+  if (!bar) return;
+
+  const q = getOfflineQueue();
+  const isOffline = !navigator.onLine;
+
+  if (isOffline && q.length === 0) {
+    bar.classList.add('visible');
+    msg.textContent = '📡 Offline — new submissions will be queued';
+    syncBtn.style.display = 'none';
+  } else if (q.length > 0) {
+    bar.classList.add('visible');
+    msg.textContent = isOffline
+      ? `📡 Offline — ${q.length} item${q.length>1?'s':''} queued`
+      : `🔄 ${q.length} item${q.length>1?'s':''} waiting to sync`;
+    syncBtn.style.display = isOffline ? 'none' : '';
+  } else {
+    bar.classList.remove('visible');
+  }
+}
+
+async function syncOfflineQueue(manual = false) {
+  const q = getOfflineQueue();
+  if (q.length === 0) { if (manual) toast('Nothing to sync ✓'); return; }
+  if (!navigator.onLine) { toast('Still offline — will retry when connected', true); return; }
+
+  let failed = [];
+  for (const payload of q) {
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), 8000);
+    try {
+      const resp = await fetch(CONFIG.SCRIPT_URL, {
+        method: 'POST', body: JSON.stringify(payload), signal: ctrl.signal,
+      });
+      clearTimeout(t);
+      if (resp.ok) {
+        const data = await resp.json();
+        if (!data.success) failed.push(payload); // bad data — don't retry
+      } else {
+        failed.push(payload); // server error — retry later
+      }
+    } catch(e) {
+      clearTimeout(t);
+      failed.push(payload); // timeout or network drop — retry later
+    }
+  }
+
+  saveOfflineQueue(failed);
+  updateOfflineBar();
+
+  const synced = q.length - failed.length;
+  if (synced > 0) toast(`✓ Synced ${synced} offline submission${synced>1?'s':''}`);
+  if (failed.length > 0) toast(`${failed.length} submission${failed.length>1?'s':''} still failed`, true);
+}
+
+// ══════════════════════════════════════════
 // INIT
 // ══════════════════════════════════════════
 function init() {
@@ -1155,6 +1262,10 @@ function init() {
   buildWhoGrids();
   getGPS();
   populateCatDropdown();
+  // Show offline bar if already offline or if there are queued items from a previous session
+  updateOfflineBar();
+  // If online and there are leftover queued items from a previous offline session, sync them now
+  if (navigator.onLine) syncOfflineQueue();
 
   const params = new URLSearchParams(window.location.search);
   const id     = (params.get('id') || '').toUpperCase().trim();
@@ -1191,6 +1302,11 @@ function init() {
   showScreen('screen-session');
 }
 
+// ══════════════════════════════════════════
+// OFFLINE / ONLINE WIRING
+// ══════════════════════════════════════════
+window.addEventListener('online',  () => { updateOfflineBar(); syncOfflineQueue(); });
+window.addEventListener('offline', () => { updateOfflineBar(); });
 
 // ══════════════════════════════════════════
 // SESSION SWITCHBOARD
@@ -1696,6 +1812,7 @@ async function submitNew() {
   if (result.success) {
     // Track whether we came from NEW mode so success screen shows right button
     S._fromNewMode = (S.itemId === 'NEW');
+    if (result.queued) toast('Saved offline — will sync when connected', false);
     showSuccessScreen('register', itemId, name);
   } else {
     toast(result.error || 'Submission failed', true);
@@ -1777,10 +1894,14 @@ async function submitTakeOut() {
     gpsLat: S.gps?.lat||'', gpsLng: S.gps?.lng||'', gpsLabel: S.gps?.label||'',
     event: S.sessionEvent, timestamp: new Date().toISOString(),
   };
-  await postToScript(payload);
+  const result = await postToScript(payload);
 
   btn.disabled = false; btn.textContent = 'Add to Load List';
-  toast(`${id} ×${qty} added to list ✓`);
+  if (result.queued) {
+    toast(`${id} ×${qty} added (saved offline ✓)`);
+  } else {
+    toast(`${id} ×${qty} added to list ✓`);
+  }
   showScreen('screen-manual');
 }
 
@@ -1833,6 +1954,7 @@ async function submitReturn() {
   btn.disabled = false; btn.textContent = 'Confirm Return';
 
   if (result.success) {
+    if (result.queued) toast('Saved offline — will sync when connected', false);
     if (S.damageOnReturn) { showDamage(); }
     else { showSuccessScreen('return', id, S.item?.name || id); }
   } else {
@@ -1888,8 +2010,12 @@ async function submitDamage() {
   const result = await postToScript(payload);
   btn.disabled = false; btn.textContent = 'Submit Damage Report';
 
-  if (result.success) showSuccessScreen('damage', id, S.item?.name||id);
-  else toast(result.error || 'Submission failed', true);
+  if (result.success) {
+    if (result.queued) toast('Saved offline — will sync when connected', false);
+    showSuccessScreen('damage', id, S.item?.name||id);
+  } else {
+    toast(result.error || 'Submission failed', true);
+  }
 }
 
 // ══════════════════════════════════════════
@@ -1919,8 +2045,12 @@ async function submitUpdatePhoto() {
   const result = await postToScript(payload);
   btn.disabled = false; btn.textContent = 'Save Photos';
 
-  if (result.success) showSuccessScreen('photo', S.itemId, S.item?.name||S.itemId);
-  else toast(result.error || 'Upload failed', true);
+  if (result.success) {
+    if (result.queued) toast('Saved offline — will sync when connected', false);
+    showSuccessScreen('photo', S.itemId, S.item?.name||S.itemId);
+  } else {
+    toast(result.error || 'Upload failed', true);
+  }
 }
 
 // ══════════════════════════════════════════
@@ -1956,8 +2086,12 @@ async function submitEdit() {
   const result = await postToScript(payload);
   btn.disabled = false; btn.textContent = 'Save Changes';
 
-  if (result.success) showSuccessScreen('edit', S.itemId, payload.name);
-  else toast(result.error || 'Save failed', true);
+  if (result.success) {
+    if (result.queued) toast('Saved offline — will sync when connected', false);
+    showSuccessScreen('edit', S.itemId, payload.name);
+  } else {
+    toast(result.error || 'Save failed', true);
+  }
 }
 
 // ══════════════════════════════════════════
@@ -2360,12 +2494,43 @@ async function postToScript(payload) {
   if (!CONFIG.SCRIPT_URL || CONFIG.SCRIPT_URL.includes('YOUR_APPS_SCRIPT')) {
     return { success: false, error: 'Script URL not configured.' };
   }
+
+  // If clearly offline, queue immediately without attempting a fetch
+  if (!navigator.onLine) {
+    queuePayload(payload);
+    return { success: true, queued: true };
+  }
+
+  // fetchWithTimeout: handles patchy connections where navigator.onLine says "yes"
+  // but packets aren't getting through. Aborts after 8 seconds and queues instead.
+  const TIMEOUT_MS = 8000;
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
+
   try {
-    const resp = await fetch(CONFIG.SCRIPT_URL, { method: 'POST', body: JSON.stringify(payload) });
-    if (!resp.ok) return { success: false, error: `Server error ${resp.status}` };
-    return await resp.json();
+    const resp = await fetch(CONFIG.SCRIPT_URL, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+      signal: controller.signal,
+    });
+    clearTimeout(timer);
+
+    if (!resp.ok) {
+      // Server error — queue for retry
+      queuePayload(payload);
+      return { success: true, queued: true };
+    }
+    const data = await resp.json();
+    if (!data.success) {
+      // App-level validation error — don't queue (bad data), surface the error
+      return data;
+    }
+    return data;
   } catch(e) {
-    return { success: false, error: `Network error: ${e.message}` };
+    clearTimeout(timer);
+    // Covers: timeout (AbortError), no signal, DNS failure, anything network-related
+    queuePayload(payload);
+    return { success: true, queued: true };
   }
 }
 
