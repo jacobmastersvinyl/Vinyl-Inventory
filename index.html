@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#0a0a0a">
+<link rel="manifest" href="./manifest.json">
 <title>Funkified — Storage</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@400;500&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
@@ -26,78 +27,41 @@
 }
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 html, body { height: 100%; background: var(--bg); color: var(--text); font-family: var(--body); overscroll-behavior: none; }
-
 .screen { display: none; flex-direction: column; min-height: 100dvh; }
 .screen.active { display: flex; }
-
-.app-header {
-  background: var(--surface);
-  border-bottom: 1px solid var(--border);
-  padding: 14px 20px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-shrink: 0;
-  position: sticky;
-  top: 0;
-  z-index: 50;
-}
+.app-header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 14px 20px; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; position: sticky; top: 0; z-index: 50; }
 .logo { font-family: var(--display); font-size: 20px; letter-spacing: 0.06em; line-height: 1; }
 .logo em { color: var(--orange); font-style: normal; }
 .header-right { display: flex; align-items: center; gap: 10px; }
 .header-id { font-family: var(--mono); font-size: 12px; color: var(--muted); letter-spacing: 0.08em; }
-
-.load-fab {
-  display: none; align-items: center; gap: 6px;
-  background: var(--orange); border: none; border-radius: 100px;
-  padding: 6px 12px 6px 8px; color: #fff;
-  font-family: var(--mono); font-size: 11px; letter-spacing: 0.08em;
-  cursor: pointer; font-weight: 500;
-}
+.load-fab { display: none; align-items: center; gap: 6px; background: var(--orange); border: none; border-radius: 100px; padding: 6px 12px 6px 8px; color: #fff; font-family: var(--mono); font-size: 11px; letter-spacing: 0.08em; cursor: pointer; font-weight: 500; }
 .load-fab.visible { display: flex; }
 .load-fab-icon { font-size: 14px; }
 .load-fab-count { background: rgba(255,255,255,0.25); border-radius: 100px; padding: 1px 6px; font-size: 10px; }
-
-.screen-body {
-  flex: 1; overflow-y: auto; padding: 20px;
-  display: flex; flex-direction: column; gap: 14px; padding-bottom: 120px;
-}
-
-.status-pill {
-  display: inline-flex; align-items: center; gap: 8px;
-  padding: 5px 12px; border-radius: 100px;
-  font-family: var(--mono); font-size: 10px; letter-spacing: 0.1em;
-  text-transform: uppercase; align-self: flex-start;
-}
+.pending-chip { display: none; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 100px; background: var(--amber); color: #fff; font-family: var(--mono); font-size: 10px; letter-spacing: 0.08em; cursor: pointer; border: none; }
+.pending-chip.visible { display: flex; }
+.pending-chip.synced { background: var(--green); }
+.pending-chip-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; opacity: 0.8; }
+.screen-body { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 14px; padding-bottom: 120px; }
+.status-pill { display: inline-flex; align-items: center; gap: 8px; padding: 5px 12px; border-radius: 100px; font-family: var(--mono); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; align-self: flex-start; }
 .pill-new    { background: rgba(232,80,10,0.15);  color: var(--orange); border: 1px solid rgba(232,80,10,0.3); }
 .pill-in     { background: rgba(26,158,74,0.15);  color: var(--green);  border: 1px solid rgba(26,158,74,0.3); }
 .pill-out    { background: rgba(192,32,32,0.15);  color: var(--red);    border: 1px solid rgba(192,32,32,0.3); }
 .pill-damage { background: rgba(212,130,10,0.15); color: var(--amber);  border: 1px solid rgba(212,130,10,0.3); }
 .status-dot  { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
-
-.id-display {
-  background: var(--card); border: 1px solid var(--border);
-  border-left: 4px solid var(--orange); border-radius: 4px; padding: 14px 16px;
-}
+.id-display { background: var(--card); border: 1px solid var(--border); border-left: 4px solid var(--orange); border-radius: 4px; padding: 14px 16px; }
 .id-label { font-family: var(--mono); font-size: 9px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--muted); margin-bottom: 2px; }
 .id-value { font-family: var(--display); font-size: 48px; letter-spacing: 0.04em; line-height: 1; }
 .id-sub   { font-size: 13px; color: var(--muted); margin-top: 3px; font-style: italic; }
-
-.damage-banner {
-  background: rgba(212,130,10,0.12); border: 1px solid rgba(212,130,10,0.35);
-  border-radius: 4px; padding: 12px 14px; display: flex; align-items: flex-start; gap: 10px;
-}
+.damage-banner { background: rgba(212,130,10,0.12); border: 1px solid rgba(212,130,10,0.35); border-radius: 4px; padding: 12px 14px; display: flex; align-items: flex-start; gap: 10px; }
 .damage-banner-icon { font-size: 18px; flex-shrink: 0; }
 .damage-banner-text { font-size: 13px; line-height: 1.5; color: var(--amber); }
 .damage-banner-text strong { display: block; font-size: 12px; font-family: var(--mono); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 2px; }
-
+.shelf-bind-banner { background: rgba(26,107,186,0.12); border: 1px solid rgba(26,107,186,0.4); border-radius: 4px; padding: 10px 14px; display: flex; align-items: center; gap: 10px; color: var(--blue); font-family: var(--mono); font-size: 11px; letter-spacing: 0.1em; }
+.shelf-bind-banner strong { color: #fff; font-family: var(--display); font-size: 18px; letter-spacing: 0.04em; }
+.shelf-bind-banner .x-btn { margin-left: auto; background: transparent; border: 1px solid rgba(26,107,186,0.4); color: var(--blue); font-family: var(--mono); font-size: 10px; padding: 3px 10px; border-radius: 100px; cursor: pointer; }
 .action-menu { display: flex; flex-direction: column; gap: 8px; }
-.action-btn {
-  display: flex; align-items: center; gap: 14px;
-  background: var(--card); border: 1.5px solid var(--border); border-radius: 4px;
-  padding: 16px; cursor: pointer; text-align: left; width: 100%; color: var(--text);
-  transition: border-color 0.12s, background 0.12s;
-}
+.action-btn { display: flex; align-items: center; gap: 14px; background: var(--card); border: 1.5px solid var(--border); border-radius: 4px; padding: 16px; cursor: pointer; text-align: left; width: 100%; color: var(--text); transition: border-color 0.12s, background 0.12s; }
 .action-btn:active { background: #222; }
 .action-btn.takeout:active { border-color: var(--orange); }
 .action-btn.return:active  { border-color: var(--green); }
@@ -109,17 +73,10 @@ html, body { height: 100%; background: var(--bg); color: var(--text); font-famil
 .action-title { font-family: var(--display); font-size: 20px; letter-spacing: 0.04em; line-height: 1; }
 .action-sub   { font-size: 12px; color: var(--muted); margin-top: 2px; }
 .action-arrow { color: var(--muted); font-size: 18px; }
-
 .item-card { background: var(--card); border: 1px solid var(--border); border-radius: 4px; overflow: hidden; }
-.item-photos-scroll {
-  display: flex; overflow-x: auto; gap: 2px;
-  scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch;
-}
+.item-photos-scroll { display: flex; overflow-x: auto; gap: 2px; scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; }
 .item-photos-scroll img { flex-shrink: 0; width: 100%; max-height: 180px; object-fit: cover; scroll-snap-align: start; }
-.item-photo-empty {
-  height: 80px; display: flex; align-items: center; justify-content: center;
-  background: #111; color: var(--muted); font-family: var(--mono); font-size: 10px; letter-spacing: 0.12em;
-}
+.item-photo-empty { height: 80px; display: flex; align-items: center; justify-content: center; background: #111; color: var(--muted); font-family: var(--mono); font-size: 10px; letter-spacing: 0.12em; }
 .item-meta { padding: 12px 14px; display: flex; flex-direction: column; gap: 5px; }
 .meta-row  { display: flex; justify-content: space-between; align-items: baseline; }
 .meta-key  { font-family: var(--mono); font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); }
@@ -127,147 +84,60 @@ html, body { height: 100%; background: var(--bg); color: var(--text); font-famil
 .meta-val.green { color: var(--green); }
 .meta-val.red   { color: var(--red); }
 .meta-val.amber { color: var(--amber); }
-
 .form-section { display: flex; flex-direction: column; gap: 12px; }
 .form-group   { display: flex; flex-direction: column; gap: 5px; }
 .form-label   { font-family: var(--mono); font-size: 9px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--muted); }
-
-.form-input {
-  background: var(--card); border: 1.5px solid var(--border); border-radius: 4px;
-  color: var(--text); font-family: var(--body); font-size: 16px;
-  padding: 13px 14px; outline: none; width: 100%;
-  transition: border-color 0.12s; -webkit-appearance: none;
-}
+.form-input { background: var(--card); border: 1.5px solid var(--border); border-radius: 4px; color: var(--text); font-family: var(--body); font-size: 16px; padding: 13px 14px; outline: none; width: 100%; transition: border-color 0.12s; -webkit-appearance: none; }
 .form-input:focus { border-color: var(--orange); }
 .form-input.large { font-family: var(--display); font-size: 36px; letter-spacing: 0.04em; text-transform: uppercase; text-align: center; }
-select.form-input {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236b6560' stroke-width='1.5' fill='none'/%3E%3C/svg%3E");
-  background-repeat: no-repeat; background-position: right 14px center; padding-right: 36px; cursor: pointer;
-}
+select.form-input { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236b6560' stroke-width='1.5' fill='none'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 14px center; padding-right: 36px; cursor: pointer; }
 select.form-input option { background: var(--card); }
 textarea.form-input { resize: vertical; min-height: 80px; font-size: 15px; line-height: 1.5; }
-
 .severity-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
-.severity-btn {
-  padding: 12px 6px; background: var(--card); border: 2px solid var(--border);
-  border-radius: 4px; color: var(--muted); font-family: var(--mono); font-size: 10px;
-  letter-spacing: 0.08em; text-transform: uppercase; cursor: pointer;
-  text-align: center; line-height: 1.4; transition: all 0.12s;
-}
+.severity-btn { padding: 12px 6px; background: var(--card); border: 2px solid var(--border); border-radius: 4px; color: var(--muted); font-family: var(--mono); font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; cursor: pointer; text-align: center; line-height: 1.4; transition: all 0.12s; }
 .severity-btn.sel-minor  { background: rgba(26,107,186,0.15); border-color: var(--blue);  color: var(--blue); }
 .severity-btn.sel-repair { background: rgba(212,130,10,0.15); border-color: var(--amber); color: var(--amber); }
 .severity-btn.sel-out    { background: rgba(192,32,32,0.15);  border-color: var(--red);   color: var(--red); }
-
 .who-grid { display: flex; flex-wrap: wrap; gap: 8px; }
-.who-btn {
-  padding: 9px 14px; background: var(--card); border: 2px solid var(--border);
-  border-radius: 100px; color: var(--muted); font-family: var(--body);
-  font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.12s;
-}
+.who-btn { padding: 9px 14px; background: var(--card); border: 2px solid var(--border); border-radius: 100px; color: var(--muted); font-family: var(--body); font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.12s; }
 .who-btn.selected { background: rgba(232,80,10,0.12); border-color: var(--orange); color: var(--orange); }
-
 .photos-area { display: flex; flex-direction: column; gap: 8px; }
 .photos-grid { display: flex; flex-wrap: wrap; gap: 8px; }
 .photo-thumb-wrap { position: relative; width: 80px; height: 80px; flex-shrink: 0; }
 .photo-thumb-wrap img { width: 100%; height: 100%; object-fit: cover; border-radius: 4px; }
-.photo-remove {
-  position: absolute; top: -6px; right: -6px; width: 18px; height: 18px;
-  background: var(--red); border: none; border-radius: 50%; color: #fff;
-  font-size: 11px; cursor: pointer; display: flex; align-items: center;
-  justify-content: center; padding: 0; line-height: 1;
-}
-.add-photo-btn {
-  width: 80px; height: 80px; background: var(--card); border: 2px dashed var(--border);
-  border-radius: 4px; display: flex; flex-direction: column; align-items: center;
-  justify-content: center; gap: 4px; cursor: pointer; color: var(--muted);
-  font-family: var(--mono); font-size: 9px; letter-spacing: 0.1em;
-  text-transform: uppercase; flex-shrink: 0;
-}
+.photo-remove { position: absolute; top: -6px; right: -6px; width: 18px; height: 18px; background: var(--red); border: none; border-radius: 50%; color: #fff; font-size: 11px; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; line-height: 1; }
+.add-photo-btn { width: 80px; height: 80px; background: var(--card); border: 2px dashed var(--border); border-radius: 4px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; cursor: pointer; color: var(--muted); font-family: var(--mono); font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; flex-shrink: 0; }
 .add-photo-btn:active { border-color: var(--orange); }
 .add-photo-icon { font-size: 22px; }
-
-.qty-control {
-  display: flex; align-items: center; background: var(--card);
-  border: 1.5px solid var(--border); border-radius: 4px; overflow: hidden;
-}
-.qty-btn {
-  width: 54px; height: 54px; background: transparent; border: none;
-  color: var(--text); font-size: 24px; cursor: pointer;
-  display: flex; align-items: center; justify-content: center;
-  flex-shrink: 0; transition: background 0.1s;
-}
+.qty-control { display: flex; align-items: center; background: var(--card); border: 1.5px solid var(--border); border-radius: 4px; overflow: hidden; }
+.qty-btn { width: 54px; height: 54px; background: transparent; border: none; color: var(--text); font-size: 24px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: background 0.1s; }
 .qty-btn:active { background: #333; }
-.qty-val {
-  flex: 1; text-align: center; font-family: var(--display); font-size: 36px;
-  letter-spacing: 0.04em; color: var(--text); border: none;
-  background: transparent; outline: none; width: 100%;
-}
-
-.loc-strip {
-  background: var(--card); border: 1px solid var(--border); border-radius: 4px;
-  padding: 11px 14px; display: flex; align-items: center; gap: 10px;
-}
+.qty-val { flex: 1; text-align: center; font-family: var(--display); font-size: 36px; letter-spacing: 0.04em; color: var(--text); border: none; background: transparent; outline: none; width: 100%; }
+.loc-strip { background: var(--card); border: 1px solid var(--border); border-radius: 4px; padding: 11px 14px; display: flex; align-items: center; gap: 10px; }
 .loc-icon  { font-size: 18px; flex-shrink: 0; }
 .loc-label { font-family: var(--mono); font-size: 9px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--muted); }
 .loc-val   { font-size: 12px; font-weight: 500; margin-top: 1px; word-break: break-all; }
 .loc-val.loading { color: var(--muted); font-style: italic; }
 .loc-val.error   { color: var(--red); }
-
-.divider {
-  display: flex; align-items: center; gap: 10px;
-  font-family: var(--mono); font-size: 9px; letter-spacing: 0.2em;
-  text-transform: uppercase; color: var(--muted);
-}
+.divider { display: flex; align-items: center; gap: 10px; font-family: var(--mono); font-size: 9px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--muted); }
 .divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
-
-.action-area {
-  padding: 14px 20px 32px; display: flex; flex-direction: column; gap: 8px;
-  flex-shrink: 0; background: var(--bg); border-top: 1px solid var(--border);
-}
-.btn-primary {
-  width: 100%; padding: 17px; background: var(--orange); border: none; border-radius: 4px;
-  color: #fff; font-family: var(--display); font-size: 20px; letter-spacing: 0.08em;
-  cursor: pointer; transition: opacity 0.12s, transform 0.08s; -webkit-appearance: none;
-}
+.action-area { padding: 14px 20px 32px; display: flex; flex-direction: column; gap: 8px; flex-shrink: 0; background: var(--bg); border-top: 1px solid var(--border); }
+.btn-primary { width: 100%; padding: 17px; background: var(--orange); border: none; border-radius: 4px; color: #fff; font-family: var(--display); font-size: 20px; letter-spacing: 0.08em; cursor: pointer; transition: opacity 0.12s, transform 0.08s; -webkit-appearance: none; }
 .btn-primary:active   { opacity: 0.85; transform: scale(0.99); }
 .btn-primary:disabled { opacity: 0.3; cursor: not-allowed; }
 .btn-primary.green { background: var(--green); }
 .btn-primary.amber { background: var(--amber); }
-.btn-secondary {
-  width: 100%; padding: 13px; background: transparent;
-  border: 1.5px solid var(--border); border-radius: 4px;
-  color: var(--muted); font-family: var(--mono); font-size: 11px;
-  letter-spacing: 0.12em; text-transform: uppercase; cursor: pointer;
-  transition: all 0.12s; -webkit-appearance: none;
-}
+.btn-secondary { width: 100%; padding: 13px; background: transparent; border: 1.5px solid var(--border); border-radius: 4px; color: var(--muted); font-family: var(--mono); font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; cursor: pointer; transition: all 0.12s; -webkit-appearance: none; }
 .btn-secondary:active { border-color: var(--text); color: var(--text); }
-
-.load-sheet {
-  position: fixed; inset: 0; z-index: 200;
-  display: none; flex-direction: column; background: var(--bg);
-}
+.load-sheet { position: fixed; inset: 0; z-index: 200; display: none; flex-direction: column; background: var(--bg); }
 .load-sheet.open { display: flex; }
-.load-sheet-header {
-  background: var(--surface); border-bottom: 1px solid var(--border);
-  padding: 16px 20px; display: flex; align-items: center; justify-content: space-between;
-}
+.load-sheet-header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 16px 20px; display: flex; align-items: center; justify-content: space-between; }
 .load-sheet-title { font-family: var(--display); font-size: 26px; letter-spacing: 0.06em; }
-.load-sheet-close {
-  background: transparent; border: 1px solid var(--border); border-radius: 4px;
-  color: var(--muted); padding: 6px 12px; font-family: var(--mono);
-  font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; cursor: pointer;
-}
-.load-event-name {
-  padding: 14px 20px; border-bottom: 1px solid var(--border);
-  font-family: var(--mono); font-size: 11px; letter-spacing: 0.1em;
-  color: var(--orange); display: flex; align-items: center; gap: 8px;
-}
+.load-sheet-close { background: transparent; border: 1px solid var(--border); border-radius: 4px; color: var(--muted); padding: 6px 12px; font-family: var(--mono); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; cursor: pointer; }
+.load-event-name { padding: 14px 20px; border-bottom: 1px solid var(--border); font-family: var(--mono); font-size: 11px; letter-spacing: 0.1em; color: var(--orange); display: flex; align-items: center; gap: 8px; }
 .load-event-name span { color: var(--muted); }
 .load-items { flex: 1; overflow-y: auto; }
-.load-item-row {
-  display: flex; align-items: center; padding: 14px 20px;
-  border-bottom: 1px solid var(--border); gap: 12px;
-}
+.load-item-row { display: flex; align-items: center; padding: 14px 20px; border-bottom: 1px solid var(--border); gap: 12px; }
 .load-item-id   { font-family: var(--display); font-size: 22px; letter-spacing: 0.04em; color: var(--orange); width: 60px; flex-shrink: 0; }
 .load-item-name { flex: 1; font-size: 14px; font-weight: 600; line-height: 1.3; }
 .load-item-cat  { font-size: 11px; color: var(--muted); margin-top: 2px; }
@@ -277,7 +147,6 @@ textarea.form-input { resize: vertical; min-height: 80px; font-size: 15px; line-
 .load-footer { padding: 14px 20px 32px; border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: 8px; }
 .load-summary { display: flex; justify-content: space-between; font-family: var(--mono); font-size: 11px; letter-spacing: 0.1em; color: var(--muted); padding-bottom: 10px; }
 .load-summary strong { color: var(--text); }
-
 .success-wrap { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px 24px; text-align: center; gap: 14px; }
 .success-icon  { font-size: 60px; }
 .success-title { font-family: var(--display); font-size: 42px; letter-spacing: 0.06em; color: var(--green); }
@@ -285,100 +154,31 @@ textarea.form-input { resize: vertical; min-height: 80px; font-size: 15px; line-
 .success-title.amber  { color: var(--amber); }
 .success-id     { font-family: var(--mono); font-size: 13px; color: var(--muted); letter-spacing: 0.1em; }
 .success-detail { font-size: 14px; color: var(--muted); line-height: 1.65; max-width: 280px; }
-
 .spinner { width: 34px; height: 34px; border: 3px solid var(--border); border-top-color: var(--orange); border-radius: 50%; animation: spin 0.7s linear infinite; margin: 0 auto; }
 @keyframes spin { to { transform: rotate(360deg); } }
-
-#toast {
-  position: fixed; bottom: 24px; left: 50%;
-  transform: translateX(-50%) translateY(80px);
-  background: #fff; color: #0a0a0a; padding: 11px 20px; border-radius: 100px;
-  font-family: var(--mono); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase;
-  white-space: nowrap; transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1);
-  z-index: 999; pointer-events: none;
-}
+#toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px); background: #fff; color: #0a0a0a; padding: 11px 20px; border-radius: 100px; font-family: var(--mono); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; white-space: nowrap; transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1); z-index: 999; pointer-events: none; max-width: 85vw; overflow: hidden; text-overflow: ellipsis; }
 #toast.show    { transform: translateX(-50%) translateY(0); }
 #toast.error   { background: var(--red);   color: #fff; }
 #toast.success { background: var(--green); color: #fff; }
 #toast.queued  { background: var(--amber); color: #fff; }
-
-/* ── OFFLINE STATUS BAR ── */
-#offline-bar {
-  display: none;
-  position: fixed; top: 0; left: 0; right: 0;
-  z-index: 1000;
-  background: var(--amber);
-  color: #fff;
-  font-family: var(--mono); font-size: 10px; letter-spacing: 0.12em;
-  text-transform: uppercase;
-  padding: 6px 16px;
-  align-items: center; justify-content: space-between; gap: 8px;
-}
+#offline-bar { display: none; position: fixed; top: 0; left: 0; right: 0; z-index: 1000; background: var(--amber); color: #fff; font-family: var(--mono); font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; padding: 6px 16px; align-items: center; justify-content: space-between; gap: 8px; }
 #offline-bar.visible { display: flex; }
+#offline-bar.syncing { background: var(--blue); }
 #offline-bar-msg { flex: 1; }
-#offline-bar-sync {
-  background: rgba(255,255,255,0.25); border: none; border-radius: 100px;
-  color: #fff; font-family: var(--mono); font-size: 10px; letter-spacing: 0.1em;
-  padding: 2px 10px; cursor: pointer;
-}
-/* ── PHOTO OPTIONS SHEET ── */
-.photo-options-sheet {
-  position: fixed; inset: 0; z-index: 300;
-  display: none; align-items: flex-end;
-  background: rgba(0,0,0,0.6);
-}
+#offline-bar-sync { background: rgba(255,255,255,0.25); border: none; border-radius: 100px; color: #fff; font-family: var(--mono); font-size: 10px; letter-spacing: 0.1em; padding: 2px 10px; cursor: pointer; }
+.photo-options-sheet { position: fixed; inset: 0; z-index: 300; display: none; align-items: flex-end; background: rgba(0,0,0,0.6); }
 .photo-options-sheet.open { display: flex; }
-.photo-options-inner {
-  width: 100%; background: var(--surface);
-  border-radius: 12px 12px 0 0;
-  padding: 16px 20px 40px;
-  display: flex; flex-direction: column; gap: 10px;
-}
-.photo-options-title {
-  font-family: var(--mono); font-size: 10px; letter-spacing: 0.16em;
-  text-transform: uppercase; color: var(--muted);
-  text-align: center; margin-bottom: 4px;
-}
-.photo-option-btn {
-  width: 100%; padding: 16px; background: var(--card);
-  border: 1.5px solid var(--border); border-radius: 4px;
-  color: var(--text); font-family: var(--body); font-size: 16px;
-  font-weight: 600; cursor: pointer; text-align: left;
-  display: flex; align-items: center; gap: 14px;
-  transition: border-color 0.12s;
-}
+.photo-options-inner { width: 100%; background: var(--surface); border-radius: 12px 12px 0 0; padding: 16px 20px 40px; display: flex; flex-direction: column; gap: 10px; }
+.photo-options-title { font-family: var(--mono); font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--muted); text-align: center; margin-bottom: 4px; }
+.photo-option-btn { width: 100%; padding: 16px; background: var(--card); border: 1.5px solid var(--border); border-radius: 4px; color: var(--text); font-family: var(--body); font-size: 16px; font-weight: 600; cursor: pointer; text-align: left; display: flex; align-items: center; gap: 14px; transition: border-color 0.12s; }
 .photo-option-btn:active { border-color: var(--orange); }
 .photo-option-icon { font-size: 22px; }
-.photo-cancel-btn {
-  width: 100%; padding: 14px; background: transparent;
-  border: 1.5px solid var(--border); border-radius: 4px;
-  color: var(--muted); font-family: var(--mono); font-size: 11px;
-  letter-spacing: 0.12em; text-transform: uppercase; cursor: pointer;
-  margin-top: 4px;
-}
-/* ── CITY BUTTONS ── */
-.city-btn {
-  padding: 14px 8px; background: var(--card);
-  border: 2px solid var(--border); border-radius: 4px;
-  color: var(--text); font-family: var(--body); font-size: 15px;
-  font-weight: 600; cursor: pointer; transition: all 0.12s; text-align: center;
-}
+.photo-cancel-btn { width: 100%; padding: 14px; background: transparent; border: 1.5px solid var(--border); border-radius: 4px; color: var(--muted); font-family: var(--mono); font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; cursor: pointer; margin-top: 4px; }
+.city-btn { padding: 14px 8px; background: var(--card); border: 2px solid var(--border); border-radius: 4px; color: var(--text); font-family: var(--body); font-size: 15px; font-weight: 600; cursor: pointer; transition: all 0.12s; text-align: center; }
 .city-btn:active, .city-btn.selected { background: rgba(232,80,10,0.12); border-color: var(--orange); color: var(--orange); }
-
-/* ── DELIVERY SEARCH RESULTS ── */
-.search-result-item {
-  display: flex; align-items: center; gap: 12px;
-  padding: 12px 14px; background: var(--card);
-  border: 1.5px solid var(--border); border-radius: 4px;
-  cursor: pointer; margin-bottom: 6px; transition: border-color 0.12s;
-}
+.search-result-item { display: flex; align-items: center; gap: 12px; padding: 12px 14px; background: var(--card); border: 1.5px solid var(--border); border-radius: 4px; cursor: pointer; margin-bottom: 6px; transition: border-color 0.12s; }
 .search-result-item:active { border-color: var(--orange); }
-.search-result-thumb {
-  width: 44px; height: 44px; border-radius: 3px;
-  object-fit: cover; flex-shrink: 0; background: #111;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 18px; color: var(--muted);
-}
+.search-result-thumb { width: 44px; height: 44px; border-radius: 3px; object-fit: cover; flex-shrink: 0; background: #111; display: flex; align-items: center; justify-content: center; font-size: 18px; color: var(--muted); }
 .search-result-thumb img { width: 100%; height: 100%; object-fit: cover; border-radius: 3px; }
 .search-result-info { flex: 1; }
 .search-result-name { font-weight: 600; font-size: 14px; }
@@ -386,21 +186,8 @@ textarea.form-input { resize: vertical; min-height: 80px; font-size: 15px; line-
 .search-result-stock { font-family: var(--display); font-size: 20px; color: var(--green); flex-shrink: 0; }
 .search-result-stock.low { color: var(--amber); }
 .search-result-stock.out { color: var(--red); }
-
-.new-item-btn {
-  display: flex; align-items: center; gap: 12px;
-  padding: 12px 14px; background: transparent;
-  border: 2px dashed var(--orange); border-radius: 4px;
-  cursor: pointer; margin-bottom: 6px; color: var(--orange);
-  font-family: var(--body); font-size: 14px; font-weight: 600; width: 100%;
-}
-
-/* ── DELIVERY LIST ── */
-.delivery-list-row {
-  display: flex; align-items: center; gap: 10px;
-  padding: 10px 14px; background: var(--card);
-  border: 1px solid var(--border); border-radius: 4px; margin-bottom: 6px;
-}
+.new-item-btn { display: flex; align-items: center; gap: 12px; padding: 12px 14px; background: transparent; border: 2px dashed var(--orange); border-radius: 4px; cursor: pointer; margin-bottom: 6px; color: var(--orange); font-family: var(--body); font-size: 14px; font-weight: 600; width: 100%; }
+.delivery-list-row { display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: var(--card); border: 1px solid var(--border); border-radius: 4px; margin-bottom: 6px; }
 .delivery-list-id   { font-family: var(--display); font-size: 18px; color: var(--orange); width: 50px; flex-shrink: 0; }
 .delivery-list-name { flex: 1; font-size: 13px; font-weight: 600; line-height: 1.3; }
 .delivery-list-cat  { font-size: 11px; color: var(--muted); }
@@ -409,6 +196,17 @@ textarea.form-input { resize: vertical; min-height: 80px; font-size: 15px; line-
 .delivery-list-type.new    { background: rgba(26,106,186,0.15); color: var(--blue); }
 .delivery-list-type.return { background: rgba(26,158,74,0.15);  color: var(--green); }
 .delivery-list-remove { background: transparent; border: none; color: var(--muted); font-size: 16px; cursor: pointer; padding: 2px; flex-shrink: 0; }
+.pending-row { display: flex; align-items: center; gap: 10px; padding: 12px 14px; background: var(--card); border: 1px solid var(--border); border-radius: 4px; margin-bottom: 6px; }
+.pending-row.in-flight { border-color: var(--blue); }
+.pending-row.error { border-color: var(--red); }
+.pending-row-info { flex: 1; min-width: 0; }
+.pending-row-action { font-family: var(--display); font-size: 16px; letter-spacing: 0.04em; }
+.pending-row-detail { font-family: var(--mono); font-size: 10px; color: var(--muted); letter-spacing: 0.06em; margin-top: 2px; word-break: break-all; }
+.pending-row-detail.error { color: var(--red); }
+.pending-row-badge { font-family: var(--mono); font-size: 9px; letter-spacing: 0.1em; padding: 3px 8px; border-radius: 100px; text-transform: uppercase; flex-shrink: 0; }
+.pending-row-badge.queued { background: rgba(212,130,10,0.18); color: var(--amber); }
+.pending-row-badge.sending { background: rgba(26,107,186,0.18); color: var(--blue); }
+.pending-row-badge.error { background: rgba(192,32,32,0.18); color: var(--red); }
 </style>
 </head>
 <body>
@@ -437,12 +235,8 @@ textarea.form-input { resize: vertical; min-height: 80px; font-size: 15px; line-
 <div class="photo-options-sheet" id="photo-options-sheet" onclick="closePhotoOptions(event)">
   <div class="photo-options-inner">
     <div class="photo-options-title">Add Photo</div>
-    <button class="photo-option-btn" onclick="triggerPhotoCamera()">
-      <span class="photo-option-icon">📷</span>Take Photo
-    </button>
-    <button class="photo-option-btn" onclick="triggerPhotoLibrary()">
-      <span class="photo-option-icon">🖼️</span>Choose from Library
-    </button>
+    <button class="photo-option-btn" onclick="triggerPhotoCamera()"><span class="photo-option-icon">📷</span>Take Photo</button>
+    <button class="photo-option-btn" onclick="triggerPhotoLibrary()"><span class="photo-option-icon">🖼️</span>Choose from Library</button>
     <button class="photo-cancel-btn" onclick="closePhotoOptions()">Cancel</button>
   </div>
 </div>
@@ -450,7 +244,7 @@ textarea.form-input { resize: vertical; min-height: 80px; font-size: 15px; line-
 <!-- OFFLINE STATUS BAR -->
 <div id="offline-bar">
   <span id="offline-bar-msg">📡 Offline — submissions queued</span>
-  <button id="offline-bar-sync" onclick="syncOfflineQueue(true)">Sync now</button>
+  <button id="offline-bar-sync" onclick="drainOutbox(true)">Sync now</button>
 </div>
 
 <!-- LOADING -->
@@ -458,18 +252,21 @@ textarea.form-input { resize: vertical; min-height: 80px; font-size: 15px; line-
   <div class="screen-body" style="align-items:center;justify-content:center;gap:20px;">
     <div class="logo">Funkified</div>
     <div class="spinner"></div>
-    <div style="font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:0.14em;text-transform:uppercase;">Reading tag…</div>
+    <div style="font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:0.14em;text-transform:uppercase;">Loading…</div>
   </div>
 </div>
 
 <!-- SESSION SWITCHBOARD -->
 <div class="screen" id="screen-session">
-  <div class="app-header"><div class="logo">Funkified</div></div>
+  <div class="app-header">
+    <div class="logo">Funkified</div>
+    <div class="header-right">
+      <button class="pending-chip" id="pending-chip-session" onclick="showPending()"><span class="pending-chip-dot"></span><span id="pending-chip-count-session">0</span></button>
+    </div>
+  </div>
   <div class="screen-body" style="justify-content:center;gap:16px;">
-
+    <div id="shelf-bind-display-session" style="display:none;"></div>
     <div class="divider">What are you here to do?</div>
-
-    <!-- Who -->
     <div>
       <div style="font-family:var(--mono);font-size:9px;letter-spacing:0.18em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;">Who are you?</div>
       <div class="who-grid" id="session-who-grid">
@@ -478,30 +275,30 @@ textarea.form-input { resize: vertical; min-height: 80px; font-size: 15px; line-
       </div>
       <input class="form-input" type="text" id="session-who-custom" placeholder="Enter name" style="display:none;margin-top:8px;" />
     </div>
-
-    <!-- Mode buttons -->
     <div style="display:flex;flex-direction:column;gap:8px;">
-      <button class="action-btn takeout" onclick="startMode('loadout')">
-        <div class="action-icon">📦</div>
-        <div class="action-text"><div class="action-title">Equipment List</div><div class="action-sub">Build an equipment list for a job</div></div>
-        <div class="action-arrow">›</div>
-      </button>
-      <button class="action-btn" style="border-color:var(--blue);" onclick="startMode('delivery')">
-        <div class="action-icon">➕</div>
-        <div class="action-text"><div class="action-title">New Item</div><div class="action-sub">Register new items into inventory</div></div>
-        <div class="action-arrow">›</div>
-      </button>
-      <button class="action-btn return" onclick="startMode('checkin')">
-        <div class="action-icon">✅</div>
-        <div class="action-text"><div class="action-title">Incoming</div><div class="action-sub">Return items to storage</div></div>
-        <div class="action-arrow">›</div>
-      </button>
-      <button class="action-btn" onclick="startMode('browse')">
-        <div class="action-icon">🔍</div>
-        <div class="action-text"><div class="action-title">Browse Inventory</div><div class="action-sub">Search and view stock levels</div></div>
-        <div class="action-arrow">›</div>
-      </button>
+      <button class="action-btn takeout" onclick="startMode('loadout')"><div class="action-icon">📦</div><div class="action-text"><div class="action-title">Equipment List</div><div class="action-sub">Build an equipment list for a job</div></div><div class="action-arrow">›</div></button>
+      <button class="action-btn" style="border-color:var(--blue);" onclick="startMode('delivery')"><div class="action-icon">➕</div><div class="action-text"><div class="action-title">New Item</div><div class="action-sub">Register new items into inventory</div></div><div class="action-arrow">›</div></button>
+      <button class="action-btn return" onclick="startMode('checkin')"><div class="action-icon">✅</div><div class="action-text"><div class="action-title">Incoming</div><div class="action-sub">Return items to storage</div></div><div class="action-arrow">›</div></button>
+      <button class="action-btn" onclick="startMode('browse')"><div class="action-icon">🔍</div><div class="action-text"><div class="action-title">Browse Inventory</div><div class="action-sub">Search and view stock levels</div></div><div class="action-arrow">›</div></button>
+      <button class="action-btn" onclick="showPending()" style="border-color:var(--amber);"><div class="action-icon">⏳</div><div class="action-text"><div class="action-title">Pending Sync</div><div class="action-sub" id="session-pending-sub">All submissions synced</div></div><div class="action-arrow">›</div></button>
     </div>
+  </div>
+</div>
+
+<!-- PENDING SCREEN -->
+<div class="screen" id="screen-pending">
+  <div class="app-header">
+    <div class="logo">Funkified</div>
+    <div class="header-right"><div style="font-family:var(--mono);font-size:10px;color:var(--muted);" id="pending-header-status">—</div></div>
+  </div>
+  <div class="screen-body">
+    <div style="font-family:var(--display);font-size:32px;letter-spacing:0.04em;">Pending Sync</div>
+    <div style="font-size:13px;color:var(--muted);line-height:1.6;">Submissions waiting to reach the server. They will sync automatically when online; everything is safe in local storage.</div>
+    <div id="pending-list"></div>
+  </div>
+  <div class="action-area">
+    <button class="btn-primary" onclick="drainOutbox(true)">Sync Now</button>
+    <button class="btn-secondary" onclick="showScreen('screen-session')">← Back</button>
   </div>
 </div>
 
@@ -510,15 +307,9 @@ textarea.form-input { resize: vertical; min-height: 80px; font-size: 15px; line-
   <div class="app-header"><div class="logo">Funkified</div></div>
   <div class="screen-body" style="justify-content:center;gap:16px;">
     <div style="font-family:var(--display);font-size:32px;letter-spacing:0.04em;line-height:1.2;">Equipment List<br><span style="color:var(--orange)" id="loadout-loc-label">Sydney</span></div>
-    <div class="form-group">
-      <div class="form-label">Event Name</div>
-      <input class="form-input" type="text" id="session-event" placeholder="e.g. NRMA Hospo Suite — Jun 2025" />
-    </div>
+    <div class="form-group"><div class="form-label">Event Name</div><input class="form-input" type="text" id="session-event" placeholder="e.g. NRMA Hospo Suite — Jun 2025" /></div>
   </div>
-  <div class="action-area">
-    <button class="btn-primary" onclick="startSession()">Start Load Out</button>
-    <button class="btn-secondary" onclick="showScreen('screen-session')">← Back</button>
-  </div>
+  <div class="action-area"><button class="btn-primary" onclick="startSession()">Start Load Out</button><button class="btn-secondary" onclick="showScreen('screen-session')">← Back</button></div>
 </div>
 
 <!-- DELIVERY SETUP -->
@@ -526,44 +317,23 @@ textarea.form-input { resize: vertical; min-height: 80px; font-size: 15px; line-
   <div class="app-header"><div class="logo">Funkified</div></div>
   <div class="screen-body" style="justify-content:center;gap:16px;">
     <div style="font-family:var(--display);font-size:32px;letter-spacing:0.04em;line-height:1.2;">New Item<br><span style="color:var(--orange)" id="delivery-loc-label">Sydney</span></div>
-    <div class="form-group">
-      <div class="form-label">Supplier Name</div>
-      <input class="form-input" type="text" id="delivery-supplier" placeholder="e.g. Staging Direct" autocomplete="off" />
-    </div>
-    <div class="form-group">
-      <div class="form-label">Notes (optional)</div>
-      <textarea class="form-input" id="delivery-notes-header" placeholder="e.g. Invoice #1234, partial delivery, damaged on arrival…" style="min-height:60px;"></textarea>
-    </div>
+    <div class="form-group"><div class="form-label">Supplier Name</div><input class="form-input" type="text" id="delivery-supplier" placeholder="e.g. Staging Direct" autocomplete="off" /></div>
+    <div class="form-group"><div class="form-label">Notes (optional)</div><textarea class="form-input" id="delivery-notes-header" placeholder="e.g. Invoice #1234, partial delivery, damaged on arrival…" style="min-height:60px;"></textarea></div>
   </div>
-  <div class="action-area">
-    <button class="btn-primary" style="background:var(--blue);" onclick="startDelivery()">Start Receiving</button>
-    <button class="btn-secondary" onclick="showScreen('screen-session')">← Back</button>
-  </div>
+  <div class="action-area"><button class="btn-primary" style="background:var(--blue);" onclick="startDelivery()">Start Receiving</button><button class="btn-secondary" onclick="showScreen('screen-session')">← Back</button></div>
 </div>
 
 <!-- DELIVERY ITEM INTAKE -->
 <div class="screen" id="screen-delivery">
   <div class="app-header">
     <div class="logo">Funkified</div>
-    <div class="header-right">
-      <div style="font-family:var(--mono);font-size:10px;color:var(--orange);letter-spacing:0.08em;" id="delivery-count-badge">0 items</div>
-    </div>
+    <div class="header-right"><div style="font-family:var(--mono);font-size:10px;color:var(--orange);letter-spacing:0.08em;" id="delivery-count-badge">0 items</div></div>
   </div>
   <div class="screen-body">
-    <div style="font-family:var(--display);font-size:22px;letter-spacing:0.04em;color:var(--muted);">
-      Receiving from <span style="color:var(--text)" id="delivery-supplier-display">—</span>
-    </div>
-
-    <!-- Search existing -->
-    <div class="form-group">
-      <div class="form-label">Search existing item or type new name</div>
-      <input class="form-input" type="text" id="delivery-search" placeholder="e.g. Crowd Barrier" autocomplete="off" oninput="searchInventory(this.value)" />
-    </div>
-
-    <!-- Search results -->
+    <div id="shelf-bind-display-delivery" style="display:none;"></div>
+    <div style="font-family:var(--display);font-size:22px;letter-spacing:0.04em;color:var(--muted);">Receiving from <span style="color:var(--text)" id="delivery-supplier-display">—</span></div>
+    <div class="form-group"><div class="form-label">Search existing item or type new name</div><input class="form-input" type="text" id="delivery-search" placeholder="e.g. Crowd Barrier" autocomplete="off" oninput="searchInventory(this.value)" /></div>
     <div id="delivery-search-results" style="display:none;"></div>
-
-    <!-- Selected item or new item form -->
     <div id="delivery-item-form" style="display:none;">
       <div class="id-display" id="delivery-item-card" style="margin-bottom:0;"></div>
       <div class="form-section" style="margin-top:12px;">
@@ -574,64 +344,31 @@ textarea.form-input { resize: vertical; min-height: 80px; font-size: 15px; line-
             <button type="button" onclick="promptNewCategory()" style="flex-shrink:0;padding:0 14px;background:var(--card);border:1.5px solid var(--border);border-radius:4px;color:var(--orange);font-family:var(--mono);font-size:11px;letter-spacing:0.1em;text-transform:uppercase;cursor:pointer;white-space:nowrap;">+ New</button>
           </div>
         </div>
-        <div class="form-group">
-          <div class="form-label">Quantity Arriving</div>
-          <div class="qty-control">
-            <button class="qty-btn" onclick="adjustQty('delivery-qty',-1)">−</button>
-            <input class="qty-val" type="number" id="delivery-qty" value="1" min="1" oninput="clampQty(this)" />
-            <button class="qty-btn" onclick="adjustQty('delivery-qty',1)">+</button>
-          </div>
+        <div class="form-group"><div class="form-label">Shelf (optional)</div><input class="form-input" type="text" id="delivery-shelf" placeholder="e.g. A1" maxlength="4" style="text-transform:uppercase;" oninput="this.value=this.value.toUpperCase()" autocomplete="off" /></div>
+        <div class="form-group"><div class="form-label">Quantity Arriving</div>
+          <div class="qty-control"><button class="qty-btn" onclick="adjustQty('delivery-qty',-1)">−</button><input class="qty-val" type="number" id="delivery-qty" value="1" min="1" oninput="clampQty(this)" /><button class="qty-btn" onclick="adjustQty('delivery-qty',1)">+</button></div>
         </div>
-        <div class="form-group">
-          <div class="form-label">Notes (optional)</div>
-          <input class="form-input" type="text" id="delivery-item-notes" placeholder="e.g. Missing tag, damaged corner…" autocomplete="off" />
-        </div>
+        <div class="form-group"><div class="form-label">Notes (optional)</div><input class="form-input" type="text" id="delivery-item-notes" placeholder="e.g. Missing tag, damaged corner…" autocomplete="off" /></div>
         <div class="divider">Photos</div>
-        <div class="photos-area">
-          <div class="photos-grid" id="delivery-photos-grid">
-            <div class="add-photo-btn" onclick="showPhotoOptions('delivery')">
-              <span class="add-photo-icon">📷</span><span>Add</span>
-            </div>
-          </div>
-        </div>
+        <div class="photos-area"><div class="photos-grid" id="delivery-photos-grid"><div class="add-photo-btn" onclick="showPhotoOptions('delivery')"><span class="add-photo-icon">📷</span><span>Add</span></div></div></div>
         <input type="file" id="photo-input-delivery-camera"  accept="image/*" capture="environment" onchange="handlePhotos(this,'delivery')" style="display:none;" />
         <input type="file" id="photo-input-delivery-library" accept="image/*" multiple            onchange="handlePhotos(this,'delivery')" style="display:none;" />
       </div>
-      <div style="display:flex;gap:8px;margin-top:8px;">
-        <button class="btn-primary" id="btn-delivery-add" onclick="addDeliveryItem()" style="flex:1;">+ Add to Delivery</button>
-        <button class="btn-secondary" onclick="clearDeliveryItemForm()" style="width:80px;flex-shrink:0;">Clear</button>
-      </div>
+      <div style="display:flex;gap:8px;margin-top:8px;"><button class="btn-primary" id="btn-delivery-add" onclick="addDeliveryItem()" style="flex:1;">+ Add to Delivery</button><button class="btn-secondary" onclick="clearDeliveryItemForm()" style="width:80px;flex-shrink:0;">Clear</button></div>
     </div>
-
-    <!-- Delivery list so far -->
-    <div id="delivery-list-section" style="display:none;">
-      <div class="divider">Added so far</div>
-      <div id="delivery-list"></div>
-    </div>
+    <div id="delivery-list-section" style="display:none;"><div class="divider">Added so far</div><div id="delivery-list"></div></div>
   </div>
-  <div class="action-area">
-    <button class="btn-primary" style="background:var(--blue);" id="btn-delivery-submit" onclick="submitDelivery()">Submit Delivery</button>
-    <button class="btn-secondary" onclick="showScreen('screen-session')">← Cancel</button>
-  </div>
+  <div class="action-area"><button class="btn-primary" style="background:var(--blue);" id="btn-delivery-submit" onclick="submitDelivery()">Submit Delivery</button><button class="btn-secondary" onclick="showScreen('screen-session')">← Cancel</button></div>
 </div>
 
-<!-- BROWSE / SEARCH INVENTORY -->
+<!-- BROWSE -->
 <div class="screen" id="screen-browse">
-  <div class="app-header">
-    <div class="logo">Funkified</div>
-    <div class="header-right"><div style="font-family:var(--mono);font-size:10px;color:var(--muted);" id="browse-loc-badge">—</div></div>
-  </div>
+  <div class="app-header"><div class="logo">Funkified</div><div class="header-right"><div style="font-family:var(--mono);font-size:10px;color:var(--muted);" id="browse-loc-badge">—</div></div></div>
   <div class="screen-body">
-    <div class="form-group">
-      <input class="form-input" type="text" id="browse-search" placeholder="Search items…" oninput="browseSearch(this.value)" autocomplete="off" />
-    </div>
-    <div id="browse-results">
-      <div style="text-align:center;padding:40px 20px;color:var(--muted);font-family:var(--mono);font-size:10px;letter-spacing:0.12em;text-transform:uppercase;">Type to search inventory</div>
-    </div>
+    <div class="form-group"><input class="form-input" type="text" id="browse-search" placeholder="Search items or shelf (e.g. A1)…" oninput="browseSearch(this.value)" autocomplete="off" /></div>
+    <div id="browse-results"><div style="text-align:center;padding:40px 20px;color:var(--muted);font-family:var(--mono);font-size:10px;letter-spacing:0.12em;text-transform:uppercase;">Type to search inventory</div></div>
   </div>
-  <div class="action-area">
-    <button class="btn-secondary" onclick="showScreen('screen-session')">← Back</button>
-  </div>
+  <div class="action-area"><button class="btn-secondary" onclick="showScreen('screen-session')">← Back</button></div>
 </div>
 
 <!-- MANUAL ID -->
@@ -639,439 +376,199 @@ textarea.form-input { resize: vertical; min-height: 80px; font-size: 15px; line-
   <div class="app-header">
     <div class="logo">Funkified</div>
     <div class="header-right">
-      <button class="load-fab" id="fab-manual" onclick="openLoadSheet()">
-        <span class="load-fab-icon">📦</span><span>List</span>
-        <span class="load-fab-count" id="fab-count-manual">0</span>
-      </button>
+      <button class="pending-chip" id="pending-chip-manual" onclick="showPending()"><span class="pending-chip-dot"></span><span id="pending-chip-count-manual">0</span></button>
+      <button class="load-fab" id="fab-manual" onclick="openLoadSheet()"><span class="load-fab-icon">📦</span><span>List</span><span class="load-fab-count" id="fab-count-manual">0</span></button>
     </div>
   </div>
   <div class="screen-body" style="justify-content:center;gap:16px;">
+    <div id="shelf-bind-display-manual" style="display:none;"></div>
     <div style="font-family:var(--mono);font-size:9px;letter-spacing:0.2em;text-transform:uppercase;color:var(--muted);">Enter Item ID</div>
     <input class="form-input large" type="text" id="manual-id" placeholder="A1" maxlength="10" />
-    <div style="font-size:12px;color:var(--muted);text-align:center;line-height:1.7;">
-      e.g. A1, B12, VM001<br>
-      <span style="color:#444;">or tap your NFC tag to scan automatically</span>
-    </div>
+    <div style="font-size:12px;color:var(--muted);text-align:center;line-height:1.7;">e.g. A1, B12, VM001<br><span style="color:#444;">or tap your NFC tag to scan automatically</span></div>
   </div>
-  <div class="action-area">
-    <button class="btn-primary" onclick="submitManualId()">Look Up</button>
-    <button class="btn-secondary" onclick="showNoTagScreen()">Register item without NFC tag</button>
-  </div>
+  <div class="action-area"><button class="btn-primary" onclick="submitManualId()">Look Up</button><button class="btn-secondary" onclick="showNoTagScreen()">Register item without NFC tag</button></div>
 </div>
 
 <!-- NO-TAG REGISTRATION -->
 <div class="screen" id="screen-notag">
-  <div class="app-header">
-    <div class="logo">Funkified</div>
-    <div class="header-right">
-      <button class="load-fab" id="fab-notag" onclick="openLoadSheet()">
-        <span class="load-fab-icon">📦</span><span>List</span>
-        <span class="load-fab-count" id="fab-count-notag">0</span>
-      </button>
-    </div>
-  </div>
+  <div class="app-header"><div class="logo">Funkified</div><div class="header-right"><button class="load-fab" id="fab-notag" onclick="openLoadSheet()"><span class="load-fab-icon">📦</span><span>List</span><span class="load-fab-count" id="fab-count-notag">0</span></button></div></div>
   <div class="screen-body">
+    <div id="shelf-bind-display-notag" style="display:none;"></div>
     <div class="status-pill pill-new"><div class="status-dot"></div>No Tag</div>
-    <div class="id-display" style="border-left-color:var(--muted);">
-      <div class="id-label">Untagged Item</div>
-      <div class="id-value" style="font-size:28px;letter-spacing:0.02em;" id="notag-id-preview">—</div>
-    </div>
-    <div style="font-size:13px;color:var(--muted);line-height:1.6;">
-      Use this for items like beanbags, bollards, or bulk goods that aren't individually tagged. Set the quantity to cover the full count.
-    </div>
+    <div class="id-display" style="border-left-color:var(--muted);"><div class="id-label">Untagged Item</div><div class="id-value" style="font-size:28px;letter-spacing:0.02em;" id="notag-id-preview">—</div></div>
+    <div style="font-size:13px;color:var(--muted);line-height:1.6;">Use this for items like beanbags, bollards, or bulk goods that aren't individually tagged. Set the quantity to cover the full count.</div>
     <div class="divider">Item Details</div>
     <div class="form-section">
-      <div class="form-group">
-        <div class="form-label">Item Name</div>
-        <input class="form-input" type="text" id="notag-name" placeholder="e.g. Beanbag" autocomplete="off" oninput="updateNoTagPreview()" />
-      </div>
-      <div class="form-group">
-        <div class="form-label">Category / Group</div>
-        <div style="display:flex;gap:8px;">
-          <select class="form-input" id="notag-cat" onchange="handleNoTagCatSelect(this)" style="flex:1;">
-            <option value="">— Select or add new —</option>
-          </select>
-          <button type="button" onclick="promptNewCategory()" style="flex-shrink:0;padding:0 14px;background:var(--card);border:1.5px solid var(--border);border-radius:4px;color:var(--orange);font-family:var(--mono);font-size:11px;letter-spacing:0.1em;text-transform:uppercase;cursor:pointer;white-space:nowrap;">+ New</button>
-        </div>
+      <div class="form-group"><div class="form-label">Item Name</div><input class="form-input" type="text" id="notag-name" placeholder="e.g. Beanbag" autocomplete="off" oninput="updateNoTagPreview()" /></div>
+      <div class="form-group"><div class="form-label">Category / Group</div>
+        <div style="display:flex;gap:8px;"><select class="form-input" id="notag-cat" onchange="handleNoTagCatSelect(this)" style="flex:1;"><option value="">— Select or add new —</option></select><button type="button" onclick="promptNewCategory()" style="flex-shrink:0;padding:0 14px;background:var(--card);border:1.5px solid var(--border);border-radius:4px;color:var(--orange);font-family:var(--mono);font-size:11px;letter-spacing:0.1em;text-transform:uppercase;cursor:pointer;white-space:nowrap;">+ New</button></div>
         <div id="notag-cat-display" style="font-family:var(--mono);font-size:11px;color:var(--orange);letter-spacing:0.1em;margin-top:4px;display:none;"></div>
       </div>
-      <div class="form-group">
-        <div class="form-label">Total Quantity</div>
-        <div class="qty-control">
-          <button class="qty-btn" onclick="adjustQty('notag-qty',-1)">−</button>
-          <input class="qty-val" type="number" id="notag-qty" value="1" min="1" oninput="clampQty(this)" />
-          <button class="qty-btn" onclick="adjustQty('notag-qty',1)">+</button>
-        </div>
+      <div class="form-group"><div class="form-label">Shelf (optional)</div><input class="form-input" type="text" id="notag-shelf" placeholder="e.g. A1" maxlength="4" style="text-transform:uppercase;" oninput="this.value=this.value.toUpperCase()" autocomplete="off" /></div>
+      <div class="form-group"><div class="form-label">Total Quantity</div>
+        <div class="qty-control"><button class="qty-btn" onclick="adjustQty('notag-qty',-1)">−</button><input class="qty-val" type="number" id="notag-qty" value="1" min="1" oninput="clampQty(this)" /><button class="qty-btn" onclick="adjustQty('notag-qty',1)">+</button></div>
       </div>
-      <div class="form-group">
-        <div class="form-label">Notes</div>
-        <textarea class="form-input" id="notag-notes" placeholder="e.g. Stored in blue bags at rear of unit"></textarea>
-      </div>
+      <div class="form-group"><div class="form-label">Notes</div><textarea class="form-input" id="notag-notes" placeholder="e.g. Stored in blue bags at rear of unit"></textarea></div>
     </div>
     <div class="divider">Photos</div>
-    <div class="photos-area">
-      <div class="photos-grid" id="notag-photos-grid">
-        <div class="add-photo-btn" onclick="showPhotoOptions('notag')">
-          <span class="add-photo-icon">📷</span><span>Add</span>
-        </div>
-      </div>
-    </div>
+    <div class="photos-area"><div class="photos-grid" id="notag-photos-grid"><div class="add-photo-btn" onclick="showPhotoOptions('notag')"><span class="add-photo-icon">📷</span><span>Add</span></div></div></div>
     <input type="file" id="photo-input-notag-camera"  accept="image/*" capture="environment" onchange="handlePhotos(this,'notag')" style="display:none;" />
     <input type="file" id="photo-input-notag-library" accept="image/*" multiple            onchange="handlePhotos(this,'notag')" style="display:none;" />
     <div class="divider">Location</div>
-    <div class="loc-strip">
-      <div class="loc-icon">📍</div>
-      <div><div class="loc-label">Detected Location</div><div class="loc-val loading" id="loc-notag">Getting GPS…</div></div>
-    </div>
+    <div class="loc-strip"><div class="loc-icon">📍</div><div><div class="loc-label">Detected Location</div><div class="loc-val loading" id="loc-notag">Getting GPS…</div></div></div>
     <div class="divider">Who's registering</div>
     <div class="who-grid" id="who-grid-notag"></div>
     <input class="form-input" type="text" id="custom-who-notag" placeholder="Enter name" style="display:none;margin-top:4px;" />
   </div>
-  <div class="action-area">
-    <button class="btn-primary" id="btn-notag" onclick="submitNoTag()">Register Item</button>
-    <button class="btn-secondary" onclick="showScreen('screen-manual')">← Back</button>
-  </div>
+  <div class="action-area"><button class="btn-primary" id="btn-notag" onclick="submitNoTag()">Register Item</button><button class="btn-secondary" onclick="showScreen('screen-manual')">← Back</button></div>
 </div>
 
 <!-- NEW ITEM -->
 <div class="screen" id="screen-new">
-  <div class="app-header">
-    <div class="logo">Funkified</div>
-    <div class="header-right">
-      <div class="header-id" id="new-header-id"></div>
-      <button class="load-fab" id="fab-new" onclick="openLoadSheet()">
-        <span class="load-fab-icon">📦</span><span>List</span>
-        <span class="load-fab-count" id="fab-count-new">0</span>
-      </button>
-    </div>
-  </div>
+  <div class="app-header"><div class="logo">Funkified</div><div class="header-right"><div class="header-id" id="new-header-id"></div><button class="load-fab" id="fab-new" onclick="openLoadSheet()"><span class="load-fab-icon">📦</span><span>List</span><span class="load-fab-count" id="fab-count-new">0</span></button></div></div>
   <div class="screen-body">
+    <div id="shelf-bind-display-new" style="display:none;"></div>
     <div class="status-pill pill-new"><div class="status-dot"></div>New Item</div>
-
-    <!-- Static ID display (used when ID comes from NFC tag URL) -->
-    <div class="id-display" id="new-id-display">
-      <div class="id-label">Item ID</div>
-      <div class="id-value" id="new-id-val"></div>
-    </div>
-
-    <!-- Editable ID input (used when coming from ?id=NEW — type the code written on the tag) -->
-    <div id="new-id-input-wrap" style="display:none;">
-      <div class="form-group">
-        <div class="form-label">Item ID — type the code written on the tag</div>
-        <input class="form-input large" type="text" id="new-id-input" placeholder="e.g. A1, B12" maxlength="10" autocomplete="off" autocapitalize="characters" style="text-transform:uppercase;" oninput="this.value=this.value.toUpperCase()" />
-      </div>
-    </div>
-
+    <div class="id-display" id="new-id-display"><div class="id-label">Item ID</div><div class="id-value" id="new-id-val"></div></div>
+    <div id="new-id-input-wrap" style="display:none;"><div class="form-group"><div class="form-label">Item ID — type the code written on the tag</div><input class="form-input large" type="text" id="new-id-input" placeholder="e.g. A1, B12" maxlength="10" autocomplete="off" autocapitalize="characters" style="text-transform:uppercase;" oninput="this.value=this.value.toUpperCase()" /></div></div>
     <div class="divider">Item Details</div>
     <div class="form-section">
-      <div class="form-group">
-        <div class="form-label">Item Name</div>
-        <input class="form-input" type="text" id="new-name" placeholder="e.g. NRMA teardrop flag" autocomplete="off" />
-      </div>
-      <div class="form-group">
-        <div class="form-label">Category / Group</div>
-        <div style="display:flex;gap:8px;">
-          <select class="form-input" id="new-cat" onchange="handleCatSelect(this)" style="flex:1;">
-            <option value="">— Select or add new —</option>
-          </select>
-          <button type="button" onclick="promptNewCategory()" style="flex-shrink:0;padding:0 14px;background:var(--card);border:1.5px solid var(--border);border-radius:4px;color:var(--orange);font-family:var(--mono);font-size:11px;letter-spacing:0.1em;text-transform:uppercase;cursor:pointer;white-space:nowrap;">+ New</button>
-        </div>
+      <div class="form-group"><div class="form-label">Item Name</div><input class="form-input" type="text" id="new-name" placeholder="e.g. NRMA teardrop flag" autocomplete="off" /></div>
+      <div class="form-group"><div class="form-label">Category / Group</div>
+        <div style="display:flex;gap:8px;"><select class="form-input" id="new-cat" onchange="handleCatSelect(this)" style="flex:1;"><option value="">— Select or add new —</option></select><button type="button" onclick="promptNewCategory()" style="flex-shrink:0;padding:0 14px;background:var(--card);border:1.5px solid var(--border);border-radius:4px;color:var(--orange);font-family:var(--mono);font-size:11px;letter-spacing:0.1em;text-transform:uppercase;cursor:pointer;white-space:nowrap;">+ New</button></div>
         <div id="new-cat-display" style="font-family:var(--mono);font-size:11px;color:var(--orange);letter-spacing:0.1em;margin-top:4px;display:none;"></div>
       </div>
-      <div class="form-group">
-        <div class="form-label">Total Quantity Owned</div>
-        <div class="qty-control">
-          <button class="qty-btn" onclick="adjustQty('new-owned-qty',-1)">−</button>
-          <input class="qty-val" type="number" id="new-owned-qty" value="1" min="1" oninput="clampQty(this)" />
-          <button class="qty-btn" onclick="adjustQty('new-owned-qty',1)">+</button>
-        </div>
+      <div class="form-group"><div class="form-label">Shelf (optional)</div><input class="form-input" type="text" id="new-shelf" placeholder="e.g. A1" maxlength="4" style="text-transform:uppercase;" oninput="this.value=this.value.toUpperCase()" autocomplete="off" /></div>
+      <div class="form-group"><div class="form-label">Total Quantity Owned</div>
+        <div class="qty-control"><button class="qty-btn" onclick="adjustQty('new-owned-qty',-1)">−</button><input class="qty-val" type="number" id="new-owned-qty" value="1" min="1" oninput="clampQty(this)" /><button class="qty-btn" onclick="adjustQty('new-owned-qty',1)">+</button></div>
       </div>
-      <div class="form-group">
-        <div class="form-label">Notes</div>
-        <textarea class="form-input" id="new-notes" placeholder="Any details worth noting…"></textarea>
-      </div>
+      <div class="form-group"><div class="form-label">Notes</div><textarea class="form-input" id="new-notes" placeholder="Any details worth noting…"></textarea></div>
     </div>
     <div class="divider">Photos</div>
-    <div class="photos-area">
-      <div class="photos-grid" id="new-photos-grid">
-        <div class="add-photo-btn" onclick="showPhotoOptions('new')">
-          <span class="add-photo-icon">📷</span><span>Add</span>
-        </div>
-      </div>
-    </div>
+    <div class="photos-area"><div class="photos-grid" id="new-photos-grid"><div class="add-photo-btn" onclick="showPhotoOptions('new')"><span class="add-photo-icon">📷</span><span>Add</span></div></div></div>
     <input type="file" id="photo-input-new-camera"  accept="image/*" capture="environment" onchange="handlePhotos(this,'new')" style="display:none;" />
     <input type="file" id="photo-input-new-library" accept="image/*" multiple            onchange="handlePhotos(this,'new')" style="display:none;" />
     <div class="divider">Location</div>
-    <div class="loc-strip">
-      <div class="loc-icon">📍</div>
-      <div>
-        <div class="loc-label">Detected Location</div>
-        <div class="loc-val loading" id="loc-new">Getting GPS…</div>
-      </div>
-    </div>
+    <div class="loc-strip"><div class="loc-icon">📍</div><div><div class="loc-label">Detected Location</div><div class="loc-val loading" id="loc-new">Getting GPS…</div></div></div>
     <div class="divider">Who's registering</div>
     <div class="who-grid" id="who-grid-new"></div>
     <input class="form-input" type="text" id="custom-who-new" placeholder="Enter name" style="display:none;margin-top:4px;" />
   </div>
-  <div class="action-area">
-    <button class="btn-primary" id="btn-register" onclick="submitNew()">Register Item</button>
-    <button class="btn-secondary" id="btn-register-back" onclick="showScreen('screen-manual')">← Back</button>
-  </div>
+  <div class="action-area"><button class="btn-primary" id="btn-register" onclick="submitNew()">Register Item</button><button class="btn-secondary" id="btn-register-back" onclick="showScreen('screen-manual')">← Back</button></div>
 </div>
 
 <!-- EXISTING ITEM -->
 <div class="screen" id="screen-existing">
-  <div class="app-header">
-    <div class="logo">Funkified</div>
-    <div class="header-right">
-      <div class="header-id" id="exist-header-id"></div>
-      <button class="load-fab" id="fab-exist" onclick="openLoadSheet()">
-        <span class="load-fab-icon">📦</span><span>List</span>
-        <span class="load-fab-count" id="fab-count-exist">0</span>
-      </button>
-    </div>
-  </div>
+  <div class="app-header"><div class="logo">Funkified</div><div class="header-right"><div class="header-id" id="exist-header-id"></div><button class="load-fab" id="fab-exist" onclick="openLoadSheet()"><span class="load-fab-icon">📦</span><span>List</span><span class="load-fab-count" id="fab-count-exist">0</span></button></div></div>
   <div class="screen-body">
     <div class="status-pill" id="exist-status-pill"><div class="status-dot"></div><span id="exist-status-text"></span></div>
     <div id="exist-damage-banner" style="display:none;"></div>
-    <div class="id-display">
-      <div class="id-label">Item ID</div>
-      <div class="id-value" id="exist-id-val"></div>
-      <div class="id-sub" id="exist-name-sub"></div>
-    </div>
-    <div class="item-card">
-      <div id="exist-photos-area"></div>
-      <div class="item-meta" id="exist-meta"></div>
-    </div>
+    <div class="id-display"><div class="id-label">Item ID</div><div class="id-value" id="exist-id-val"></div><div class="id-sub" id="exist-name-sub"></div></div>
+    <div class="item-card"><div id="exist-photos-area"></div><div class="item-meta" id="exist-meta"></div></div>
     <div class="divider">Actions</div>
     <div class="action-menu">
-      <button class="action-btn takeout" onclick="showTakeOut()">
-        <div class="action-icon">📦</div>
-        <div class="action-text"><div class="action-title">Take Items Out</div><div class="action-sub">Add to active load list</div></div>
-        <div class="action-arrow">›</div>
-      </button>
-      <button class="action-btn return" onclick="showReturn()">
-        <div class="action-icon">📥</div>
-        <div class="action-text"><div class="action-title">Return Items</div><div class="action-sub">Log back into storage</div></div>
-        <div class="action-arrow">›</div>
-      </button>
-      <button class="action-btn damage" onclick="showDamage()">
-        <div class="action-icon">⚠️</div>
-        <div class="action-text"><div class="action-title">Log Damage</div><div class="action-sub">Photo + description + severity</div></div>
-        <div class="action-arrow">›</div>
-      </button>
-      <button class="action-btn photo" onclick="showUpdatePhoto()">
-        <div class="action-icon">📷</div>
-        <div class="action-text"><div class="action-title">Update Photo</div><div class="action-sub">Replace or add item photos</div></div>
-        <div class="action-arrow">›</div>
-      </button>
-      <button class="action-btn edit" onclick="showEdit()">
-        <div class="action-icon">✏️</div>
-        <div class="action-text"><div class="action-title">Edit Details</div><div class="action-sub">Name, category, notes</div></div>
-        <div class="action-arrow">›</div>
-      </button>
+      <button class="action-btn takeout" onclick="showTakeOut()"><div class="action-icon">📦</div><div class="action-text"><div class="action-title">Take Items Out</div><div class="action-sub">Add to active load list</div></div><div class="action-arrow">›</div></button>
+      <button class="action-btn return" onclick="showReturn()"><div class="action-icon">📥</div><div class="action-text"><div class="action-title">Return Items</div><div class="action-sub">Log back into storage</div></div><div class="action-arrow">›</div></button>
+      <button class="action-btn damage" onclick="showDamage()"><div class="action-icon">⚠️</div><div class="action-text"><div class="action-title">Log Damage</div><div class="action-sub">Photo + description + severity</div></div><div class="action-arrow">›</div></button>
+      <button class="action-btn photo" onclick="showUpdatePhoto()"><div class="action-icon">📷</div><div class="action-text"><div class="action-title">Update Photo</div><div class="action-sub">Replace or add item photos</div></div><div class="action-arrow">›</div></button>
+      <button class="action-btn edit" onclick="showEdit()"><div class="action-icon">✏️</div><div class="action-text"><div class="action-title">Edit Details</div><div class="action-sub">Name, category, notes, shelf</div></div><div class="action-arrow">›</div></button>
     </div>
   </div>
-  <div class="action-area">
-    <button class="btn-secondary" onclick="showScreen('screen-manual')">← Scan Another</button>
-  </div>
+  <div class="action-area"><button class="btn-secondary" onclick="showScreen('screen-manual')">← Scan Another</button></div>
 </div>
 
 <!-- TAKE OUT -->
 <div class="screen" id="screen-takeout">
-  <div class="app-header">
-    <div class="logo">Funkified</div>
-    <div class="header-right"><div class="header-id" id="takeout-header-id"></div></div>
-  </div>
+  <div class="app-header"><div class="logo">Funkified</div><div class="header-right"><div class="header-id" id="takeout-header-id"></div></div></div>
   <div class="screen-body">
-    <div class="id-display">
-      <div class="id-label">Taking Out</div>
-      <div class="id-value" id="takeout-id-val"></div>
-      <div class="id-sub" id="takeout-name-sub"></div>
-    </div>
-    <div class="form-group">
-      <div class="form-label">How many are you taking?</div>
-      <div class="qty-control">
-        <button class="qty-btn" onclick="adjustQty('takeout-qty',-1)">−</button>
-        <input class="qty-val" type="number" id="takeout-qty" value="1" min="1" oninput="clampQty(this)" />
-        <button class="qty-btn" onclick="adjustQty('takeout-qty',1)">+</button>
-      </div>
+    <div class="id-display"><div class="id-label">Taking Out</div><div class="id-value" id="takeout-id-val"></div><div class="id-sub" id="takeout-name-sub"></div></div>
+    <div class="form-group"><div class="form-label">How many are you taking?</div>
+      <div class="qty-control"><button class="qty-btn" onclick="adjustQty('takeout-qty',-1)">−</button><input class="qty-val" type="number" id="takeout-qty" value="1" min="1" oninput="clampQty(this)" /><button class="qty-btn" onclick="adjustQty('takeout-qty',1)">+</button></div>
     </div>
     <div class="divider">Who's taking</div>
     <div class="who-grid" id="who-grid-takeout"></div>
     <input class="form-input" type="text" id="custom-who-takeout" placeholder="Enter name" style="display:none;margin-top:4px;" />
-    <div class="loc-strip">
-      <div class="loc-icon">📍</div>
-      <div><div class="loc-label">GPS</div><div class="loc-val loading" id="loc-takeout">Getting GPS…</div></div>
-    </div>
+    <div class="loc-strip"><div class="loc-icon">📍</div><div><div class="loc-label">GPS</div><div class="loc-val loading" id="loc-takeout">Getting GPS…</div></div></div>
   </div>
-  <div class="action-area">
-    <button class="btn-primary" id="btn-takeout" onclick="submitTakeOut()">Add to Load List</button>
-    <button class="btn-secondary" onclick="showScreen('screen-existing')">← Back</button>
-  </div>
+  <div class="action-area"><button class="btn-primary" id="btn-takeout" onclick="submitTakeOut()">Add to Load List</button><button class="btn-secondary" onclick="showScreen('screen-existing')">← Back</button></div>
 </div>
 
 <!-- RETURN -->
 <div class="screen" id="screen-return">
-  <div class="app-header">
-    <div class="logo">Funkified</div>
-    <div class="header-right"><div class="header-id" id="return-header-id"></div></div>
-  </div>
+  <div class="app-header"><div class="logo">Funkified</div><div class="header-right"><div class="header-id" id="return-header-id"></div></div></div>
   <div class="screen-body">
-    <div class="id-display">
-      <div class="id-label">Returning</div>
-      <div class="id-value" id="return-id-val"></div>
-      <div class="id-sub" id="return-name-sub"></div>
+    <div id="shelf-bind-display-return" style="display:none;"></div>
+    <div class="id-display"><div class="id-label">Returning</div><div class="id-value" id="return-id-val"></div><div class="id-sub" id="return-name-sub"></div></div>
+    <div class="form-group"><div class="form-label">How many are you returning?</div>
+      <div class="qty-control"><button class="qty-btn" onclick="adjustQty('return-qty',-1)">−</button><input class="qty-val" type="number" id="return-qty" value="1" min="1" oninput="clampQty(this)" /><button class="qty-btn" onclick="adjustQty('return-qty',1)">+</button></div>
     </div>
-    <div class="form-group">
-      <div class="form-label">How many are you returning?</div>
-      <div class="qty-control">
-        <button class="qty-btn" onclick="adjustQty('return-qty',-1)">−</button>
-        <input class="qty-val" type="number" id="return-qty" value="1" min="1" oninput="clampQty(this)" />
-        <button class="qty-btn" onclick="adjustQty('return-qty',1)">+</button>
-      </div>
+    <div class="form-group"><div class="form-label">Returning to shelf (optional)</div><input class="form-input" type="text" id="return-shelf" placeholder="e.g. A1" maxlength="4" style="text-transform:uppercase;" oninput="this.value=this.value.toUpperCase()" autocomplete="off" /></div>
+    <div class="form-group"><div class="form-label">Any damage to report?</div>
+      <div style="display:flex;gap:10px;"><button class="who-btn" id="damage-no-btn"  onclick="setDamageOnReturn(false)" style="flex:1;">No — all good</button><button class="who-btn" id="damage-yes-btn" onclick="setDamageOnReturn(true)"  style="flex:1;">Yes — log damage</button></div>
     </div>
-    <div class="form-group">
-      <div class="form-label">Any damage to report?</div>
-      <div style="display:flex;gap:10px;">
-        <button class="who-btn" id="damage-no-btn"  onclick="setDamageOnReturn(false)" style="flex:1;">No — all good</button>
-        <button class="who-btn" id="damage-yes-btn" onclick="setDamageOnReturn(true)"  style="flex:1;">Yes — log damage</button>
-      </div>
-    </div>
-    <div class="form-group">
-      <div class="form-label">Notes (optional)</div>
-      <input class="form-input" type="text" id="return-notes" placeholder="Any notes on condition…" autocomplete="off" />
-    </div>
+    <div class="form-group"><div class="form-label">Notes (optional)</div><input class="form-input" type="text" id="return-notes" placeholder="Any notes on condition…" autocomplete="off" /></div>
     <div class="divider">Who's returning</div>
     <div class="who-grid" id="who-grid-return"></div>
     <input class="form-input" type="text" id="custom-who-return" placeholder="Enter name" style="display:none;margin-top:4px;" />
-    <div class="loc-strip">
-      <div class="loc-icon">📍</div>
-      <div><div class="loc-label">GPS</div><div class="loc-val loading" id="loc-return">Getting GPS…</div></div>
-    </div>
+    <div class="loc-strip"><div class="loc-icon">📍</div><div><div class="loc-label">GPS</div><div class="loc-val loading" id="loc-return">Getting GPS…</div></div></div>
   </div>
-  <div class="action-area">
-    <button class="btn-primary green" id="btn-return" onclick="submitReturn()">Confirm Return</button>
-    <button class="btn-secondary" onclick="showScreen('screen-existing')">← Back</button>
-  </div>
+  <div class="action-area"><button class="btn-primary green" id="btn-return" onclick="submitReturn()">Confirm Return</button><button class="btn-secondary" onclick="showScreen('screen-existing')">← Back</button></div>
 </div>
 
 <!-- DAMAGE -->
 <div class="screen" id="screen-damage">
-  <div class="app-header">
-    <div class="logo">Funkified</div>
-    <div class="header-right"><div class="header-id" id="damage-header-id"></div></div>
-  </div>
+  <div class="app-header"><div class="logo">Funkified</div><div class="header-right"><div class="header-id" id="damage-header-id"></div></div></div>
   <div class="screen-body">
     <div class="status-pill pill-damage"><div class="status-dot"></div>Logging Damage</div>
-    <div class="id-display" style="border-left-color:var(--amber);">
-      <div class="id-label">Item</div>
-      <div class="id-value" id="damage-id-val"></div>
-      <div class="id-sub" id="damage-name-sub"></div>
-    </div>
+    <div class="id-display" style="border-left-color:var(--amber);"><div class="id-label">Item</div><div class="id-value" id="damage-id-val"></div><div class="id-sub" id="damage-name-sub"></div></div>
     <div class="divider">Damage Photos</div>
-    <div class="photos-area">
-      <div class="photos-grid" id="damage-photos-grid">
-        <div class="add-photo-btn" onclick="showPhotoOptions('damage')">
-          <span class="add-photo-icon">📷</span><span>Add</span>
-        </div>
-      </div>
-    </div>
+    <div class="photos-area"><div class="photos-grid" id="damage-photos-grid"><div class="add-photo-btn" onclick="showPhotoOptions('damage')"><span class="add-photo-icon">📷</span><span>Add</span></div></div></div>
     <input type="file" id="photo-input-damage-camera"  accept="image/*" capture="environment" onchange="handlePhotos(this,'damage')" style="display:none;" />
     <input type="file" id="photo-input-damage-library" accept="image/*" multiple            onchange="handlePhotos(this,'damage')" style="display:none;" />
     <div class="divider">Details</div>
     <div class="form-section">
-      <div class="form-group">
-        <div class="form-label">Description</div>
-        <textarea class="form-input" id="damage-desc" placeholder="Describe the damage — e.g. Bent corner post, cracked base, torn fabric panel…"></textarea>
-      </div>
-      <div class="form-group">
-        <div class="form-label">Severity</div>
-        <div class="severity-grid">
-          <button class="severity-btn" id="sev-minor"  onclick="setSeverity('minor')">🔵 Minor<br><span style="font-size:8px;">Usable as-is</span></button>
-          <button class="severity-btn" id="sev-repair" onclick="setSeverity('repair')">🟡 Needs<br>Repair</button>
-          <button class="severity-btn" id="sev-out"    onclick="setSeverity('out')">🔴 Out of<br>Service</button>
-        </div>
+      <div class="form-group"><div class="form-label">Description</div><textarea class="form-input" id="damage-desc" placeholder="Describe the damage…"></textarea></div>
+      <div class="form-group"><div class="form-label">Severity</div>
+        <div class="severity-grid"><button class="severity-btn" id="sev-minor"  onclick="setSeverity('minor')">🔵 Minor<br><span style="font-size:8px;">Usable as-is</span></button><button class="severity-btn" id="sev-repair" onclick="setSeverity('repair')">🟡 Needs<br>Repair</button><button class="severity-btn" id="sev-out"    onclick="setSeverity('out')">🔴 Out of<br>Service</button></div>
       </div>
     </div>
     <div class="divider">Who's reporting</div>
     <div class="who-grid" id="who-grid-damage"></div>
     <input class="form-input" type="text" id="custom-who-damage" placeholder="Enter name" style="display:none;margin-top:4px;" />
   </div>
-  <div class="action-area">
-    <button class="btn-primary amber" id="btn-damage" onclick="submitDamage()">Submit Damage Report</button>
-    <button class="btn-secondary" onclick="showScreen('screen-existing')">← Back</button>
-  </div>
+  <div class="action-area"><button class="btn-primary amber" id="btn-damage" onclick="submitDamage()">Submit Damage Report</button><button class="btn-secondary" onclick="showScreen('screen-existing')">← Back</button></div>
 </div>
 
 <!-- UPDATE PHOTO -->
 <div class="screen" id="screen-photo">
-  <div class="app-header">
-    <div class="logo">Funkified</div>
-    <div class="header-right"><div class="header-id" id="photo-header-id"></div></div>
-  </div>
+  <div class="app-header"><div class="logo">Funkified</div><div class="header-right"><div class="header-id" id="photo-header-id"></div></div></div>
   <div class="screen-body">
-    <div class="id-display">
-      <div class="id-label">Update Photos</div>
-      <div class="id-value" id="photo-id-val"></div>
-      <div class="id-sub" id="photo-name-sub"></div>
-    </div>
+    <div class="id-display"><div class="id-label">Update Photos</div><div class="id-value" id="photo-id-val"></div><div class="id-sub" id="photo-name-sub"></div></div>
     <div class="divider">New Photos</div>
-    <div class="photos-area">
-      <div class="photos-grid" id="updatephoto-photos-grid">
-        <div class="add-photo-btn" onclick="showPhotoOptions('updatephoto')">
-          <span class="add-photo-icon">📷</span><span>Add</span>
-        </div>
-      </div>
-    </div>
+    <div class="photos-area"><div class="photos-grid" id="updatephoto-photos-grid"><div class="add-photo-btn" onclick="showPhotoOptions('updatephoto')"><span class="add-photo-icon">📷</span><span>Add</span></div></div></div>
     <input type="file" id="photo-input-updatephoto-camera"  accept="image/*" capture="environment" onchange="handlePhotos(this,'updatephoto')" style="display:none;" />
     <input type="file" id="photo-input-updatephoto-library" accept="image/*" multiple            onchange="handlePhotos(this,'updatephoto')" style="display:none;" />
     <div style="font-size:12px;color:var(--muted);line-height:1.6;">Photos added here will be appended to the item's record.</div>
   </div>
-  <div class="action-area">
-    <button class="btn-primary" id="btn-updatephoto" onclick="submitUpdatePhoto()">Save Photos</button>
-    <button class="btn-secondary" onclick="showScreen('screen-existing')">← Back</button>
-  </div>
+  <div class="action-area"><button class="btn-primary" id="btn-updatephoto" onclick="submitUpdatePhoto()">Save Photos</button><button class="btn-secondary" onclick="showScreen('screen-existing')">← Back</button></div>
 </div>
 
 <!-- EDIT -->
 <div class="screen" id="screen-edit">
-  <div class="app-header">
-    <div class="logo">Funkified</div>
-    <div class="header-right"><div class="header-id" id="edit-header-id"></div></div>
-  </div>
+  <div class="app-header"><div class="logo">Funkified</div><div class="header-right"><div class="header-id" id="edit-header-id"></div></div></div>
   <div class="screen-body">
-    <div class="id-display">
-      <div class="id-label">Editing</div>
-      <div class="id-value" id="edit-id-val"></div>
-    </div>
+    <div class="id-display"><div class="id-label">Editing</div><div class="id-value" id="edit-id-val"></div></div>
     <div class="form-section">
-      <div class="form-group">
-        <div class="form-label">Item Name</div>
-        <input class="form-input" type="text" id="edit-name" autocomplete="off" />
+      <div class="form-group"><div class="form-label">Item Name</div><input class="form-input" type="text" id="edit-name" autocomplete="off" /></div>
+      <div class="form-group"><div class="form-label">Category</div><select class="form-input" id="edit-cat"></select></div>
+      <div class="form-group"><div class="form-label">Shelf</div><input class="form-input" type="text" id="edit-shelf" placeholder="e.g. A1" maxlength="4" style="text-transform:uppercase;" oninput="this.value=this.value.toUpperCase()" autocomplete="off" /></div>
+      <div class="form-group"><div class="form-label">Total Quantity Owned</div>
+        <div class="qty-control"><button class="qty-btn" onclick="adjustQty('edit-owned-qty',-1)">−</button><input class="qty-val" type="number" id="edit-owned-qty" value="1" min="1" oninput="clampQty(this)" /><button class="qty-btn" onclick="adjustQty('edit-owned-qty',1)">+</button></div>
       </div>
-      <div class="form-group">
-        <div class="form-label">Category</div>
-        <select class="form-input" id="edit-cat"></select>
-      </div>
-      <div class="form-group">
-        <div class="form-label">Total Quantity Owned</div>
-        <div class="qty-control">
-          <button class="qty-btn" onclick="adjustQty('edit-owned-qty',-1)">−</button>
-          <input class="qty-val" type="number" id="edit-owned-qty" value="1" min="1" oninput="clampQty(this)" />
-          <button class="qty-btn" onclick="adjustQty('edit-owned-qty',1)">+</button>
-        </div>
-      </div>
-      <div class="form-group">
-        <div class="form-label">Notes</div>
-        <textarea class="form-input" id="edit-notes"></textarea>
-      </div>
+      <div class="form-group"><div class="form-label">Notes</div><textarea class="form-input" id="edit-notes"></textarea></div>
     </div>
   </div>
-  <div class="action-area">
-    <button class="btn-primary" id="btn-edit" onclick="submitEdit()">Save Changes</button>
-    <button class="btn-secondary" onclick="showScreen('screen-existing')">← Cancel</button>
-  </div>
+  <div class="action-area"><button class="btn-primary" id="btn-edit" onclick="submitEdit()">Save Changes</button><button class="btn-secondary" onclick="showScreen('screen-existing')">← Cancel</button></div>
 </div>
 
 <!-- SUCCESS -->
@@ -1083,7 +580,6 @@ textarea.form-input { resize: vertical; min-height: 80px; font-size: 15px; line-
     <div class="success-detail" id="success-detail"></div>
   </div>
   <div class="action-area">
-    <!-- Primary action changes based on context -->
     <button class="btn-primary" id="success-primary-btn" onclick="showScreen('screen-manual')">Scan Another</button>
     <button class="btn-secondary" id="success-secondary-btn" onclick="openLoadSheet()">View Equipment List</button>
   </div>
@@ -1092,1471 +588,7 @@ textarea.form-input { resize: vertical; min-height: 80px; font-size: 15px; line-
 <div id="toast"></div>
 
 <script>
-// ══════════════════════════════════════════
-// CONFIG
-// ══════════════════════════════════════════
-const CONFIG = {
-  SCRIPT_URL: 'https://script.google.com/macros/s/AKfycbwxhZiH_yrNp7oTWSht6qu7y5sWkKXnMTVAQyEXklnYXEbMQgYhacfhKU4ipJQ-rY6g8g/exec',
-  SHEET_ID:   '143xqtYJo-PvwQWkfE06YH54etJC34gsXGapZd3wftfs',
-};
-
-// ══════════════════════════════════════════
-// STATE
-// ══════════════════════════════════════════
-const TEAM = ['Jacob'];
-
-let S = {
-  itemId: null, item: null, gps: null,
-  sessionMode: null,        // 'loadout' | 'delivery' | 'checkin' | 'browse'
-  sessionLocation: null,    // 'Sydney' | 'Melbourne' | 'Brisbane' | 'Adelaide'
-  sessionEvent: null,
-  sessionWho: null,
-  damageOnReturn: false, severity: null,
-  currentCategory: null, currentNoTagCategory: null,
-  _fromNewMode: false,
-  photos: { new: [], damage: [], updatephoto: [], notag: [], delivery: [] },
-  // delivery state
-  delivery: {
-    supplier: '', notes: '',
-    items: [],               // accumulated delivery items
-    selectedItem: null,      // existing inventory item chosen from search
-    isNewItem: false,
-    pendingName: '',
-  },
-  // browse cache
-  inventoryCache: [],
-};
-
-let loadList = [];
-
-// ══════════════════════════════════════════
-// SESSION PERSISTENCE (survives NFC page reloads)
-// ══════════════════════════════════════════
-const SESSION_KEY  = 'vinyl_session';
-const LOADLIST_KEY = 'vinyl_loadlist';
-
-function saveSession() {
-  try {
-    sessionStorage.setItem(SESSION_KEY, JSON.stringify({
-      sessionMode:     S.sessionMode,
-      sessionLocation: S.sessionLocation,
-      sessionEvent:    S.sessionEvent,
-      sessionWho:      S.sessionWho,
-    }));
-    sessionStorage.setItem(LOADLIST_KEY, JSON.stringify(loadList));
-  } catch(e) {}
-}
-
-function restoreSession() {
-  try {
-    const saved     = JSON.parse(sessionStorage.getItem(SESSION_KEY)  || 'null');
-    const savedList = JSON.parse(sessionStorage.getItem(LOADLIST_KEY) || '[]');
-    if (saved && saved.sessionMode) {
-      S.sessionMode     = saved.sessionMode;
-      S.sessionLocation = saved.sessionLocation;
-      S.sessionEvent    = saved.sessionEvent;
-      S.sessionWho      = saved.sessionWho;
-      loadList = Array.isArray(savedList) ? savedList : [];
-      document.getElementById('load-event-display').textContent = S.sessionEvent || '—';
-      updateFabs();
-      return true;
-    }
-    return false;
-  } catch(e) { return false; }
-}
-
-function clearSession() {
-  try {
-    sessionStorage.removeItem(SESSION_KEY);
-    sessionStorage.removeItem(LOADLIST_KEY);
-  } catch(e) {}
-}
-
-// ══════════════════════════════════════════
-// OFFLINE QUEUE
-// ══════════════════════════════════════════
-const QUEUE_KEY = 'vinyl_offline_queue';
-
-function getOfflineQueue() {
-  try { return JSON.parse(localStorage.getItem(QUEUE_KEY) || '[]'); }
-  catch(e) { return []; }
-}
-
-function saveOfflineQueue(q) {
-  try { localStorage.setItem(QUEUE_KEY, JSON.stringify(q)); }
-  catch(e) {}
-}
-
-function queuePayload(payload) {
-  const q = getOfflineQueue();
-  q.push({ ...payload, _queuedAt: new Date().toISOString() });
-  saveOfflineQueue(q);
-  updateOfflineBar();
-}
-
-function updateOfflineBar() {
-  const bar  = document.getElementById('offline-bar');
-  const msg  = document.getElementById('offline-bar-msg');
-  const syncBtn = document.getElementById('offline-bar-sync');
-  if (!bar) return;
-
-  const q = getOfflineQueue();
-  const isOffline = !navigator.onLine;
-
-  if (isOffline && q.length === 0) {
-    bar.classList.add('visible');
-    msg.textContent = '📡 Offline — new submissions will be queued';
-    syncBtn.style.display = 'none';
-  } else if (q.length > 0) {
-    bar.classList.add('visible');
-    msg.textContent = isOffline
-      ? `📡 Offline — ${q.length} item${q.length>1?'s':''} queued`
-      : `🔄 ${q.length} item${q.length>1?'s':''} waiting to sync`;
-    syncBtn.style.display = isOffline ? 'none' : '';
-  } else {
-    bar.classList.remove('visible');
-  }
-}
-
-async function syncOfflineQueue(manual = false) {
-  const q = getOfflineQueue();
-  if (q.length === 0) { if (manual) toast('Nothing to sync ✓'); return; }
-  if (!navigator.onLine) { toast('Still offline — will retry when connected', true); return; }
-
-  let failed = [];
-  for (const payload of q) {
-    const ctrl = new AbortController();
-    const t = setTimeout(() => ctrl.abort(), 8000);
-    try {
-      const resp = await fetch(CONFIG.SCRIPT_URL, {
-        method: 'POST', body: JSON.stringify(payload), signal: ctrl.signal,
-      });
-      clearTimeout(t);
-      if (resp.ok) {
-        const data = await resp.json();
-        if (!data.success) failed.push(payload); // bad data — don't retry
-      } else {
-        failed.push(payload); // server error — retry later
-      }
-    } catch(e) {
-      clearTimeout(t);
-      failed.push(payload); // timeout or network drop — retry later
-    }
-  }
-
-  saveOfflineQueue(failed);
-  updateOfflineBar();
-
-  const synced = q.length - failed.length;
-  if (synced > 0) toast(`✓ Synced ${synced} offline submission${synced>1?'s':''}`);
-  if (failed.length > 0) toast(`${failed.length} submission${failed.length>1?'s':''} still failed`, true);
-}
-
-// ══════════════════════════════════════════
-// INIT
-// ══════════════════════════════════════════
-function init() {
-  // Location is always Sydney for now
-  S.sessionLocation = 'Sydney';
-
-  buildWhoGrids();
-  getGPS();
-  populateCatDropdown();
-  // Show offline bar if already offline or if there are queued items from a previous session
-  updateOfflineBar();
-  // If online and there are leftover queued items from a previous offline session, sync them now
-  if (navigator.onLine) syncOfflineQueue();
-
-  const params = new URLSearchParams(window.location.search);
-  const id     = (params.get('id') || '').toUpperCase().trim();
-  const group  = (params.get('group') || '').trim();
-
-  if (group) {
-    showBrowse(group);
-    return;
-  }
-
-  // ?id=NEW — NFC tags all encode this URL.
-  // Skip session setup, go straight to the quick-register form.
-  if (id === 'NEW') {
-    S.sessionWho = TEAM[0];
-    showNewItemDirect();
-    return;
-  }
-
-  if (id) {
-    S.itemId = id;
-    // If there's an active session saved (e.g. mid equipment list, NFC tapped a new tag),
-    // restore it and go straight to item lookup — skip the session switchboard.
-    const restored = restoreSession();
-    if (restored) {
-      showScreen('screen-loading');
-      lookupAndRoute(id);
-    } else {
-      // No active session — show switchboard first (ID stored, used after mode is chosen)
-      showScreen('screen-session');
-    }
-    return;
-  }
-
-  showScreen('screen-session');
-}
-
-// ══════════════════════════════════════════
-// OFFLINE / ONLINE WIRING
-// ══════════════════════════════════════════
-window.addEventListener('online',  () => { updateOfflineBar(); syncOfflineQueue(); });
-window.addEventListener('offline', () => { updateOfflineBar(); });
-
-// ══════════════════════════════════════════
-// SESSION SWITCHBOARD
-// ══════════════════════════════════════════
-let sessionWhoSelected = null;
-
-function selectSessionWho(btn) {
-  document.querySelectorAll('#session-who-grid .who-btn').forEach(b => b.classList.remove('selected'));
-  btn.classList.add('selected');
-  const custom = document.getElementById('session-who-custom');
-  if (btn.textContent.includes('Add name')) {
-    custom.style.display = 'block'; custom.focus();
-    sessionWhoSelected = '__custom__';
-  } else {
-    custom.style.display = 'none';
-    sessionWhoSelected = btn.textContent;
-  }
-}
-
-function getSessionWho() {
-  if (sessionWhoSelected === '__custom__') return document.getElementById('session-who-custom').value.trim() || 'Unknown';
-  return sessionWhoSelected || TEAM[0];
-}
-
-function selectCity(city) {
-  document.querySelectorAll('.city-btn').forEach(b => b.classList.remove('selected'));
-  event.target.classList.add('selected');
-  S.sessionLocation = city;
-}
-
-function startMode(mode) {
-  S.sessionWho  = getSessionWho();
-  S.sessionMode = mode;
-
-  if (mode === 'loadout') {
-    showScreen('screen-loadout-setup');
-  } else if (mode === 'delivery') {
-    showScreen('screen-delivery-setup');
-  } else if (mode === 'checkin') {
-    saveSession();
-    proceedToScan();
-  } else if (mode === 'browse') {
-    showBrowse();
-  }
-}
-
-function startSession() {
-  const ev = document.getElementById('session-event').value.trim();
-  if (!ev) { toast('Enter an event name', true); return; }
-  S.sessionEvent = ev;
-  document.getElementById('load-event-display').textContent = ev;
-  saveSession();
-  proceedToScan();
-}
-
-function skipSession() {
-  S.sessionEvent = 'No Event';
-  document.getElementById('load-event-display').textContent = 'No Event';
-  proceedToScan();
-}
-
-function proceedToScan() {
-  if (S.itemId) { showScreen('screen-loading'); lookupAndRoute(S.itemId); }
-  else showScreen('screen-manual');
-}
-
-// ══════════════════════════════════════════
-// DELIVERY FLOW
-// ══════════════════════════════════════════
-function startDelivery() {
-  const supplier = document.getElementById('delivery-supplier').value.trim();
-  if (!supplier) { toast('Enter supplier name', true); return; }
-  S.delivery.supplier = supplier;
-  S.delivery.notes    = document.getElementById('delivery-notes-header').value.trim();
-  S.delivery.items    = [];
-  S.photos.delivery   = [];
-  clearDeliveryItemForm();
-  document.getElementById('delivery-supplier-display').textContent = supplier;
-  document.getElementById('delivery-count-badge').textContent = '0 items';
-  document.getElementById('delivery-list-section').style.display = 'none';
-  document.getElementById('delivery-list').innerHTML = '';
-  showScreen('screen-delivery');
-}
-
-let searchDebounce;
-async function searchInventory(query) {
-  clearTimeout(searchDebounce);
-  const results = document.getElementById('delivery-search-results');
-  const form    = document.getElementById('delivery-item-form');
-
-  if (!query.trim()) {
-    results.style.display = 'none';
-    form.style.display    = 'none';
-    return;
-  }
-
-  searchDebounce = setTimeout(async () => {
-    results.style.display = 'block';
-    results.innerHTML = `<div style="font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:0.1em;text-transform:uppercase;padding:8px 0;">Searching…</div>`;
-
-    try {
-      const resp = await fetch(`${CONFIG.SCRIPT_URL}?action=search&q=${encodeURIComponent(query)}`);
-      const data = await resp.json();
-      const items = data.items || [];
-      renderDeliverySearchResults(items, query);
-    } catch(e) {
-      // Fallback to cached results if available
-      if (S.inventoryCache.length > 0) {
-        const filtered = S.inventoryCache.filter(i =>
-          i.name.toLowerCase().includes(query.toLowerCase()) ||
-          i.id.toLowerCase().includes(query.toLowerCase())
-        );
-        renderDeliverySearchResults(filtered, query);
-      } else {
-        results.innerHTML = `<div class="new-item-btn" onclick="selectNewDeliveryItem('${query.replace(/'/g,"\\'")}')"><span style="font-size:20px;">➕</span> Add "${query}" as new item</div>`;
-      }
-    }
-  }, 300);
-}
-
-function renderDeliverySearchResults(items, query) {
-  const results = document.getElementById('delivery-search-results');
-  let html = '';
-
-  if (items.length > 0) {
-    items.slice(0, 5).forEach(item => {
-      const inStorage = (item.totalQty || 0) - (item.qtyOut || 0);
-      const stockClass = inStorage <= 0 ? 'out' : inStorage < 3 ? 'low' : '';
-      const thumb = item.photoUrls && item.photoUrls[0]
-        ? `<div class="search-result-thumb"><img src="${item.photoUrls[0]}" /></div>`
-        : `<div class="search-result-thumb">📦</div>`;
-      html += `
-        <div class="search-result-item" onclick="selectExistingDeliveryItem(${JSON.stringify(JSON.stringify(item))})">
-          ${thumb}
-          <div class="search-result-info">
-            <div class="search-result-name">${item.name}</div>
-            <div class="search-result-meta">${item.id} · ${item.category || '—'} · ${item.location || '—'}</div>
-          </div>
-          <div class="search-result-stock ${stockClass}">${inStorage}/${item.totalQty || '?'}</div>
-        </div>`;
-    });
-  }
-
-  html += `<div class="new-item-btn" onclick="selectNewDeliveryItem('${query.replace(/'/g,"\\'")}')"><span style="font-size:20px;">➕</span> Add "${query}" as new item</div>`;
-  results.innerHTML = html;
-}
-
-function selectExistingDeliveryItem(itemJson) {
-  const item = JSON.parse(itemJson);
-  S.delivery.selectedItem = item;
-  S.delivery.isNewItem    = false;
-  S.delivery.pendingName  = item.name;
-  document.getElementById('delivery-search-results').style.display = 'none';
-  document.getElementById('delivery-search').value = item.name;
-
-  const card = document.getElementById('delivery-item-card');
-  const thumb = item.photoUrls && item.photoUrls[0]
-    ? `<img src="${item.photoUrls[0]}" style="width:48px;height:48px;object-fit:cover;border-radius:3px;flex-shrink:0;" />`
-    : `<span style="font-size:28px;">📦</span>`;
-  card.innerHTML = `
-    <div style="display:flex;align-items:center;gap:12px;">
-      ${thumb}
-      <div>
-        <div class="id-label">Existing Item</div>
-        <div style="font-family:var(--display);font-size:22px;letter-spacing:0.04em;">${item.name}</div>
-        <div style="font-family:var(--mono);font-size:10px;color:var(--muted);">${item.id} · ${item.category}</div>
-      </div>
-    </div>`;
-
-  document.getElementById('delivery-cat-group').style.display  = 'none';
-  document.getElementById('delivery-item-form').style.display  = 'flex';
-  document.getElementById('delivery-item-form').style.flexDirection = 'column';
-  document.getElementById('delivery-item-form').style.gap = '12px';
-  document.getElementById('delivery-qty').value = 1;
-  document.getElementById('delivery-item-notes').value = '';
-  S.photos.delivery = [];
-  renderPhotoGrid('delivery');
-}
-
-function selectNewDeliveryItem(name) {
-  S.delivery.selectedItem = null;
-  S.delivery.isNewItem    = true;
-  S.delivery.pendingName  = name;
-  document.getElementById('delivery-search-results').style.display = 'none';
-  document.getElementById('delivery-search').value = name;
-
-  const card = document.getElementById('delivery-item-card');
-  card.innerHTML = `
-    <div class="id-label">New Item</div>
-    <div style="font-family:var(--display);font-size:22px;letter-spacing:0.04em;color:var(--orange);">${name}</div>
-    <div style="font-size:12px;color:var(--muted);margin-top:2px;">Will be added to master inventory</div>`;
-
-  populateCatDropdown();
-  document.getElementById('delivery-cat-group').style.display = 'block';
-  document.getElementById('delivery-item-form').style.display  = 'flex';
-  document.getElementById('delivery-item-form').style.flexDirection = 'column';
-  document.getElementById('delivery-item-form').style.gap = '12px';
-  document.getElementById('delivery-qty').value = 1;
-  document.getElementById('delivery-item-notes').value = '';
-  S.photos.delivery = [];
-  renderPhotoGrid('delivery');
-}
-
-async function addDeliveryItem() {
-  const qty   = parseInt(document.getElementById('delivery-qty').value) || 1;
-  const notes = document.getElementById('delivery-item-notes').value.trim();
-  const btn   = document.getElementById('btn-delivery-add');
-
-  btn.disabled = true; btn.textContent = 'Adding…';
-
-  if (S.delivery.isNewItem) {
-    const cat = document.getElementById('delivery-cat').value;
-    if (!cat) { toast('Select a category', true); btn.disabled = false; btn.textContent = '+ Add to Delivery'; return; }
-
-    // Generate ID
-    const id = S.delivery.pendingName.toUpperCase().replace(/\s+/g,'-').substring(0,10) + '-NOTAG';
-
-    const payload = {
-      action: 'register', id,
-      name: S.delivery.pendingName, category: cat,
-      totalQty: qty, notes: notes + (notes ? ' | ' : '') + `Received from ${S.delivery.supplier}`,
-      who: S.sessionWho, gpsLabel: S.sessionLocation,
-      gpsLat: S.gps?.lat||'', gpsLng: S.gps?.lng||'', gpsAcc: S.gps?.accuracy||'',
-      photos: S.photos.delivery.map(p => p.base64),
-      timestamp: new Date().toISOString(),
-    };
-    await postToScript(payload);
-
-    S.delivery.items.push({ id, name: S.delivery.pendingName, category: cat, qty, type: 'New Stock', notes });
-
-  } else if (S.delivery.selectedItem) {
-    const item = S.delivery.selectedItem;
-    const payload = {
-      action: 'return', id: item.id, qty,
-      notes: notes + (notes ? ' | ' : '') + `Received from ${S.delivery.supplier}`,
-      who: S.sessionWho, gpsLabel: S.sessionLocation,
-      gpsLat: S.gps?.lat||'', gpsLng: S.gps?.lng||'', gpsAcc: S.gps?.accuracy||'',
-      timestamp: new Date().toISOString(),
-    };
-    await postToScript(payload);
-
-    S.delivery.items.push({ id: item.id, name: item.name, category: item.category, qty, type: 'Return', notes });
-  } else {
-    toast('Select or add an item first', true);
-    btn.disabled = false; btn.textContent = '+ Add to Delivery';
-    return;
-  }
-
-  btn.disabled = false; btn.textContent = '+ Add to Delivery';
-  renderDeliveryList();
-  clearDeliveryItemForm();
-  toast(`Added ✓`);
-}
-
-function clearDeliveryItemForm() {
-  document.getElementById('delivery-search').value = '';
-  document.getElementById('delivery-search-results').style.display = 'none';
-  document.getElementById('delivery-item-form').style.display = 'none';
-  S.delivery.selectedItem = null;
-  S.delivery.isNewItem    = false;
-  S.delivery.pendingName  = '';
-  S.photos.delivery = [];
-}
-
-function renderDeliveryList() {
-  const list    = document.getElementById('delivery-list');
-  const section = document.getElementById('delivery-list-section');
-  const badge   = document.getElementById('delivery-count-badge');
-  const items   = S.delivery.items;
-
-  badge.textContent = `${items.length} item${items.length !== 1 ? 's' : ''}`;
-
-  if (items.length === 0) { section.style.display = 'none'; return; }
-  section.style.display = 'block';
-
-  list.innerHTML = items.map((r, i) => `
-    <div class="delivery-list-row">
-      <div class="delivery-list-id">${r.id.substring(0,6)}</div>
-      <div class="delivery-list-name">${r.name}<div class="delivery-list-cat">${r.category}</div></div>
-      <div class="delivery-list-qty">×${r.qty}</div>
-      <div class="delivery-list-type ${r.type === 'New Stock' ? 'new' : 'return'}">${r.type}</div>
-      <button class="delivery-list-remove" onclick="removeDeliveryItem(${i})">✕</button>
-    </div>`).join('');
-}
-
-function removeDeliveryItem(i) {
-  S.delivery.items.splice(i, 1);
-  renderDeliveryList();
-}
-
-async function submitDelivery() {
-  if (S.delivery.items.length === 0) { toast('Add at least one item', true); return; }
-
-  const btn = document.getElementById('btn-delivery-submit');
-  btn.disabled = true; btn.textContent = 'Submitting…';
-
-  const payload = {
-    action:   'submitdelivery',
-    supplier: S.delivery.supplier,
-    notes:    S.delivery.notes,
-    location: S.sessionLocation,
-    who:      S.sessionWho,
-    items:    S.delivery.items,
-    timestamp: new Date().toISOString(),
-  };
-  const result = await postToScript(payload);
-  btn.disabled = false; btn.textContent = 'Submit Delivery';
-
-  if (result.success) {
-    S.delivery.items = [];
-    showSuccessScreen('delivery', '', S.delivery.supplier);
-  } else {
-    toast(result.error || 'Submission failed', true);
-  }
-}
-
-// ══════════════════════════════════════════
-// BROWSE / SEARCH
-// ══════════════════════════════════════════
-async function showBrowse(groupFilter) {
-  document.getElementById('browse-loc-badge').textContent = S.sessionLocation || 'All locations';
-  document.getElementById('browse-search').value = groupFilter || '';
-  showScreen('screen-browse');
-
-  // Load inventory cache
-  try {
-    const resp = await fetch(`${CONFIG.SCRIPT_URL}?action=search&q=`);
-    const data = await resp.json();
-    S.inventoryCache = data.items || [];
-    if (groupFilter) browseSearch(groupFilter);
-    else renderBrowseResults(S.inventoryCache);
-  } catch(e) {
-    document.getElementById('browse-results').innerHTML =
-      `<div style="text-align:center;padding:40px;color:var(--muted);font-family:var(--mono);font-size:10px;">Could not load inventory</div>`;
-  }
-}
-
-function browseSearch(query) {
-  const items = S.inventoryCache.filter(i =>
-    !query || i.name.toLowerCase().includes(query.toLowerCase()) ||
-    (i.category||'').toLowerCase().includes(query.toLowerCase()) ||
-    i.id.toLowerCase().includes(query.toLowerCase())
-  );
-  renderBrowseResults(items);
-}
-
-function renderBrowseResults(items) {
-  const el = document.getElementById('browse-results');
-  if (items.length === 0) {
-    el.innerHTML = `<div style="text-align:center;padding:40px;color:var(--muted);font-family:var(--mono);font-size:10px;letter-spacing:0.12em;text-transform:uppercase;">No items found</div>`;
-    return;
-  }
-  el.innerHTML = items.map(item => {
-    const inStorage = (item.totalQty || 0) - (item.qtyOut || 0);
-    const stockClass = inStorage <= 0 ? 'out' : inStorage < 3 ? 'low' : '';
-    const thumb = item.photoUrls && item.photoUrls[0]
-      ? `<div class="search-result-thumb"><img src="${item.photoUrls[0]}" /></div>`
-      : `<div class="search-result-thumb">📦</div>`;
-    return `
-      <div class="search-result-item" onclick="browseSelectItem('${item.id}')">
-        ${thumb}
-        <div class="search-result-info">
-          <div class="search-result-name">${item.name}</div>
-          <div class="search-result-meta">${item.id} · ${item.category||'—'} · ${item.location||'—'}</div>
-        </div>
-        <div class="search-result-stock ${stockClass}">${inStorage}/${item.totalQty||'?'}</div>
-      </div>`;
-  }).join('');
-}
-
-function browseSelectItem(id) {
-  S.itemId = id;
-  showScreen('screen-loading');
-  lookupAndRoute(id);
-}
-
-function proceedToScan() {
-  if (S.itemId) { showScreen('screen-loading'); lookupAndRoute(S.itemId); }
-  else showScreen('screen-manual');
-}
-
-
-// ══════════════════════════════════════════
-// ROUTING
-// ══════════════════════════════════════════
-async function lookupAndRoute(id) {
-  try {
-    const resp = await fetch(`${CONFIG.SCRIPT_URL}?action=lookup&id=${encodeURIComponent(id)}`);
-    const data = await resp.json();
-    if (data.found) {
-      S.item = data.item;
-      populateExistingScreen(id, data.item);
-      showScreen('screen-existing');
-    } else {
-      S.item = null;
-      populateNewScreen(id);
-      showScreen('screen-new');
-    }
-  } catch(e) {
-    S.item = null;
-    populateNewScreen(id);
-    showScreen('screen-new');
-    toast('Could not reach server — check connection', true);
-  }
-}
-
-function submitManualId() {
-  const raw = document.getElementById('manual-id').value.toUpperCase().trim();
-  if (!raw || !/^[A-Z0-9][A-Z0-9-]{0,9}$/.test(raw)) {
-    toast('Enter a valid ID (e.g. A1, B12, VM001)', true); return;
-  }
-  S.itemId = raw;
-  S.photos = { new: [], damage: [], updatephoto: [] };
-  showScreen('screen-loading');
-  lookupAndRoute(raw);
-}
-
-// ══════════════════════════════════════════
-// NEW ITEM
-// ══════════════════════════════════════════
-
-// Called from init() when ?id=NEW is detected — skip session, go straight to form
-function showNewItemDirect() {
-  S.itemId = 'NEW';
-  S.photos.new = [];
-  S.currentCategory = null;
-  populateCatDropdown();
-  buildWhoGrid('new');
-  updateLocDisplay('loc-new');
-
-  // Show editable ID input, hide static display
-  document.getElementById('new-id-display').style.display = 'none';
-  document.getElementById('new-id-input-wrap').style.display = 'block';
-  document.getElementById('new-id-input').value = '';
-  document.getElementById('new-name').value = '';
-  document.getElementById('new-notes').value = '';
-  document.getElementById('new-owned-qty').value = 1;
-  const disp = document.getElementById('new-cat-display');
-  if (disp) { disp.style.display = 'none'; disp.textContent = ''; }
-  const sel = document.getElementById('new-cat');
-  if (sel) sel.value = '';
-  renderPhotoGrid('new');
-  // Back button goes back to session screen in NEW mode
-  document.getElementById('btn-register-back').onclick = () => showScreen('screen-session');
-  updateFabs();
-  showScreen('screen-new');
-}
-
-function populateNewScreen(id) {
-  S.itemId = id;
-  document.getElementById('new-header-id').textContent = id;
-  document.getElementById('new-id-val').textContent = id;
-
-  // Show static ID display, hide editable input
-  document.getElementById('new-id-display').style.display = 'block';
-  document.getElementById('new-id-input-wrap').style.display = 'none';
-
-  S.photos.new = [];
-  S.currentCategory = null;
-  const disp = document.getElementById('new-cat-display');
-  if (disp) { disp.style.display = 'none'; disp.textContent = ''; }
-  const sel = document.getElementById('new-cat');
-  if (sel) sel.value = '';
-  document.getElementById('btn-register-back').onclick = () => showScreen('screen-manual');
-  renderPhotoGrid('new');
-  updateFabs();
-}
-
-async function submitNew() {
-  // If in NEW mode, read the ID from the editable input
-  let itemId = S.itemId;
-  if (itemId === 'NEW') {
-    const entered = document.getElementById('new-id-input').value.toUpperCase().trim();
-    if (!entered) { toast('Enter the ID written on the tag', true); return; }
-    itemId = entered;
-  }
-
-  const name  = document.getElementById('new-name').value.trim();
-  const cat   = S.currentCategory || '';
-  const qty   = parseInt(document.getElementById('new-owned-qty').value) || 1;
-  const notes = document.getElementById('new-notes').value.trim();
-  const who   = getWho('new');
-
-  if (!name) { toast('Item name required', true); return; }
-  if (!cat)  { toast('Add a category first', true); return; }
-
-  const btn = document.getElementById('btn-register');
-  btn.disabled = true; btn.textContent = 'Submitting…';
-
-  const payload = {
-    action: 'register', id: itemId, name, category: cat,
-    totalQty: qty, notes, who,
-    gpsLat:   S.gps?.lat      || '',
-    gpsLng:   S.gps?.lng      || '',
-    gpsAcc:   S.gps?.accuracy || '',
-    gpsLabel: S.gps?.label    || S.sessionLocation || 'Sydney',
-    photos:   S.photos.new.map(p => p.base64),
-    timestamp: new Date().toISOString(),
-  };
-
-  const result = await postToScript(payload);
-  btn.disabled = false; btn.textContent = 'Register Item';
-  if (result.success) {
-    // Track whether we came from NEW mode so success screen shows right button
-    S._fromNewMode = (S.itemId === 'NEW');
-    if (result.queued) toast('Saved offline — will sync when connected', false);
-    showSuccessScreen('register', itemId, name);
-  } else {
-    toast(result.error || 'Submission failed', true);
-  }
-}
-
-// ══════════════════════════════════════════
-// EXISTING ITEM
-// ══════════════════════════════════════════
-function populateExistingScreen(id, item) {
-  document.getElementById('exist-header-id').textContent = id;
-  document.getElementById('exist-id-val').textContent = id;
-  document.getElementById('exist-name-sub').textContent = item.name || '';
-
-  const pill = document.getElementById('exist-status-pill');
-  const statusTxt = document.getElementById('exist-status-text');
-  const st = (item.status || 'in').toLowerCase();
-  pill.className = `status-pill ${st === 'in' ? 'pill-in' : 'pill-out'}`;
-  statusTxt.textContent = st === 'in' ? 'In Storage' : 'Out';
-
-  const banner = document.getElementById('exist-damage-banner');
-  if (item.damageFlagged) {
-    banner.style.display = 'flex';
-    banner.innerHTML = `<div class="damage-banner"><div class="damage-banner-icon">⚠️</div><div class="damage-banner-text"><strong>Damage Flag Active</strong>${item.damageNote || 'This item has a logged damage report.'}</div></div>`;
-  } else {
-    banner.style.display = 'none';
-  }
-
-  const photosArea = document.getElementById('exist-photos-area');
-  if (item.photoUrls && item.photoUrls.length > 0) {
-    photosArea.innerHTML = `<div class="item-photos-scroll">${item.photoUrls.map(u => `<img src="${u}" />`).join('')}</div>`;
-  } else {
-    photosArea.innerHTML = `<div class="item-photo-empty">No photos on record</div>`;
-  }
-
-  const inStorage = (item.totalQty || 0) - (item.qtyOut || 0);
-  document.getElementById('exist-meta').innerHTML = `
-    <div class="meta-row"><span class="meta-key">Category</span><span class="meta-val">${item.category||'—'}</span></div>
-    <div class="meta-row"><span class="meta-key">In Storage</span><span class="meta-val ${inStorage>0?'green':'red'}">${inStorage} / ${item.totalQty||'?'}</span></div>
-    <div class="meta-row"><span class="meta-key">Location</span><span class="meta-val">${item.location||'—'}</span></div>
-    <div class="meta-row"><span class="meta-key">Last Scanned</span><span class="meta-val">${item.lastScan||'—'}</span></div>
-    <div class="meta-row"><span class="meta-key">By</span><span class="meta-val">${item.lastWho||'—'}</span></div>`;
-
-  updateFabs();
-}
-
-// ══════════════════════════════════════════
-// TAKE OUT
-// ══════════════════════════════════════════
-function showTakeOut() {
-  const id = S.itemId;
-  document.getElementById('takeout-header-id').textContent = id;
-  document.getElementById('takeout-id-val').textContent = id;
-  document.getElementById('takeout-name-sub').textContent = S.item?.name || '';
-  document.getElementById('takeout-qty').value = 1;
-  buildWhoGrid('takeout');
-  updateLocDisplay('loc-takeout');
-  showScreen('screen-takeout');
-}
-
-async function submitTakeOut() {
-  const qty  = parseInt(document.getElementById('takeout-qty').value) || 1;
-  const who  = getWho('takeout');
-  const id   = S.itemId;
-  const name = S.item?.name || id;
-  const cat  = S.item?.category || '';
-
-  const btn = document.getElementById('btn-takeout');
-  btn.disabled = true; btn.textContent = 'Adding…';
-
-  const existing = loadList.find(r => r.id === id);
-  if (existing) { existing.qty += qty; }
-  else { loadList.push({ id, name, category: cat, qty, who }); }
-  updateFabs();
-  saveSession();
-
-  const payload = {
-    action: 'takeout', id, qty, who,
-    gpsLat: S.gps?.lat||'', gpsLng: S.gps?.lng||'', gpsLabel: S.gps?.label||'',
-    event: S.sessionEvent, timestamp: new Date().toISOString(),
-  };
-  const result = await postToScript(payload);
-
-  btn.disabled = false; btn.textContent = 'Add to Load List';
-  if (result.queued) {
-    toast(`${id} ×${qty} added (saved offline ✓)`);
-  } else {
-    toast(`${id} ×${qty} added to list ✓`);
-  }
-  showScreen('screen-manual');
-}
-
-// ══════════════════════════════════════════
-// RETURN
-// ══════════════════════════════════════════
-function showReturn() {
-  const id = S.itemId;
-  document.getElementById('return-header-id').textContent = id;
-  document.getElementById('return-id-val').textContent = id;
-  document.getElementById('return-name-sub').textContent = S.item?.name || '';
-  document.getElementById('return-qty').value = 1;
-  document.getElementById('return-notes').value = '';
-  S.damageOnReturn = false;
-  document.getElementById('damage-no-btn').classList.add('selected');
-  document.getElementById('damage-yes-btn').classList.remove('selected');
-  buildWhoGrid('return');
-  updateLocDisplay('loc-return');
-  showScreen('screen-return');
-}
-
-function setDamageOnReturn(val) {
-  S.damageOnReturn = val;
-  document.getElementById('damage-no-btn').classList.toggle('selected', !val);
-  document.getElementById('damage-yes-btn').classList.toggle('selected', val);
-}
-
-async function submitReturn() {
-  const qty   = parseInt(document.getElementById('return-qty').value) || 1;
-  const notes = document.getElementById('return-notes').value.trim();
-  const who   = getWho('return');
-  const id    = S.itemId;
-
-  const btn = document.getElementById('btn-return');
-  btn.disabled = true; btn.textContent = 'Confirming…';
-
-  const idx = loadList.findIndex(r => r.id === id);
-  if (idx > -1) {
-    loadList[idx].qty -= qty;
-    if (loadList[idx].qty <= 0) loadList.splice(idx, 1);
-  }
-  updateFabs();
-
-  const payload = {
-    action: 'return', id, qty, notes, who,
-    gpsLat: S.gps?.lat||'', gpsLng: S.gps?.lng||'', gpsLabel: S.gps?.label||'',
-    timestamp: new Date().toISOString(),
-  };
-  const result = await postToScript(payload);
-  btn.disabled = false; btn.textContent = 'Confirm Return';
-
-  if (result.success) {
-    if (result.queued) toast('Saved offline — will sync when connected', false);
-    if (S.damageOnReturn) { showDamage(); }
-    else { showSuccessScreen('return', id, S.item?.name || id); }
-  } else {
-    toast(result.error || 'Return failed', true);
-  }
-}
-
-// ══════════════════════════════════════════
-// DAMAGE
-// ══════════════════════════════════════════
-function showDamage() {
-  const id = S.itemId;
-  document.getElementById('damage-header-id').textContent = id;
-  document.getElementById('damage-id-val').textContent = id;
-  document.getElementById('damage-name-sub').textContent = S.item?.name || '';
-  document.getElementById('damage-desc').value = '';
-  S.severity = null;
-  S.photos.damage = [];
-  renderPhotoGrid('damage');
-  ['sev-minor','sev-repair','sev-out'].forEach(sid => {
-    const b = document.getElementById(sid);
-    if (b) b.className = 'severity-btn';
-  });
-  buildWhoGrid('damage');
-  showScreen('screen-damage');
-}
-
-function setSeverity(s) {
-  S.severity = s;
-  document.getElementById('sev-minor').className  = 'severity-btn' + (s==='minor'  ? ' sel-minor'  : '');
-  document.getElementById('sev-repair').className = 'severity-btn' + (s==='repair' ? ' sel-repair' : '');
-  document.getElementById('sev-out').className    = 'severity-btn' + (s==='out'    ? ' sel-out'    : '');
-}
-
-async function submitDamage() {
-  const desc = document.getElementById('damage-desc').value.trim();
-  const who  = getWho('damage');
-  const id   = S.itemId;
-
-  if (!desc)       { toast('Describe the damage', true); return; }
-  if (!S.severity) { toast('Select a severity level', true); return; }
-
-  const btn = document.getElementById('btn-damage');
-  btn.disabled = true; btn.textContent = 'Submitting…';
-
-  const payload = {
-    action: 'damage', id, name: S.item?.name||'', description: desc,
-    severity: S.severity, who,
-    gpsLat: S.gps?.lat||'', gpsLng: S.gps?.lng||'', gpsLabel: S.gps?.label||'',
-    photos: S.photos.damage.map(p => p.base64),
-    timestamp: new Date().toISOString(),
-  };
-  const result = await postToScript(payload);
-  btn.disabled = false; btn.textContent = 'Submit Damage Report';
-
-  if (result.success) {
-    if (result.queued) toast('Saved offline — will sync when connected', false);
-    showSuccessScreen('damage', id, S.item?.name||id);
-  } else {
-    toast(result.error || 'Submission failed', true);
-  }
-}
-
-// ══════════════════════════════════════════
-// UPDATE PHOTO
-// ══════════════════════════════════════════
-function showUpdatePhoto() {
-  const id = S.itemId;
-  document.getElementById('photo-header-id').textContent = id;
-  document.getElementById('photo-id-val').textContent = id;
-  document.getElementById('photo-name-sub').textContent = S.item?.name||'';
-  S.photos.updatephoto = [];
-  renderPhotoGrid('updatephoto');
-  showScreen('screen-photo');
-}
-
-async function submitUpdatePhoto() {
-  if (S.photos.updatephoto.length === 0) { toast('Add at least one photo', true); return; }
-
-  const btn = document.getElementById('btn-updatephoto');
-  btn.disabled = true; btn.textContent = 'Uploading…';
-
-  const payload = {
-    action: 'updatephoto', id: S.itemId,
-    photos: S.photos.updatephoto.map(p => p.base64),
-    timestamp: new Date().toISOString(),
-  };
-  const result = await postToScript(payload);
-  btn.disabled = false; btn.textContent = 'Save Photos';
-
-  if (result.success) {
-    if (result.queued) toast('Saved offline — will sync when connected', false);
-    showSuccessScreen('photo', S.itemId, S.item?.name||S.itemId);
-  } else {
-    toast(result.error || 'Upload failed', true);
-  }
-}
-
-// ══════════════════════════════════════════
-// EDIT
-// ══════════════════════════════════════════
-function showEdit() {
-  const id   = S.itemId;
-  const item = S.item || {};
-  document.getElementById('edit-header-id').textContent = id;
-  document.getElementById('edit-id-val').textContent = id;
-  document.getElementById('edit-name').value = item.name || '';
-  document.getElementById('edit-notes').value = item.notes || '';
-  document.getElementById('edit-owned-qty').value = item.totalQty || 1;
-  populateCatDropdown();
-  const catSel = document.getElementById('edit-cat');
-  if (catSel && item.category) catSel.value = item.category;
-  showScreen('screen-edit');
-}
-
-async function submitEdit() {
-  const btn = document.getElementById('btn-edit');
-  btn.disabled = true; btn.textContent = 'Saving…';
-
-  const payload = {
-    action:   'edit',
-    id:       S.itemId,
-    name:     document.getElementById('edit-name').value.trim(),
-    category: document.getElementById('edit-cat').value,
-    notes:    document.getElementById('edit-notes').value.trim(),
-    totalQty: parseInt(document.getElementById('edit-owned-qty').value) || 1,
-    timestamp: new Date().toISOString(),
-  };
-  const result = await postToScript(payload);
-  btn.disabled = false; btn.textContent = 'Save Changes';
-
-  if (result.success) {
-    if (result.queued) toast('Saved offline — will sync when connected', false);
-    showSuccessScreen('edit', S.itemId, payload.name);
-  } else {
-    toast(result.error || 'Save failed', true);
-  }
-}
-
-// ══════════════════════════════════════════
-// LOAD LIST
-// ══════════════════════════════════════════
-function openLoadSheet() {
-  renderLoadList();
-  document.getElementById('load-sheet').classList.add('open');
-}
-
-function closeLoadSheet() {
-  document.getElementById('load-sheet').classList.remove('open');
-}
-
-function renderLoadList() {
-  const list = document.getElementById('load-items-list');
-  if (loadList.length === 0) {
-    list.innerHTML = `<div class="load-empty">No items added yet.<br>Scan items and tap Take Out.</div>`;
-  } else {
-    list.innerHTML = loadList.map((r, i) => `
-      <div class="load-item-row">
-        <div class="load-item-id">${r.id}</div>
-        <div class="load-item-name">${r.name}<div class="load-item-cat">${r.category}</div></div>
-        <div class="load-item-qty">×${r.qty}</div>
-        <button class="load-item-remove" onclick="removeLoadItem(${i})">✕</button>
-      </div>`).join('');
-  }
-  const total = loadList.reduce((a, r) => a + r.qty, 0);
-  document.getElementById('load-count').textContent = loadList.length;
-  document.getElementById('load-units').textContent = total;
-}
-
-function removeLoadItem(i) {
-  loadList.splice(i, 1);
-  renderLoadList();
-  updateFabs();
-  saveSession();
-}
-
-async function submitLoad() {
-  if (loadList.length === 0) { toast('Load list is empty', true); return; }
-
-  const submitBtn = document.querySelector('#load-sheet .btn-primary');
-  if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Submitting…'; }
-
-  const payload = {
-    action: 'submitload',
-    event:  S.sessionEvent,
-    who:    S.sessionWho,
-    items:  loadList,
-    timestamp: new Date().toISOString(),
-  };
-  const result = await postToScript(payload);
-
-  if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = '✓ Confirm & Submit Load'; }
-  closeLoadSheet();
-
-  if (result.success) {
-    loadList = [];
-    clearSession();
-    updateFabs();
-    showSuccessScreen('load', '', S.sessionEvent);
-  } else {
-    toast(result.error || 'Load submission failed', true);
-  }
-}
-
-function updateFabs() {
-  const count = loadList.length;
-  document.querySelectorAll('.load-fab').forEach(f => f.classList.toggle('visible', count > 0));
-  document.querySelectorAll('.load-fab-count').forEach(el => { el.textContent = count; });
-}
-
-// ══════════════════════════════════════════
-// PHOTOS
-// ══════════════════════════════════════════
-let _photoCtx = null;
-
-function showPhotoOptions(ctx) {
-  _photoCtx = ctx;
-  document.getElementById('photo-options-sheet').classList.add('open');
-}
-
-function closePhotoOptions(e) {
-  if (e && e.target !== document.getElementById('photo-options-sheet')) return;
-  document.getElementById('photo-options-sheet').classList.remove('open');
-  _photoCtx = null;
-}
-
-function triggerPhotoCamera() {
-  document.getElementById('photo-options-sheet').classList.remove('open');
-  if (!_photoCtx) return;
-  const id = `photo-input-${_photoCtx}-camera`;
-  const el = document.getElementById(id);
-  if (el) el.click();
-}
-
-function triggerPhotoLibrary() {
-  document.getElementById('photo-options-sheet').classList.remove('open');
-  if (!_photoCtx) return;
-  const id = `photo-input-${_photoCtx}-library`;
-  const el = document.getElementById(id);
-  if (el) el.click();
-}
-
-function handlePhotos(input, ctx) {
-  Array.from(input.files).forEach(file => {
-    const reader = new FileReader();
-    reader.onload = e => {
-      S.photos[ctx].push({ base64: e.target.result, name: file.name });
-      renderPhotoGrid(ctx);
-      updateLocDisplay(`loc-${ctx === 'notag' ? 'notag' : ctx}`);
-    };
-    reader.readAsDataURL(file);
-  });
-  input.value = '';
-}
-
-function renderPhotoGrid(ctx) {
-  const gridIds = {
-    new: 'new-photos-grid', damage: 'damage-photos-grid',
-    updatephoto: 'updatephoto-photos-grid', notag: 'notag-photos-grid',
-  };
-  const grid = document.getElementById(gridIds[ctx]);
-  if (!grid) return;
-  const thumbs = S.photos[ctx].map((p, i) => `
-    <div class="photo-thumb-wrap">
-      <img src="${p.base64}" />
-      <button class="photo-remove" onclick="removePhoto('${ctx}',${i})">✕</button>
-    </div>`).join('');
-  grid.innerHTML = thumbs + `<div class="add-photo-btn" onclick="showPhotoOptions('${ctx}')"><span class="add-photo-icon">📷</span><span>Add</span></div>`;
-}
-
-function removePhoto(ctx, i) {
-  S.photos[ctx].splice(i, 1);
-  renderPhotoGrid(ctx);
-}
-
-// ══════════════════════════════════════════
-// NO-TAG REGISTRATION
-// ══════════════════════════════════════════
-function updateNoTagPreview() {
-  const name = document.getElementById('notag-name').value.trim().toUpperCase().replace(/\s+/g, '-') || '—';
-  document.getElementById('notag-id-preview').textContent = name;
-}
-
-function handleNoTagCatSelect(sel) {
-  if (!sel.value) return;
-  S.currentNoTagCategory = sel.value;
-  const disp = document.getElementById('notag-cat-display');
-  if (disp) { disp.textContent = sel.value; disp.style.display = 'block'; }
-}
-
-function showNoTagScreen() {
-  S.photos.notag = [];
-  S.currentNoTagCategory = null;
-  renderPhotoGrid('notag');
-  populateCatDropdown();
-  buildWhoGrid('notag');
-  updateLocDisplay('loc-notag');
-  document.getElementById('notag-name').value = '';
-  document.getElementById('notag-notes').value = '';
-  document.getElementById('notag-qty').value = 1;
-  document.getElementById('notag-id-preview').textContent = '—';
-  const disp = document.getElementById('notag-cat-display');
-  if (disp) { disp.style.display = 'none'; disp.textContent = ''; }
-  updateFabs();
-  showScreen('screen-notag');
-}
-
-async function submitNoTag() {
-  const name = document.getElementById('notag-name').value.trim();
-  const cat  = S.currentNoTagCategory || '';
-  const qty  = parseInt(document.getElementById('notag-qty').value) || 1;
-  const notes = document.getElementById('notag-notes').value.trim();
-  const who   = getWho('notag');
-
-  if (!name) { toast('Item name required', true); return; }
-  if (!cat)  { toast('Add a category first', true); return; }
-
-  // Generate a pseudo-ID from name
-  const id = name.toUpperCase().replace(/\s+/g, '-').substring(0, 10) + '-NOTAG';
-
-  const btn = document.getElementById('btn-notag');
-  btn.disabled = true; btn.textContent = 'Submitting…';
-
-  const payload = {
-    action: 'register', id, name, category: cat,
-    totalQty: qty, notes, who,
-    gpsLat:   S.gps?.lat      || '',
-    gpsLng:   S.gps?.lng      || '',
-    gpsAcc:   S.gps?.accuracy || '',
-    gpsLabel: S.gps?.label    || '',
-    photos:   S.photos.notag.map(p => p.base64),
-    noTag:    true,
-    timestamp: new Date().toISOString(),
-  };
-
-  const result = await postToScript(payload);
-  btn.disabled = false; btn.textContent = 'Register Item';
-
-  if (result.success) showSuccessScreen('register', id, name);
-  else toast(result.error || 'Submission failed', true);
-}
-
-// ══════════════════════════════════════════
-// WHO SELECTORS
-// ══════════════════════════════════════════
-const SCREENS_WITH_WHO = ['new','takeout','return','damage','notag'];
-
-function buildWhoGrids() {
-  SCREENS_WITH_WHO.forEach(ctx => buildWhoGrid(ctx));
-}
-
-function buildWhoGrid(ctx) {
-  const grid = document.getElementById(`who-grid-${ctx}`);
-  if (!grid) return;
-  grid.innerHTML = TEAM.map(name =>
-    `<button class="who-btn" onclick="selectWho(this,'${ctx}')">${name}</button>`
-  ).join('') + `<button class="who-btn" onclick="selectWho(this,'${ctx}')">+ Other</button>`;
-  const first = grid.querySelector('.who-btn');
-  if (first) first.classList.add('selected');
-}
-
-function selectWho(btn, ctx) {
-  const grid = document.getElementById(`who-grid-${ctx}`);
-  grid.querySelectorAll('.who-btn').forEach(b => b.classList.remove('selected'));
-  btn.classList.add('selected');
-  const custom = document.getElementById(`custom-who-${ctx}`);
-  if (btn.textContent.includes('Other')) {
-    if (custom) { custom.style.display = 'block'; custom.focus(); }
-  } else {
-    if (custom) custom.style.display = 'none';
-  }
-}
-
-function getWho(ctx) {
-  const grid = document.getElementById(`who-grid-${ctx}`);
-  const sel  = grid?.querySelector('.who-btn.selected');
-  if (!sel || sel.textContent.includes('Other')) {
-    const custom = document.getElementById(`custom-who-${ctx}`);
-    return custom?.value.trim() || S.sessionWho || TEAM[0];
-  }
-  return sel.textContent;
-}
-
-// ══════════════════════════════════════════
-// GPS + REVERSE GEOCODE
-// ══════════════════════════════════════════
-function getGPS() {
-  if (!navigator.geolocation) return;
-  navigator.geolocation.getCurrentPosition(
-    async pos => {
-      S.gps = {
-        lat:      pos.coords.latitude.toFixed(6),
-        lng:      pos.coords.longitude.toFixed(6),
-        accuracy: Math.round(pos.coords.accuracy),
-        label:    null,
-      };
-      try {
-        const r = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${S.gps.lat}&lon=${S.gps.lng}&format=json`);
-        const d = await r.json();
-        const a = d.address || {};
-        const suburb = a.suburb || a.neighbourhood || a.village || a.town || '';
-        const city   = a.city   || a.state_district || a.county || '';
-        S.gps.label  = [suburb, city].filter(Boolean).join(', ') || `${S.gps.lat}, ${S.gps.lng}`;
-      } catch(e) {
-        S.gps.label = `${S.gps.lat}, ${S.gps.lng}`;
-      }
-      const txt = `${S.gps.label} (±${S.gps.accuracy}m)`;
-      ['loc-new','loc-takeout','loc-return','loc-notag'].forEach(elId => {
-        const el = document.getElementById(elId);
-        if (el) { el.textContent = txt; el.className = 'loc-val'; }
-      });
-    },
-    () => {
-      ['loc-new','loc-takeout','loc-return','loc-notag'].forEach(elId => {
-        const el = document.getElementById(elId);
-        if (el) { el.textContent = 'Location unavailable'; el.className = 'loc-val error'; }
-      });
-    },
-    { enableHighAccuracy: true, timeout: 10000 }
-  );
-}
-
-function updateLocDisplay(elId) {
-  const el = document.getElementById(elId);
-  if (!el || !S.gps) return;
-  el.textContent = `${S.gps.label || S.gps.lat + ', ' + S.gps.lng} (±${S.gps.accuracy}m)`;
-  el.className = 'loc-val';
-}
-
-// ══════════════════════════════════════════
-// QTY
-// ══════════════════════════════════════════
-function adjustQty(inputId, delta) {
-  const input = document.getElementById(inputId);
-  input.value = Math.max(1, (parseInt(input.value) || 1) + delta);
-}
-
-function clampQty(input) {
-  const v = parseInt(input.value);
-  if (isNaN(v) || v < 1) input.value = 1;
-}
-
-// ══════════════════════════════════════════
-// CATEGORIES
-// ══════════════════════════════════════════
-const CAT_KEY = 'vinyl_categories';
-
-function loadCategories() {
-  try { return JSON.parse(localStorage.getItem(CAT_KEY) || '[]'); }
-  catch(e) { return []; }
-}
-
-function saveCategories(cats) {
-  try { localStorage.setItem(CAT_KEY, JSON.stringify(cats)); } catch(e) {}
-}
-
-function populateCatDropdown() {
-  const cats = loadCategories();
-  ['new-cat','edit-cat','notag-cat'].forEach(selId => {
-    const sel = document.getElementById(selId);
-    if (!sel) return;
-    const cur = sel.value;
-    sel.innerHTML = (selId === 'new-cat' || selId === 'notag-cat') ? `<option value="">— Select or add new —</option>` : '';
-    cats.forEach(c => {
-      const opt = document.createElement('option');
-      opt.value = c; opt.textContent = c;
-      sel.appendChild(opt);
-    });
-    if (cur) sel.value = cur;
-  });
-}
-
-function handleCatSelect(sel) {
-  if (!sel.value) return;
-  S.currentCategory = sel.value;
-  const disp = document.getElementById('new-cat-display');
-  if (disp) { disp.textContent = sel.value; disp.style.display = 'block'; }
-}
-
-function promptNewCategory() {
-  const name = prompt('New category name (e.g. NRMA, Barriers, Audio):');
-  if (!name || !name.trim()) return;
-  const trimmed = name.trim();
-  const cats = loadCategories();
-  if (!cats.includes(trimmed)) { cats.push(trimmed); saveCategories(cats); }
-  populateCatDropdown();
-  S.currentCategory = trimmed;
-  const sel  = document.getElementById('new-cat');
-  const disp = document.getElementById('new-cat-display');
-  if (sel)  sel.value = trimmed;
-  if (disp) { disp.textContent = trimmed; disp.style.display = 'block'; }
-  toast(`Category "${trimmed}" ready`);
-}
-
-// ══════════════════════════════════════════
-// SUCCESS
-// ══════════════════════════════════════════
-const SUCCESS_MAP = {
-  register: { icon:'📦', title:'Registered', cls:'orange', detail:(id,n)=>`${n} (${id}) added to master inventory.` },
-  takeout:  { icon:'📤', title:'Added',       cls:'orange', detail:(id,n)=>`${id} added to load list.` },
-  return:   { icon:'✅', title:'Returned',    cls:'',       detail:(id,n)=>`${n} logged back into storage.` },
-  damage:   { icon:'⚠️', title:'Flagged',     cls:'amber',  detail:(id,n)=>`Damage report logged for ${id}.` },
-  photo:    { icon:'📷', title:'Updated',     cls:'',       detail:(id,n)=>`Photos updated for ${id}.` },
-  edit:     { icon:'✏️', title:'Saved',        cls:'',       detail:(id,n)=>`Details updated for ${n}.` },
-  load:     { icon:'🚛', title:'Submitted',   cls:'',       detail:(id,n)=>`Load list submitted for "${n}".` },
-  delivery: { icon:'🚚', title:'Received',    cls:'',       detail:(id,n)=>`Delivery from ${n} logged. New tab created in Sheet.` },
-};
-
-function showSuccessScreen(type, id, name) {
-  const m = SUCCESS_MAP[type] || { icon:'✅', title:'Done', cls:'', detail:()=>'' };
-  document.getElementById('success-icon').textContent   = m.icon;
-  document.getElementById('success-title').textContent  = m.title;
-  document.getElementById('success-title').className    = `success-title ${m.cls}`;
-  document.getElementById('success-id').textContent     = id ? `ID: ${id}` : '';
-  document.getElementById('success-detail').textContent = m.detail(id, name);
-
-  // If we just registered via ?id=NEW, offer Register Another (resets the same form)
-  const primaryBtn   = document.getElementById('success-primary-btn');
-  const secondaryBtn = document.getElementById('success-secondary-btn');
-  if (S._fromNewMode && type === 'register') {
-    primaryBtn.textContent = '+ Register Another';
-    primaryBtn.onclick = () => { S._fromNewMode = false; showNewItemDirect(); };
-    secondaryBtn.style.display = 'none';
-  } else {
-    primaryBtn.textContent = 'Scan Another';
-    primaryBtn.onclick = () => showScreen('screen-manual');
-    secondaryBtn.style.display = '';
-  }
-
-  showScreen('screen-success');
-}
-
-// ══════════════════════════════════════════
-// API
-// ══════════════════════════════════════════
-async function postToScript(payload) {
-  if (!CONFIG.SCRIPT_URL || CONFIG.SCRIPT_URL.includes('YOUR_APPS_SCRIPT')) {
-    return { success: false, error: 'Script URL not configured.' };
-  }
-
-  // If clearly offline, queue immediately without attempting a fetch
-  if (!navigator.onLine) {
-    queuePayload(payload);
-    return { success: true, queued: true };
-  }
-
-  // fetchWithTimeout: handles patchy connections where navigator.onLine says "yes"
-  // but packets aren't getting through. Aborts after 8 seconds and queues instead.
-  const TIMEOUT_MS = 8000;
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
-
-  try {
-    const resp = await fetch(CONFIG.SCRIPT_URL, {
-      method: 'POST',
-      body: JSON.stringify(payload),
-      signal: controller.signal,
-    });
-    clearTimeout(timer);
-
-    if (!resp.ok) {
-      // Server error — queue for retry
-      queuePayload(payload);
-      return { success: true, queued: true };
-    }
-    const data = await resp.json();
-    if (!data.success) {
-      // App-level validation error — don't queue (bad data), surface the error
-      return data;
-    }
-    return data;
-  } catch(e) {
-    clearTimeout(timer);
-    // Covers: timeout (AbortError), no signal, DNS failure, anything network-related
-    queuePayload(payload);
-    return { success: true, queued: true };
-  }
-}
-
-// ══════════════════════════════════════════
-// SCREEN NAV
-// ══════════════════════════════════════════
-function showScreen(id) {
-  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-  document.getElementById(id).classList.add('active');
-  window.scrollTo(0, 0);
-}
-
-// ══════════════════════════════════════════
-// TOAST
-// ══════════════════════════════════════════
-let toastTimer;
-function toast(msg, isError=false) {
-  const el = document.getElementById('toast');
-  el.textContent = msg;
-  el.className = 'show' + (isError ? ' error' : '');
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => { el.className = ''; }, 3000);
-}
-
-// GO
-init();
+/* JS appended below */
 </script>
 </body>
 </html>
