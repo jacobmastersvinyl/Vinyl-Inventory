@@ -167,7 +167,7 @@
       <h1>Scan or enter a shelf</h1>
       <p class="muted">Tap an NFC tag, scan a QR, or type the shelf code.</p>
       <button class="primary" onclick="browseManual()">Enter shelf manually</button>
-      <button onclick="browseNoTag()">Item has no shelf yet</button>
+      <button onclick="browseNoTag()">Add a new item</button>
       <button class="ghost" onclick="show('screen-session')">Back</button>
     </div>
   </section>
@@ -184,11 +184,13 @@
     </div>
   </section>
 
-  <!-- NO SHELF / UNPLACED -->
+  <!-- NEW ITEM (shelf optional) -->
   <section id="screen-notag" class="screen">
     <div class="card stack">
-      <h1>Unplaced item</h1>
-      <p class="muted">Logs the item without a shelf. You can assign a shelf later.</p>
+      <h1>Add new item</h1>
+      <p class="muted">Shelf is optional — leave it blank if you don't have one yet.</p>
+      <div class="field"><label>Shelf (optional)</label>
+        <input id="notag-shelf" data-shelf-input type="text" placeholder="e.g. B4" oninput="this.value=this.value.toUpperCase()"/></div>
       <div class="field"><label>Name</label>
         <input id="notag-name" type="text" placeholder="e.g. Silver bollard"/></div>
       <div class="field"><label>Brand</label>
@@ -197,8 +199,8 @@
         <input id="notag-type" type="text" placeholder="e.g. Infrastructure / Styling / Owned asset"/></div>
       <div class="field"><label>Total Qty</label>
         <input id="notag-qty" type="number" min="0" step="1" value="1"/></div>
-      <div class="field"><label>Notes (for Scan Log)</label>
-        <textarea id="notag-notes"></textarea></div>
+      <div class="field"><label>Notes</label>
+        <textarea id="notag-notes" placeholder="Saved to the Inventory row"></textarea></div>
       <div class="field">
         <label>Photo</label>
         <input type="file" accept="image/*" capture="environment" onchange="handlePhotoInput(event,'notag-photo')"/>
@@ -225,8 +227,8 @@
         <input id="new-type" type="text" placeholder="e.g. Infrastructure / Styling / Owned asset"/></div>
       <div class="field"><label>Total Qty</label>
         <input id="new-qty" type="number" min="0" step="1" value="1"/></div>
-      <div class="field"><label>Notes (for Scan Log)</label>
-        <textarea id="new-notes"></textarea></div>
+      <div class="field"><label>Notes</label>
+        <textarea id="new-notes" placeholder="Saved to the Inventory row"></textarea></div>
       <div class="field">
         <label>Photo</label>
         <input type="file" accept="image/*" capture="environment" onchange="handlePhotoInput(event,'new-photo')"/>
@@ -351,6 +353,8 @@
         <input id="edit-qty" type="number" min="0" step="1"/></div>
       <div class="field"><label>Move to shelf (optional)</label>
         <input id="edit-newshelf" type="text" placeholder="leave blank to keep" oninput="this.value=this.value.toUpperCase()"/></div>
+      <div class="field"><label>Notes</label>
+        <textarea id="edit-notes" placeholder="Saved to the Inventory row"></textarea></div>
       <button class="primary" onclick="submitEdit()">Queue edit</button>
       <button class="ghost" onclick="show('screen-existing')">Back</button>
     </div>
@@ -691,6 +695,7 @@ function renderExistingItem(item){
   const host=document.getElementById('existing-details'); if(!host)return;
   const out=Number(item.qtyOut)||0, total=Number(item.totalQty)||0;
   const statusPill = item.status==='out'?'pill pill-err':(item.status==='partial'?'pill pill-warn':'pill pill-ok');
+  const notes = item.notes ? `<div style="margin-top:6px"><span class="muted">Notes:</span> ${String(item.notes).replace(/</g,'&lt;')}</div>` : '';
   host.innerHTML=`
     <div class="big-shelf">${item.shelf||''}</div>
     <h1 style="margin:4px 0 8px">${item.name||'(no name)'}</h1>
@@ -698,6 +703,7 @@ function renderExistingItem(item){
          <span class="muted">${out} out of ${total}</span></div>
     <div><span class="muted">Brand:</span> ${item.brand||'—'}</div>
     <div><span class="muted">Type:</span> ${item.type||'—'}</div>
+    ${notes}
     <div class="muted" style="font-size:12px">Last scanned by ${item.lastScannedBy||'—'}</div>`;
 }
 
@@ -720,6 +726,7 @@ async function submitNew(){
   show('screen-success');
 }
 async function submitNoTag(){
+  const shelf=((document.getElementById('notag-shelf')||{}).value||'').trim().toUpperCase()||getShelfBind()||'';
   const name=(document.getElementById('notag-name')||{}).value?.trim();
   const brand=(document.getElementById('notag-brand')||{}).value?.trim()||'Funkified';
   const type=(document.getElementById('notag-type')||{}).value?.trim();
@@ -727,11 +734,11 @@ async function submitNoTag(){
   const notes=(document.getElementById('notag-notes')||{}).value?.trim();
   if(!name){toast('Name required');return;}
   await enqueue('registerNoTag',Object.assign({
-    name,brand,type,totalQty:Number(totalQty)||0,notes,
+    shelf,name,brand,type,totalQty:Number(totalQty)||0,notes,
     team:state.team||'',photo:state.pendingPhoto?.dataUrl||'',ts:nowIso()
   },gpsPayload()));
   state.pendingPhoto=null;
-  toast('Queued untagged: '+name);
+  toast(shelf?('Queued: '+shelf+' — '+name):('Queued: '+name));
   show('screen-success');
 }
 async function submitTakeOut(){
@@ -781,6 +788,7 @@ function prefillEdit(){
   set('edit-type',it.type);
   set('edit-qty',it.totalQty||0);
   set('edit-newshelf','');
+  set('edit-notes',it.notes||'');
 }
 async function submitEdit(){
   const name=(document.getElementById('edit-name')||{}).value?.trim();
@@ -788,10 +796,11 @@ async function submitEdit(){
   const type=(document.getElementById('edit-type')||{}).value?.trim();
   const totalQty=(document.getElementById('edit-qty')||{}).value;
   const newShelf=((document.getElementById('edit-newshelf')||{}).value||'').trim().toUpperCase();
+  const notes=(document.getElementById('edit-notes')||{}).value;
   await enqueue('edit',{
     shelf:state.currentShelf,name,brand,type,
     totalQty:totalQty===''?'':Number(totalQty)||0,
-    newShelf,team:state.team||'',ts:nowIso()
+    newShelf,notes,team:state.team||'',ts:nowIso()
   });
   toast('Queued edit');
   show('screen-success');
