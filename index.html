@@ -1,152 +1,881 @@
-<!DOCTYPE html>
-<html>
+<!doctype html>
+<html lang="en">
 <head>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Item Logger</title>
-  <style>
-    body { font-family: Arial; padding: 20px; }
-    input, textarea, button {
-      width: 100%;
-      margin: 8px 0;
-      padding: 10px;
-      font-size: 16px;
-    }
-    .status { margin-top: 10px; }
-  </style>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+<meta name="theme-color" content="#0a0a0a"/>
+<title>Funkified — Storage</title>
+<link rel="manifest" href="./manifest.json"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+  :root{
+    --bg:#0a0a0a; --panel:#141414; --panel2:#1c1c1c; --border:#2a2a2a;
+    --text:#f2f2f2; --muted:#9a9a9a; --accent:#ff7a18; --accent2:#ffb347;
+    --ok:#22c55e; --warn:#facc15; --err:#ef4444;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--text);
+    font-family:'Inter',system-ui,-apple-system,sans-serif;
+    -webkit-tap-highlight-color:transparent;overscroll-behavior:none}
+  body{padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)}
+  .app{max-width:640px;margin:0 auto;padding:16px}
+  header{display:flex;align-items:center;justify-content:space-between;padding:8px 4px 16px}
+  .brand{display:flex;align-items:center;gap:10px;font-weight:700;letter-spacing:.5px}
+  .brand .dot{width:14px;height:14px;border-radius:50%;background:var(--accent);box-shadow:0 0 12px var(--accent)}
+  .pending-chip{display:none;align-items:center;justify-content:center;min-width:22px;height:22px;padding:0 8px;
+    border-radius:11px;background:var(--accent);color:#111;font-size:12px;font-weight:700}
+  .screen{display:none}
+  .screen.active{display:block;animation:fade .2s ease-out}
+  @keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+  h1{font-size:22px;margin:0 0 4px}
+  h2{font-size:18px;margin:0 0 12px}
+  p{line-height:1.45}
+  .muted{color:var(--muted)}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:12px}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .grid.three{grid-template-columns:1fr 1fr 1fr}
+  button,.btn{appearance:none;border:1px solid var(--border);background:var(--panel2);color:var(--text);
+    padding:14px 16px;border-radius:12px;font-size:16px;font-weight:600;cursor:pointer;width:100%}
+  button.primary,.btn.primary{background:var(--accent);color:#111;border-color:transparent}
+  button.ghost{background:transparent}
+  button.danger{background:transparent;color:var(--err);border-color:rgba(239,68,68,.4)}
+  button.small{padding:8px 10px;font-size:13px;width:auto}
+  .row{display:flex;gap:8px}
+  label{display:block;font-size:13px;color:var(--muted);margin:6px 0 4px}
+  input[type=text],input[type=number],input[type=search],textarea,select{
+    width:100%;padding:12px;border-radius:10px;border:1px solid var(--border);background:#0f0f0f;
+    color:var(--text);font-size:16px;font-family:inherit}
+  textarea{min-height:70px;resize:vertical}
+  .field{margin-bottom:10px}
+  .stack>*+*{margin-top:10px}
+  .center{text-align:center}
+  .pill{display:inline-flex;align-items:center;padding:2px 8px;font-size:11px;border-radius:999px;
+    background:#222;color:#ccc;text-transform:uppercase;letter-spacing:.5px}
+  .pill-warn{background:rgba(250,204,21,.15);color:var(--warn)}
+  .pill-err{background:rgba(239,68,68,.15);color:var(--err)}
+  .pill-ok{background:rgba(34,197,94,.15);color:var(--ok)}
+  .shelf-bind-banner{display:none;align-items:center;gap:8px;background:rgba(255,122,24,.12);
+    border:1px solid rgba(255,122,24,.4);color:var(--accent2);padding:8px 12px;border-radius:10px;
+    font-size:13px;margin-bottom:10px}
+  .shelf-bind-banner .shelf-code{font-weight:700;color:var(--accent)}
+  #offline-bar{display:none;background:var(--err);color:#fff;text-align:center;padding:6px;font-size:13px;
+    position:sticky;top:0;z-index:10}
+  #offline-bar.show{display:block}
+  #toast{position:fixed;left:50%;bottom:32px;transform:translateX(-50%) translateY(60px);
+    background:#fff;color:#111;padding:10px 16px;border-radius:999px;font-weight:600;
+    opacity:0;transition:all .25s;pointer-events:none;z-index:20;max-width:90%;text-align:center}
+  #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  .hidden{display:none!important}
+  .photo-preview{max-width:100%;border-radius:10px;margin-top:8px;display:none}
+  .pending-item{background:var(--panel2);border:1px solid var(--border);border-radius:10px;padding:10px;margin-bottom:8px}
+  .pending-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:4px}
+  .pending-body{font-size:14px;color:#ddd;margin-bottom:6px}
+  .err-line{color:var(--err);font-size:12px;margin-bottom:6px;word-break:break-word}
+  .pending-actions{display:flex;gap:8px}
+  .pending-actions button{width:auto;padding:8px 12px;font-size:13px}
+  code{background:#000;padding:1px 6px;border-radius:6px;font-size:13px}
+  [data-team-opt]{cursor:pointer}
+  [data-team-opt].selected{background:var(--accent);color:#111;border-color:transparent}
+  .big-shelf{font-size:28px;font-weight:800;letter-spacing:2px;color:var(--accent)}
+  .switchboard button{min-height:72px;font-size:18px}
+  .qty-row{display:flex;gap:8px;align-items:center}
+  .qty-row button{width:44px;padding:10px 0}
+  .qty-row input{flex:1;text-align:center}
+</style>
 </head>
 <body>
+<div id="offline-bar">Offline — submissions are being queued</div>
+<div class="app">
+  <header>
+    <div class="brand"><span class="dot"></span><span>FUNKIFIED</span></div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <span class="muted" style="font-size:12px">Pending</span>
+      <span class="pending-chip"></span>
+      <button class="small ghost" onclick="show('screen-pending');renderPendingList()">Queue</button>
+    </div>
+  </header>
 
-<h2>Log Item</h2>
+  <!-- SESSION SWITCHBOARD -->
+  <section id="screen-session" class="screen active">
+    <div class="card">
+      <h1>Who's on?</h1>
+      <div class="grid three">
+        <button data-team-opt="Alpha" onclick="setTeam('Alpha')">Alpha</button>
+        <button data-team-opt="Bravo" onclick="setTeam('Bravo')">Bravo</button>
+        <button data-team-opt="Charlie" onclick="setTeam('Charlie')">Charlie</button>
+      </div>
+      <div class="field" style="margin-top:10px">
+        <label>Or enter a name</label>
+        <input id="team-other" type="text" placeholder="e.g. Jacob" oninput="setTeam(this.value)"/>
+      </div>
+      <p class="muted">Team: <span data-team-display>—</span></p>
+    </div>
+    <div class="card switchboard stack">
+      <h2>What are you doing?</h2>
+      <button class="primary" onclick="startMode('sort')">Sort / Inventory</button>
+      <button onclick="startMode('loadout')">Loadout for a Job</button>
+      <button onclick="startMode('delivery')">Delivery / Transfer</button>
+      <button class="ghost" onclick="manualBindShelf()">Bind to shelf manually</button>
+    </div>
+  </section>
 
-<input id="id" placeholder="ID" />
-<input id="name" placeholder="Name" />
-<input id="category" placeholder="Category" />
-<textarea id="description" placeholder="Description"></textarea>
+  <!-- LOADOUT SETUP -->
+  <section id="screen-loadout-setup" class="screen">
+    <div class="card stack">
+      <h1>Loadout</h1>
+      <div class="field">
+        <label>Job / Event name</label>
+        <input id="loadout-job" type="text" placeholder="e.g. Daffodils 2026"/>
+      </div>
+      <button class="primary" onclick="submitLoadoutSetup()">Start loadout</button>
+      <button class="ghost" onclick="show('screen-session')">Back</button>
+    </div>
+  </section>
 
-<input id="photos" type="file" accept="image/*" multiple />
+  <!-- DELIVERY SETUP -->
+  <section id="screen-delivery-setup" class="screen">
+    <div class="card stack">
+      <h1>Delivery</h1>
+      <div class="field"><label>From</label>
+        <input id="delivery-from" type="text" placeholder="Warehouse / Venue / Truck"/></div>
+      <div class="field"><label>To</label>
+        <input id="delivery-to" type="text" placeholder="Warehouse / Venue / Truck"/></div>
+      <div class="field"><label>Note (optional)</label>
+        <textarea id="delivery-note"></textarea></div>
+      <button class="primary" onclick="submitDeliverySetup()">Start delivery</button>
+      <button class="ghost" onclick="show('screen-session')">Back</button>
+    </div>
+  </section>
 
-<button onclick="save()">Save</button>
+  <!-- DELIVERY SCAN LOOP -->
+  <section id="screen-delivery" class="screen">
+    <div class="shelf-bind-banner">Bound to shelf <span class="shelf-code"></span></div>
+    <div class="card stack">
+      <h1>Delivery</h1>
+      <p class="muted"><span data-team-display>—</span> · Scan each item as it moves.</p>
+      <div class="field"><label>Shelf</label>
+        <input id="delivery-shelf" data-shelf-input type="text" placeholder="e.g. B1"/></div>
+      <button class="primary" onclick="submitDelivery()">Queue scan</button>
+      <button class="ghost" onclick="show('screen-session')">Finish delivery</button>
+    </div>
+  </section>
 
-<div class="status" id="status"></div>
+  <!-- BROWSE (scan entry point for sort/loadout) -->
+  <section id="screen-browse" class="screen">
+    <div class="shelf-bind-banner">Bound to shelf <span class="shelf-code"></span></div>
+    <div class="card stack">
+      <h1>Scan or enter a shelf</h1>
+      <p class="muted">Tap an NFC tag, scan a QR, or type the shelf code.</p>
+      <button class="primary" onclick="browseManual()">Enter shelf manually</button>
+      <button onclick="browseNoTag()">Item has no shelf yet</button>
+      <button class="ghost" onclick="show('screen-session')">Back</button>
+    </div>
+  </section>
+
+  <!-- MANUAL SHELF -->
+  <section id="screen-manual" class="screen">
+    <div class="card stack">
+      <h1>Enter shelf</h1>
+      <div class="field">
+        <input id="manual-shelf" type="text" autocomplete="off" placeholder="e.g. B1" oninput="this.value=this.value.toUpperCase()"/>
+      </div>
+      <button class="primary" onclick="submitManualShelf()">Look up</button>
+      <button class="ghost" onclick="show('screen-browse')">Back</button>
+    </div>
+  </section>
+
+  <!-- NO SHELF / UNPLACED -->
+  <section id="screen-notag" class="screen">
+    <div class="card stack">
+      <h1>Unplaced item</h1>
+      <p class="muted">Logs the item without a shelf. You can assign a shelf later.</p>
+      <div class="field"><label>Name</label>
+        <input id="notag-name" type="text" placeholder="e.g. Silver bollard"/></div>
+      <div class="field"><label>Brand</label>
+        <input id="notag-brand" type="text" value="Funkified"/></div>
+      <div class="field"><label>Type</label>
+        <input id="notag-type" type="text" placeholder="e.g. Infrastructure / Styling / Owned asset"/></div>
+      <div class="field"><label>Total Qty</label>
+        <input id="notag-qty" type="number" min="0" step="1" value="1"/></div>
+      <div class="field"><label>Notes (for Scan Log)</label>
+        <textarea id="notag-notes"></textarea></div>
+      <div class="field">
+        <label>Photo</label>
+        <input type="file" accept="image/*" capture="environment" onchange="handlePhotoInput(event,'notag-photo')"/>
+        <img id="notag-photo" class="photo-preview"/>
+      </div>
+      <button class="primary" onclick="submitNoTag()">Queue item</button>
+      <button class="ghost" onclick="show('screen-browse')">Back</button>
+    </div>
+  </section>
+
+  <!-- NEW ITEM ON SHELF -->
+  <section id="screen-new" class="screen">
+    <div class="shelf-bind-banner">Bound to shelf <span class="shelf-code"></span></div>
+    <div class="card stack">
+      <h1>New shelf entry</h1>
+      <p class="muted">Shelf <code id="new-shelf-display"></code> isn't set up yet.</p>
+      <div class="field"><label>Shelf</label>
+        <input id="new-shelf" data-shelf-input type="text" oninput="this.value=this.value.toUpperCase()"/></div>
+      <div class="field"><label>Name</label>
+        <input id="new-name" type="text"/></div>
+      <div class="field"><label>Brand</label>
+        <input id="new-brand" type="text" value="Funkified"/></div>
+      <div class="field"><label>Type</label>
+        <input id="new-type" type="text" placeholder="e.g. Infrastructure / Styling / Owned asset"/></div>
+      <div class="field"><label>Total Qty</label>
+        <input id="new-qty" type="number" min="0" step="1" value="1"/></div>
+      <div class="field"><label>Notes (for Scan Log)</label>
+        <textarea id="new-notes"></textarea></div>
+      <div class="field">
+        <label>Photo</label>
+        <input type="file" accept="image/*" capture="environment" onchange="handlePhotoInput(event,'new-photo')"/>
+        <img id="new-photo" class="photo-preview"/>
+      </div>
+      <button class="primary" onclick="submitNew()">Register</button>
+      <button class="ghost" onclick="show('screen-browse')">Back</button>
+    </div>
+  </section>
+
+  <!-- EXISTING ITEM MENU -->
+  <section id="screen-existing" class="screen">
+    <div class="card">
+      <div id="existing-details" class="stack"></div>
+    </div>
+    <div class="card stack">
+      <button class="primary" onclick="show('screen-takeout')">Take out</button>
+      <button onclick="show('screen-return')">Return</button>
+      <button onclick="show('screen-damage')">Log damage</button>
+      <button onclick="show('screen-photo')">Add photo</button>
+      <button onclick="show('screen-edit');prefillEdit()">Edit details</button>
+      <button id="btn-load" class="hidden" onclick="show('screen-load')">Load onto job</button>
+      <button class="ghost" onclick="show('screen-browse')">Back</button>
+    </div>
+  </section>
+
+  <!-- TAKE OUT -->
+  <section id="screen-takeout" class="screen">
+    <div class="card stack">
+      <h1>Take out</h1>
+      <div class="field"><label>Qty</label>
+        <div class="qty-row">
+          <button onclick="stepQty('takeout-qty',-1)">−</button>
+          <input id="takeout-qty" type="number" min="1" step="1" value="1"/>
+          <button onclick="stepQty('takeout-qty',1)">+</button>
+        </div></div>
+      <div class="field"><label>Reason / Job</label>
+        <input id="takeout-reason" type="text"/></div>
+      <button class="primary" onclick="submitTakeOut()">Queue take-out</button>
+      <button class="ghost" onclick="show('screen-existing')">Back</button>
+    </div>
+  </section>
+
+  <!-- LOAD (take out AND add to job sheet) -->
+  <section id="screen-load" class="screen">
+    <div class="card stack">
+      <h1>Load onto job</h1>
+      <p class="muted">Job: <strong id="load-job-display">—</strong></p>
+      <div class="field"><label>Qty</label>
+        <div class="qty-row">
+          <button onclick="stepQty('load-qty',-1)">−</button>
+          <input id="load-qty" type="number" min="1" step="1" value="1"/>
+          <button onclick="stepQty('load-qty',1)">+</button>
+        </div></div>
+      <button class="primary" onclick="submitLoad()">Queue load</button>
+      <button class="ghost" onclick="show('screen-existing')">Back</button>
+    </div>
+  </section>
+
+  <!-- RETURN -->
+  <section id="screen-return" class="screen">
+    <div class="card stack">
+      <h1>Return</h1>
+      <div class="field"><label>Qty</label>
+        <div class="qty-row">
+          <button onclick="stepQty('return-qty',-1)">−</button>
+          <input id="return-qty" type="number" min="1" step="1" value="1"/>
+          <button onclick="stepQty('return-qty',1)">+</button>
+        </div></div>
+      <div class="field"><label>Notes</label>
+        <textarea id="return-notes"></textarea></div>
+      <button class="primary" onclick="submitReturn()">Queue return</button>
+      <button class="ghost" onclick="show('screen-existing')">Back</button>
+    </div>
+  </section>
+
+  <!-- DAMAGE -->
+  <section id="screen-damage" class="screen">
+    <div class="card stack">
+      <h1>Log damage</h1>
+      <div class="field"><label>Description</label>
+        <textarea id="damage-desc" placeholder="What broke, how"></textarea></div>
+      <div class="field"><label>Severity</label>
+        <select id="damage-severity">
+          <option value="minor">Minor</option>
+          <option value="major">Major</option>
+          <option value="destroyed">Destroyed</option>
+        </select></div>
+      <div class="field">
+        <label>Photo</label>
+        <input type="file" accept="image/*" capture="environment" onchange="handlePhotoInput(event,'damage-photo')"/>
+        <img id="damage-photo" class="photo-preview"/>
+      </div>
+      <button class="primary" onclick="submitDamage()">Queue damage report</button>
+      <button class="ghost" onclick="show('screen-existing')">Back</button>
+    </div>
+  </section>
+
+  <!-- PHOTO UPDATE -->
+  <section id="screen-photo" class="screen">
+    <div class="card stack">
+      <h1>Add photo</h1>
+      <p class="muted">Appends to the Photos column — existing photos are kept.</p>
+      <input type="file" accept="image/*" capture="environment" onchange="handlePhotoInput(event,'update-photo')"/>
+      <img id="update-photo" class="photo-preview"/>
+      <button class="primary" onclick="submitUpdatePhoto()">Queue photo</button>
+      <button class="ghost" onclick="show('screen-existing')">Back</button>
+    </div>
+  </section>
+
+  <!-- EDIT DETAILS -->
+  <section id="screen-edit" class="screen">
+    <div class="card stack">
+      <h1>Edit details</h1>
+      <div class="field"><label>Name</label>
+        <input id="edit-name" type="text"/></div>
+      <div class="field"><label>Brand</label>
+        <input id="edit-brand" type="text"/></div>
+      <div class="field"><label>Type</label>
+        <input id="edit-type" type="text"/></div>
+      <div class="field"><label>Total Qty</label>
+        <input id="edit-qty" type="number" min="0" step="1"/></div>
+      <div class="field"><label>Move to shelf (optional)</label>
+        <input id="edit-newshelf" type="text" placeholder="leave blank to keep" oninput="this.value=this.value.toUpperCase()"/></div>
+      <button class="primary" onclick="submitEdit()">Queue edit</button>
+      <button class="ghost" onclick="show('screen-existing')">Back</button>
+    </div>
+  </section>
+
+  <!-- SUCCESS -->
+  <section id="screen-success" class="screen">
+    <div class="card center stack">
+      <h1>Queued ✓</h1>
+      <p class="muted">Syncs automatically when online.</p>
+      <button class="primary" onclick="goScanAnother()">Scan another</button>
+      <button class="ghost" onclick="goHome()">Home</button>
+    </div>
+  </section>
+
+  <!-- PENDING -->
+  <section id="screen-pending" class="screen">
+    <div class="card">
+      <h1>Pending sync</h1>
+      <p class="muted">Items waiting to reach the sheet. Retries happen automatically when online.</p>
+      <div id="pending-list" class="stack"></div>
+      <div class="row" style="margin-top:10px">
+        <button onclick="retryAll()">Retry all</button>
+        <button class="ghost" onclick="show('screen-session')">Back</button>
+      </div>
+    </div>
+  </section>
+</div>
+<div id="toast"></div>
 
 <script>
-const API_URL = "https://script.google.com/macros/s/AKfycbwxhZiH_yrNp7oTWSht6qu7y5sWkKXnMTVAQyEXklnYXEbMQgYhacfhKU4ipJQ-rY6g8g/exec";
+/* =========================================================
+   FUNKIFIED — Offline-first Storage client v6
+   Schema key: Shelf (primary). No ID field.
+   ========================================================= */
+const ENDPOINT = 'https://script.google.com/macros/s/AKfycbwxhZiH_yrNp7oTWSht6qu7y5sWkKXnMTVAQyEXklnYXEbMQgYhacfhKU4ipJQ-rY6g8g/exec';
+const SHELF_BIND_MINUTES = 10;
+const DRAIN_RETRY_MS = 15000;
+const POST_TIMEOUT_MS = 30000;
+const IN_FLIGHT_TIMEOUT_MS = 60000;
+const PHOTO_MAX_DIM = 1600;
+const PHOTO_QUALITY = 0.8;
 
-let queue = JSON.parse(localStorage.getItem('queue') || '[]');
+const state = {
+  team:null, mode:null, loadout:null, delivery:null,
+  currentShelf:null, currentItem:null, pendingPhoto:null,
+  shelfBind:null, gps:null
+};
 
-function setStatus(msg) {
-  document.getElementById('status').innerText = msg;
+function toast(msg, ms=2400){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  clearTimeout(toast._t);
+  toast._t=setTimeout(()=>t.classList.remove('show'), ms);
 }
 
-// compress image
-function compress(file) {
-  return new Promise(resolve => {
-    const img = new Image();
-    const reader = new FileReader();
-
-    reader.onload = e => {
-      img.src = e.target.result;
-    };
-
-    img.onload = () => {
-      const canvas = document.createElement('canvas');
-      const max = 800;
-      let w = img.width;
-      let h = img.height;
-
-      if (w > h && w > max) {
-        h *= max / w;
-        w = max;
-      } else if (h > max) {
-        w *= max / h;
-        h = max;
-      }
-
-      canvas.width = w;
-      canvas.height = h;
-
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(img, 0, 0, w, h);
-
-      resolve(canvas.toDataURL('image/jpeg', 0.6));
-    };
-
-    reader.readAsDataURL(file);
-  });
+function uuid(){
+  if(crypto&&crypto.randomUUID) return crypto.randomUUID();
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,c=>{
+    const r=Math.random()*16|0,v=c=='x'?r:(r&0x3|0x8); return v.toString(16);});
+}
+function nowIso(){ return new Date().toISOString(); }
+function stepQty(id,delta){
+  const el=document.getElementById(id); if(!el) return;
+  const v=Math.max(1,(parseInt(el.value)||1)+delta);
+  el.value=v;
 }
 
-async function getPhotos() {
-  const files = document.getElementById('photos').files;
-  const arr = [];
-
-  for (let f of files) {
-    const c = await compress(f);
-    arr.push(c);
-  }
-
-  return arr;
-}
-
-async function save() {
-  const item = {
-    id: document.getElementById('id').value.trim(),
-    name: document.getElementById('name').value.trim(),
-    category: document.getElementById('category').value.trim(),
-    description: document.getElementById('description').value.trim(),
-    photos: await getPhotos()
-  };
-
-  if (!item.id) {
-    setStatus("ID required");
-    return;
-  }
-
-  queue.push(item);
-  localStorage.setItem('queue', JSON.stringify(queue));
-
-  setStatus("Saved locally");
-
-  sync();
-}
-
-// retry upload
-async function sync() {
-  if (!navigator.onLine) {
-    setStatus("Offline — waiting");
-    return;
-  }
-
-  for (let i = 0; i < queue.length; i++) {
-    try {
-      const res = await fetch(API_URL, {
-        method: "POST",
-        body: JSON.stringify(queue[i])
-      });
-
-      const json = await res.json();
-
-      if (json.success) {
-        queue.splice(i, 1);
-        i--;
-        setStatus("Synced");
-      } else {
-        setStatus("Error syncing");
-        break;
-      }
-
-    } catch (e) {
-      setStatus("Connection failed");
-      break;
+/* ---------- IndexedDB outbox ---------- */
+const DB_NAME='funkified-db', DB_VERSION=1, STORE_OUTBOX='outbox';
+function openDB(){return new Promise((res,rej)=>{
+  const req=indexedDB.open(DB_NAME,DB_VERSION);
+  req.onupgradeneeded=e=>{
+    const db=e.target.result;
+    if(!db.objectStoreNames.contains(STORE_OUTBOX)){
+      const s=db.createObjectStore(STORE_OUTBOX,{keyPath:'clientId'});
+      s.createIndex('createdAt','createdAt');
+      s.createIndex('status','status');
     }
-  }
+  };
+  req.onsuccess=()=>res(req.result); req.onerror=()=>rej(req.error);
+});}
+function idbTx(store,mode='readonly'){return openDB().then(db=>{const tx=db.transaction(store,mode);return{tx,store:tx.objectStore(store)};});}
+async function idbPut(s,v){const{store}=await idbTx(s,'readwrite');return new Promise((r,j)=>{const q=store.put(v);q.onsuccess=()=>r(q.result);q.onerror=()=>j(q.error);});}
+async function idbGet(s,k){const{store}=await idbTx(s);return new Promise((r,j)=>{const q=store.get(k);q.onsuccess=()=>r(q.result);q.onerror=()=>j(q.error);});}
+async function idbDelete(s,k){const{store}=await idbTx(s,'readwrite');return new Promise((r,j)=>{const q=store.delete(k);q.onsuccess=()=>r();q.onerror=()=>j(q.error);});}
+async function idbGetAll(s){const{store}=await idbTx(s);return new Promise((r,j)=>{const q=store.getAll();q.onsuccess=()=>r(q.result||[]);q.onerror=()=>j(q.error);});}
+async function idbCount(s){const{store}=await idbTx(s);return new Promise((r,j)=>{const q=store.count();q.onsuccess=()=>r(q.result);q.onerror=()=>j(q.error);});}
 
-  localStorage.setItem('queue', JSON.stringify(queue));
+/* ---------- Online bar + pending chip ---------- */
+function updateOnlineBar(){
+  const bar=document.getElementById('offline-bar'); if(!bar)return;
+  navigator.onLine?bar.classList.remove('show'):bar.classList.add('show');
+}
+async function updatePendingChip(){
+  try{
+    const n=await idbCount(STORE_OUTBOX);
+    document.querySelectorAll('.pending-chip').forEach(el=>{
+      el.textContent=n>0?String(n):'';
+      el.style.display=n>0?'inline-flex':'none';
+    });
+  }catch(_){}
 }
 
-// auto retry every 15s
-setInterval(sync, 15000);
+/* ---------- Envelope + photo compression ---------- */
+function buildEnvelope(action,payload){
+  return{clientId:uuid(),action,payload,createdAt:nowIso(),attempts:0,status:'queued',inFlightAt:null,lastError:null};
+}
+function fileToDataUrl(f){return new Promise((r,j)=>{const x=new FileReader();x.onload=()=>r(x.result);x.onerror=()=>j(x.error);x.readAsDataURL(f);});}
+function loadImage(u){return new Promise((r,j)=>{const i=new Image();i.onload=()=>r(i);i.onerror=()=>j(new Error('img'));i.src=u;});}
+async function compressImage(file){
+  if(!file)return null;
+  const dataUrl=await fileToDataUrl(file);
+  const img=await loadImage(dataUrl);
+  let w=img.width,h=img.height;
+  if(w>PHOTO_MAX_DIM||h>PHOTO_MAX_DIM){const s=Math.min(PHOTO_MAX_DIM/w,PHOTO_MAX_DIM/h);w=Math.round(w*s);h=Math.round(h*s);}
+  const c=document.createElement('canvas');c.width=w;c.height=h;
+  c.getContext('2d').drawImage(img,0,0,w,h);
+  return c.toDataURL('image/jpeg',PHOTO_QUALITY);
+}
+async function handlePhotoInput(ev,previewId){
+  const f=ev.target.files&&ev.target.files[0]; if(!f)return;
+  try{
+    const dataUrl=await compressImage(f);
+    state.pendingPhoto={dataUrl};
+    if(previewId){const img=document.getElementById(previewId);if(img){img.src=dataUrl;img.style.display='block';}}
+    toast('Photo ready');
+  }catch(_){toast('Photo error');}
+}
 
+/* ---------- Enqueue + Drain ---------- */
+async function enqueue(action,payload){
+  const env=buildEnvelope(action,payload);
+  await idbPut(STORE_OUTBOX,env);
+  updatePendingChip();
+  drainOutbox().catch(()=>{});
+  return env.clientId;
+}
+
+let _drainLock=false;
+async function drainOutbox(manual=false){
+  if(_drainLock)return;
+  _drainLock=true;
+  try{
+    if(!navigator.onLine)return;
+    const now=Date.now();
+    const all=await idbGetAll(STORE_OUTBOX);
+    for(const env of all){
+      if(env.status==='in_flight'&&env.inFlightAt&&(now-new Date(env.inFlightAt).getTime())>IN_FLIGHT_TIMEOUT_MS){
+        env.status='queued'; env.inFlightAt=null; await idbPut(STORE_OUTBOX,env);
+      }
+    }
+    const fresh=(await idbGetAll(STORE_OUTBOX))
+      .filter(e=>e.status==='queued'||(manual&&e.status==='failed'))
+      .sort((a,b)=>a.createdAt<b.createdAt?-1:1);
+    for(const env of fresh){
+      if(!navigator.onLine)break;
+      env.status='in_flight'; env.inFlightAt=nowIso(); env.attempts=(env.attempts||0)+1;
+      await idbPut(STORE_OUTBOX,env);
+      let result;
+      try{ result=await postEnvelope(env); }
+      catch(err){
+        env.status='queued'; env.inFlightAt=null; env.lastError=String(err&&err.message||err);
+        await idbPut(STORE_OUTBOX,env); break;
+      }
+      if(result&&result.success){
+        await idbDelete(STORE_OUTBOX,env.clientId);
+      }else{
+        env.status='failed'; env.lastError=(result&&result.error)?result.error:'Unknown server error';
+        await idbPut(STORE_OUTBOX,env);
+      }
+      updatePendingChip(); renderPendingList();
+    }
+  }finally{ _drainLock=false; }
+}
+async function postEnvelope(env){
+  const body=Object.assign({clientId:env.clientId,action:env.action},env.payload);
+  const ctrl=new AbortController();
+  const tid=setTimeout(()=>ctrl.abort(),POST_TIMEOUT_MS);
+  try{
+    const res=await fetch(ENDPOINT,{method:'POST',mode:'cors',
+      headers:{'Content-Type':'text/plain;charset=utf-8'},
+      body:JSON.stringify(body),signal:ctrl.signal});
+    const text=await res.text();
+    let json; try{json=JSON.parse(text);}catch(_){throw new Error('Bad server response');}
+    return json;
+  }finally{ clearTimeout(tid); }
+}
+
+/* ---------- Screen + banners ---------- */
+function show(id){
+  document.querySelectorAll('.screen').forEach(el=>el.classList.remove('active'));
+  const el=document.getElementById(id); if(el) el.classList.add('active');
+  window.scrollTo(0,0); renderShelfBanners();
+}
+
+/* ---------- Shelf bind ---------- */
+function getShelfBind(){if(!state.shelfBind)return null;if(Date.now()>state.shelfBind.until){state.shelfBind=null;return null;}return state.shelfBind.code;}
+function setShelfBind(code){
+  if(!code){state.shelfBind=null;sessionStorage.removeItem('shelfBind');renderShelfBanners();return;}
+  state.shelfBind={code:code.toUpperCase(),until:Date.now()+SHELF_BIND_MINUTES*60*1000};
+  sessionStorage.setItem('shelfBind',JSON.stringify(state.shelfBind));
+  renderShelfBanners();
+}
+function renderShelfBanners(){
+  const code=getShelfBind();
+  document.querySelectorAll('.shelf-bind-banner').forEach(b=>{
+    if(code){b.style.display='flex';const s=b.querySelector('.shelf-code');if(s)s.textContent=code;}
+    else b.style.display='none';
+  });
+  if(code) document.querySelectorAll('input[data-shelf-input]').forEach(i=>{if(!i.value)i.value=code;});
+}
+
+/* ---------- URL params ---------- */
+function parseParams(){
+  const p=new URLSearchParams(location.search);
+  const shelf=p.get('shelf')||p.get('id'); // legacy ?id= still treated as shelf
+  if(shelf) setShelfBind(shelf.toUpperCase());
+  return{shelf};
+}
+
+/* ---------- Session persistence ---------- */
+function saveSession(){sessionStorage.setItem('funkSession',JSON.stringify({team:state.team,mode:state.mode,loadout:state.loadout,delivery:state.delivery}));}
+function restoreSession(){
+  try{
+    const raw=sessionStorage.getItem('funkSession');
+    if(raw){const s=JSON.parse(raw);state.team=s.team||null;state.mode=s.mode||null;state.loadout=s.loadout||null;state.delivery=s.delivery||null;}
+    const sb=sessionStorage.getItem('shelfBind');
+    if(sb){const p=JSON.parse(sb);if(p.until&&Date.now()<p.until)state.shelfBind=p;}
+  }catch(_){}
+  updateTeamUI();
+}
+
+/* ---------- Service worker ---------- */
+async function registerSW(){
+  if(!('serviceWorker' in navigator))return;
+  try{const reg=await navigator.serviceWorker.register('./sw.js');
+    if(reg.waiting) reg.waiting.postMessage({type:'SKIP_WAITING'});
+  }catch(e){console.warn('SW register failed',e);}
+}
+
+/* ---------- GPS (best-effort, non-blocking) ---------- */
+function tryGetGPS(){
+  if(!navigator.geolocation)return;
+  navigator.geolocation.getCurrentPosition(pos=>{
+    state.gps={lat:pos.coords.latitude,lng:pos.coords.longitude,acc:pos.coords.accuracy};
+  },()=>{}, {enableHighAccuracy:true,timeout:8000,maximumAge:60000});
+}
+function gpsPayload(){
+  if(!state.gps)return{};
+  return{gpsLat:state.gps.lat,gpsLng:state.gps.lng,gpsAccuracy:state.gps.acc};
+}
+
+/* ---------- Online events + periodic drain ---------- */
+window.addEventListener('online',()=>{updateOnlineBar();drainOutbox().catch(()=>{});});
+window.addEventListener('offline',updateOnlineBar);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)drainOutbox().catch(()=>{});});
+setInterval(()=>{if(navigator.onLine)drainOutbox().catch(()=>{});},DRAIN_RETRY_MS);
+
+/* ---------- Team + mode ---------- */
+function setTeam(t){state.team=(t||'').trim()||null;saveSession();updateTeamUI();}
+function updateTeamUI(){
+  document.querySelectorAll('[data-team-opt]').forEach(el=>el.classList.toggle('selected',el.dataset.teamOpt===state.team));
+  document.querySelectorAll('[data-team-display]').forEach(el=>el.textContent=state.team||'—');
+  const other=document.getElementById('team-other');
+  if(other && state.team && !['Alpha','Bravo','Charlie'].includes(state.team)) other.value=state.team;
+}
+function startMode(mode){
+  if(!state.team){toast('Pick a team first');return;}
+  state.mode=mode; saveSession();
+  if(mode==='sort')show('screen-browse');
+  else if(mode==='loadout')show('screen-loadout-setup');
+  else if(mode==='delivery')show('screen-delivery-setup');
+}
+function submitLoadoutSetup(){
+  const jobName=(document.getElementById('loadout-job')||{}).value?.trim();
+  if(!jobName){toast('Enter a job name');return;}
+  state.loadout={jobName,team:state.team}; saveSession();
+  show('screen-browse');
+}
+function submitDeliverySetup(){
+  const from=(document.getElementById('delivery-from')||{}).value?.trim();
+  const to=(document.getElementById('delivery-to')||{}).value?.trim();
+  const note=(document.getElementById('delivery-note')||{}).value?.trim();
+  if(!from||!to){toast('Need both From and To');return;}
+  state.delivery={from,to,note}; saveSession();
+  show('screen-delivery');
+}
+
+/* ---------- Delivery scan loop ---------- */
+async function submitDelivery(){
+  const shelf=(document.getElementById('delivery-shelf')||{}).value?.trim()?.toUpperCase()||getShelfBind()||'';
+  if(!shelf){toast('Scan or type a shelf');return;}
+  await enqueue('delivery',Object.assign({
+    shelf,
+    from:state.delivery?.from||'',
+    to:state.delivery?.to||'',
+    note:state.delivery?.note||'',
+    team:state.team||'',
+    ts:nowIso()
+  },gpsPayload()));
+  toast('Queued delivery '+shelf);
+  const el=document.getElementById('delivery-shelf'); if(el)el.value='';
+}
+
+/* ---------- Browse / lookup ---------- */
+function browseManual(){show('screen-manual');}
+function browseNoTag(){show('screen-notag');}
+async function submitManualShelf(){
+  const v=(document.getElementById('manual-shelf')||{}).value?.trim()?.toUpperCase();
+  if(!v){toast('Enter a shelf code');return;}
+  state.currentShelf=v;
+  lookupAndRoute(v).catch(()=>{prefillNewShelf(v);show('screen-new');});
+}
+function prefillNewShelf(shelf){
+  const f=document.getElementById('new-shelf'); if(f)f.value=shelf;
+  const d=document.getElementById('new-shelf-display'); if(d)d.textContent=shelf;
+}
+async function lookupAndRoute(shelf){
+  state.currentShelf=shelf;
+  if(!navigator.onLine){prefillNewShelf(shelf);show('screen-new');return;}
+  try{
+    const res=await fetch(ENDPOINT+'?action=lookup&shelf='+encodeURIComponent(shelf),{method:'GET'});
+    const data=await res.json();
+    if(data&&data.exists){
+      state.currentItem=data.item;
+      renderExistingItem(data.item);
+      document.getElementById('btn-load').classList.toggle('hidden',state.mode!=='loadout');
+      if(state.mode==='loadout'){
+        const j=document.getElementById('load-job-display');
+        if(j) j.textContent=state.loadout?.jobName||'—';
+      }
+      show('screen-existing');
+    }else{prefillNewShelf(shelf);show('screen-new');}
+  }catch(_){prefillNewShelf(shelf);show('screen-new');}
+}
+function renderExistingItem(item){
+  const host=document.getElementById('existing-details'); if(!host)return;
+  const out=Number(item.qtyOut)||0, total=Number(item.totalQty)||0;
+  const statusPill = item.status==='out'?'pill pill-err':(item.status==='partial'?'pill pill-warn':'pill pill-ok');
+  host.innerHTML=`
+    <div class="big-shelf">${item.shelf||''}</div>
+    <h1 style="margin:4px 0 8px">${item.name||'(no name)'}</h1>
+    <div><span class="${statusPill}">${item.status||'—'}</span>
+         <span class="muted">${out} out of ${total}</span></div>
+    <div><span class="muted">Brand:</span> ${item.brand||'—'}</div>
+    <div><span class="muted">Type:</span> ${item.type||'—'}</div>
+    <div class="muted" style="font-size:12px">Last scanned by ${item.lastScannedBy||'—'}</div>`;
+}
+
+/* ---------- Submit handlers ---------- */
+async function submitNew(){
+  const shelf=((document.getElementById('new-shelf')||{}).value||'').trim().toUpperCase();
+  const name=(document.getElementById('new-name')||{}).value?.trim();
+  const brand=(document.getElementById('new-brand')||{}).value?.trim()||'Funkified';
+  const type=(document.getElementById('new-type')||{}).value?.trim();
+  const totalQty=(document.getElementById('new-qty')||{}).value;
+  const notes=(document.getElementById('new-notes')||{}).value?.trim();
+  if(!shelf){toast('Shelf required');return;}
+  if(!name){toast('Name required');return;}
+  await enqueue('register',Object.assign({
+    shelf,name,brand,type,totalQty:Number(totalQty)||0,notes,
+    team:state.team||'',photo:state.pendingPhoto?.dataUrl||'',ts:nowIso()
+  },gpsPayload()));
+  state.pendingPhoto=null;
+  toast('Queued: '+shelf+' — '+name);
+  show('screen-success');
+}
+async function submitNoTag(){
+  const name=(document.getElementById('notag-name')||{}).value?.trim();
+  const brand=(document.getElementById('notag-brand')||{}).value?.trim()||'Funkified';
+  const type=(document.getElementById('notag-type')||{}).value?.trim();
+  const totalQty=(document.getElementById('notag-qty')||{}).value;
+  const notes=(document.getElementById('notag-notes')||{}).value?.trim();
+  if(!name){toast('Name required');return;}
+  await enqueue('registerNoTag',Object.assign({
+    name,brand,type,totalQty:Number(totalQty)||0,notes,
+    team:state.team||'',photo:state.pendingPhoto?.dataUrl||'',ts:nowIso()
+  },gpsPayload()));
+  state.pendingPhoto=null;
+  toast('Queued untagged: '+name);
+  show('screen-success');
+}
+async function submitTakeOut(){
+  const qty=Math.max(1,parseInt((document.getElementById('takeout-qty')||{}).value)||1);
+  const reason=(document.getElementById('takeout-reason')||{}).value?.trim();
+  await enqueue('takeOut',{shelf:state.currentShelf,qty,reason,team:state.team||'',ts:nowIso()});
+  toast('Queued take-out ×'+qty);
+  show('screen-success');
+}
+async function submitLoad(){
+  const qty=Math.max(1,parseInt((document.getElementById('load-qty')||{}).value)||1);
+  await enqueue('load',{shelf:state.currentShelf,qty,jobName:state.loadout?.jobName||'',team:state.team||'',ts:nowIso()});
+  toast('Loaded ×'+qty+' onto '+(state.loadout?.jobName||''));
+  show('screen-success');
+}
+async function submitReturn(){
+  const qty=Math.max(1,parseInt((document.getElementById('return-qty')||{}).value)||1);
+  const notes=(document.getElementById('return-notes')||{}).value?.trim();
+  await enqueue('return',{shelf:state.currentShelf,qty,notes,team:state.team||'',ts:nowIso()});
+  toast('Queued return ×'+qty);
+  show('screen-success');
+}
+async function submitDamage(){
+  const desc=(document.getElementById('damage-desc')||{}).value?.trim();
+  const severity=(document.getElementById('damage-severity')||{}).value||'minor';
+  if(!desc){toast('Describe the damage');return;}
+  await enqueue('damage',Object.assign({
+    shelf:state.currentShelf,name:state.currentItem?.name||'',description:desc,severity,
+    team:state.team||'',photo:state.pendingPhoto?.dataUrl||'',ts:nowIso()
+  },gpsPayload()));
+  state.pendingPhoto=null;
+  toast('Queued damage report');
+  show('screen-success');
+}
+async function submitUpdatePhoto(){
+  if(!state.pendingPhoto){toast('Take a photo first');return;}
+  await enqueue('updatePhoto',{shelf:state.currentShelf,photo:state.pendingPhoto.dataUrl,team:state.team||'',ts:nowIso()});
+  state.pendingPhoto=null;
+  toast('Queued photo');
+  show('screen-success');
+}
+function prefillEdit(){
+  const it=state.currentItem||{};
+  const set=(id,v)=>{const e=document.getElementById(id); if(e)e.value=v||'';};
+  set('edit-name',it.name);
+  set('edit-brand',it.brand);
+  set('edit-type',it.type);
+  set('edit-qty',it.totalQty||0);
+  set('edit-newshelf','');
+}
+async function submitEdit(){
+  const name=(document.getElementById('edit-name')||{}).value?.trim();
+  const brand=(document.getElementById('edit-brand')||{}).value?.trim();
+  const type=(document.getElementById('edit-type')||{}).value?.trim();
+  const totalQty=(document.getElementById('edit-qty')||{}).value;
+  const newShelf=((document.getElementById('edit-newshelf')||{}).value||'').trim().toUpperCase();
+  await enqueue('edit',{
+    shelf:state.currentShelf,name,brand,type,
+    totalQty:totalQty===''?'':Number(totalQty)||0,
+    newShelf,team:state.team||'',ts:nowIso()
+  });
+  toast('Queued edit');
+  show('screen-success');
+}
+
+/* ---------- Pending screen ---------- */
+async function renderPendingList(){
+  const host=document.getElementById('pending-list'); if(!host)return;
+  const all=await idbGetAll(STORE_OUTBOX);
+  if(!all.length){host.innerHTML='<p class="muted">No pending submissions.</p>';return;}
+  all.sort((a,b)=>a.createdAt<b.createdAt?-1:1);
+  host.innerHTML=all.map(env=>{
+    const age=Math.max(0,Math.round((Date.now()-new Date(env.createdAt).getTime())/1000));
+    const mins=Math.floor(age/60),secs=age%60;
+    const ago=mins?`${mins}m ${secs}s ago`:`${secs}s ago`;
+    const label=env.status==='failed'?'FAILED':(env.status==='in_flight'?'SENDING':'QUEUED');
+    const cls=env.status==='failed'?'pill pill-err':(env.status==='in_flight'?'pill pill-warn':'pill');
+    const err=env.lastError?`<div class="err-line">${env.lastError}</div>`:'';
+    return `<div class="pending-item">
+      <div class="pending-row"><span class="${cls}">${label}</span><strong>${env.action}</strong>
+        <span class="muted">${ago} · attempts ${env.attempts||0}</span></div>
+      <div class="pending-body">${summarizePayload(env)}</div>${err}
+      <div class="pending-actions">
+        <button onclick="retryEnvelope('${env.clientId}')">Retry</button>
+        <button class="danger" onclick="discardEnvelope('${env.clientId}')">Discard</button>
+      </div></div>`;
+  }).join('');
+}
+function summarizePayload(env){
+  const p=env.payload||{},bits=[];
+  if(p.shelf) bits.push(`Shelf: <code>${p.shelf}</code>`);
+  if(p.name) bits.push(`Name: ${p.name}`);
+  if(p.type) bits.push(`Type: ${p.type}`);
+  if(p.qty) bits.push(`Qty: ${p.qty}`);
+  if(p.jobName) bits.push(`Job: ${p.jobName}`);
+  if(p.to||p.from) bits.push(`${p.from||'?'} → ${p.to||'?'}`);
+  if(p.description) bits.push(`Damage: ${p.description}`);
+  if(p.photo) bits.push(`<span class="muted">+photo</span>`);
+  return bits.join(' · ');
+}
+async function retryEnvelope(cid){
+  const env=await idbGet(STORE_OUTBOX,cid); if(!env)return;
+  env.status='queued'; env.lastError=null; env.inFlightAt=null;
+  await idbPut(STORE_OUTBOX,env);
+  renderPendingList(); updatePendingChip();
+  drainOutbox(true).catch(()=>{});
+}
+async function discardEnvelope(cid){
+  if(!confirm('Discard this submission permanently?'))return;
+  await idbDelete(STORE_OUTBOX,cid);
+  renderPendingList(); updatePendingChip();
+}
+async function retryAll(){drainOutbox(true).catch(()=>{});}
+
+/* ---------- Misc ---------- */
+function manualBindShelf(){
+  const v=prompt('Shelf code (e.g. B1):'); if(!v)return;
+  setShelfBind(v.trim().toUpperCase()); toast('Shelf bound to '+getShelfBind());
+}
+function goHome(){state.currentShelf=null;state.currentItem=null;state.pendingPhoto=null;show('screen-session');}
+function goScanAnother(){
+  state.currentShelf=null;state.currentItem=null;state.pendingPhoto=null;
+  if(state.mode==='delivery')show('screen-delivery');
+  else show('screen-browse');
+}
+
+/* ---------- Init ---------- */
+async function init(){
+  updateOnlineBar();
+  restoreSession();
+  const params=parseParams();
+  await registerSW();
+  updatePendingChip();
+  renderPendingList();
+  tryGetGPS();
+  if(params.shelf){
+    state.currentShelf=params.shelf.toUpperCase();
+    lookupAndRoute(params.shelf.toUpperCase()).catch(()=>show('screen-session'));
+  } else {
+    show('screen-session');
+  }
+  drainOutbox().catch(()=>{});
+}
+document.addEventListener('DOMContentLoaded',init);
 </script>
-
 </body>
 </html>
