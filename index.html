@@ -1,594 +1,152 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="theme-color" content="#0a0a0a">
-<link rel="manifest" href="./manifest.json">
-<title>Funkified — Storage</title>
-<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@400;500&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
-<style>
-:root {
-  --bg:      #0a0a0a;
-  --surface: #141414;
-  --card:    #1c1c1c;
-  --border:  #2a2a2a;
-  --text:    #f0ede8;
-  --muted:   #6b6560;
-  --orange:  #e8500a;
-  --green:   #1a9e4a;
-  --red:     #c02020;
-  --amber:   #d4820a;
-  --blue:    #1a6bba;
-  --mono:    'DM Mono', monospace;
-  --display: 'Bebas Neue', sans-serif;
-  --body:    'Barlow', sans-serif;
-}
-* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-html, body { height: 100%; background: var(--bg); color: var(--text); font-family: var(--body); overscroll-behavior: none; }
-.screen { display: none; flex-direction: column; min-height: 100dvh; }
-.screen.active { display: flex; }
-.app-header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 14px 20px; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; position: sticky; top: 0; z-index: 50; }
-.logo { font-family: var(--display); font-size: 20px; letter-spacing: 0.06em; line-height: 1; }
-.logo em { color: var(--orange); font-style: normal; }
-.header-right { display: flex; align-items: center; gap: 10px; }
-.header-id { font-family: var(--mono); font-size: 12px; color: var(--muted); letter-spacing: 0.08em; }
-.load-fab { display: none; align-items: center; gap: 6px; background: var(--orange); border: none; border-radius: 100px; padding: 6px 12px 6px 8px; color: #fff; font-family: var(--mono); font-size: 11px; letter-spacing: 0.08em; cursor: pointer; font-weight: 500; }
-.load-fab.visible { display: flex; }
-.load-fab-icon { font-size: 14px; }
-.load-fab-count { background: rgba(255,255,255,0.25); border-radius: 100px; padding: 1px 6px; font-size: 10px; }
-.pending-chip { display: none; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 100px; background: var(--amber); color: #fff; font-family: var(--mono); font-size: 10px; letter-spacing: 0.08em; cursor: pointer; border: none; }
-.pending-chip.visible { display: flex; }
-.pending-chip.synced { background: var(--green); }
-.pending-chip-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; opacity: 0.8; }
-.screen-body { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 14px; padding-bottom: 120px; }
-.status-pill { display: inline-flex; align-items: center; gap: 8px; padding: 5px 12px; border-radius: 100px; font-family: var(--mono); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; align-self: flex-start; }
-.pill-new    { background: rgba(232,80,10,0.15);  color: var(--orange); border: 1px solid rgba(232,80,10,0.3); }
-.pill-in     { background: rgba(26,158,74,0.15);  color: var(--green);  border: 1px solid rgba(26,158,74,0.3); }
-.pill-out    { background: rgba(192,32,32,0.15);  color: var(--red);    border: 1px solid rgba(192,32,32,0.3); }
-.pill-damage { background: rgba(212,130,10,0.15); color: var(--amber);  border: 1px solid rgba(212,130,10,0.3); }
-.status-dot  { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
-.id-display { background: var(--card); border: 1px solid var(--border); border-left: 4px solid var(--orange); border-radius: 4px; padding: 14px 16px; }
-.id-label { font-family: var(--mono); font-size: 9px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--muted); margin-bottom: 2px; }
-.id-value { font-family: var(--display); font-size: 48px; letter-spacing: 0.04em; line-height: 1; }
-.id-sub   { font-size: 13px; color: var(--muted); margin-top: 3px; font-style: italic; }
-.damage-banner { background: rgba(212,130,10,0.12); border: 1px solid rgba(212,130,10,0.35); border-radius: 4px; padding: 12px 14px; display: flex; align-items: flex-start; gap: 10px; }
-.damage-banner-icon { font-size: 18px; flex-shrink: 0; }
-.damage-banner-text { font-size: 13px; line-height: 1.5; color: var(--amber); }
-.damage-banner-text strong { display: block; font-size: 12px; font-family: var(--mono); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 2px; }
-.shelf-bind-banner { background: rgba(26,107,186,0.12); border: 1px solid rgba(26,107,186,0.4); border-radius: 4px; padding: 10px 14px; display: flex; align-items: center; gap: 10px; color: var(--blue); font-family: var(--mono); font-size: 11px; letter-spacing: 0.1em; }
-.shelf-bind-banner strong { color: #fff; font-family: var(--display); font-size: 18px; letter-spacing: 0.04em; }
-.shelf-bind-banner .x-btn { margin-left: auto; background: transparent; border: 1px solid rgba(26,107,186,0.4); color: var(--blue); font-family: var(--mono); font-size: 10px; padding: 3px 10px; border-radius: 100px; cursor: pointer; }
-.action-menu { display: flex; flex-direction: column; gap: 8px; }
-.action-btn { display: flex; align-items: center; gap: 14px; background: var(--card); border: 1.5px solid var(--border); border-radius: 4px; padding: 16px; cursor: pointer; text-align: left; width: 100%; color: var(--text); transition: border-color 0.12s, background 0.12s; }
-.action-btn:active { background: #222; }
-.action-btn.takeout:active { border-color: var(--orange); }
-.action-btn.return:active  { border-color: var(--green); }
-.action-btn.damage:active  { border-color: var(--amber); }
-.action-btn.photo:active   { border-color: var(--blue); }
-.action-btn.edit:active    { border-color: var(--muted); }
-.action-icon  { font-size: 24px; flex-shrink: 0; width: 32px; text-align: center; }
-.action-text  { flex: 1; }
-.action-title { font-family: var(--display); font-size: 20px; letter-spacing: 0.04em; line-height: 1; }
-.action-sub   { font-size: 12px; color: var(--muted); margin-top: 2px; }
-.action-arrow { color: var(--muted); font-size: 18px; }
-.item-card { background: var(--card); border: 1px solid var(--border); border-radius: 4px; overflow: hidden; }
-.item-photos-scroll { display: flex; overflow-x: auto; gap: 2px; scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; }
-.item-photos-scroll img { flex-shrink: 0; width: 100%; max-height: 180px; object-fit: cover; scroll-snap-align: start; }
-.item-photo-empty { height: 80px; display: flex; align-items: center; justify-content: center; background: #111; color: var(--muted); font-family: var(--mono); font-size: 10px; letter-spacing: 0.12em; }
-.item-meta { padding: 12px 14px; display: flex; flex-direction: column; gap: 5px; }
-.meta-row  { display: flex; justify-content: space-between; align-items: baseline; }
-.meta-key  { font-family: var(--mono); font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); }
-.meta-val  { font-size: 13px; font-weight: 600; }
-.meta-val.green { color: var(--green); }
-.meta-val.red   { color: var(--red); }
-.meta-val.amber { color: var(--amber); }
-.form-section { display: flex; flex-direction: column; gap: 12px; }
-.form-group   { display: flex; flex-direction: column; gap: 5px; }
-.form-label   { font-family: var(--mono); font-size: 9px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--muted); }
-.form-input { background: var(--card); border: 1.5px solid var(--border); border-radius: 4px; color: var(--text); font-family: var(--body); font-size: 16px; padding: 13px 14px; outline: none; width: 100%; transition: border-color 0.12s; -webkit-appearance: none; }
-.form-input:focus { border-color: var(--orange); }
-.form-input.large { font-family: var(--display); font-size: 36px; letter-spacing: 0.04em; text-transform: uppercase; text-align: center; }
-select.form-input { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236b6560' stroke-width='1.5' fill='none'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 14px center; padding-right: 36px; cursor: pointer; }
-select.form-input option { background: var(--card); }
-textarea.form-input { resize: vertical; min-height: 80px; font-size: 15px; line-height: 1.5; }
-.severity-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
-.severity-btn { padding: 12px 6px; background: var(--card); border: 2px solid var(--border); border-radius: 4px; color: var(--muted); font-family: var(--mono); font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; cursor: pointer; text-align: center; line-height: 1.4; transition: all 0.12s; }
-.severity-btn.sel-minor  { background: rgba(26,107,186,0.15); border-color: var(--blue);  color: var(--blue); }
-.severity-btn.sel-repair { background: rgba(212,130,10,0.15); border-color: var(--amber); color: var(--amber); }
-.severity-btn.sel-out    { background: rgba(192,32,32,0.15);  border-color: var(--red);   color: var(--red); }
-.who-grid { display: flex; flex-wrap: wrap; gap: 8px; }
-.who-btn { padding: 9px 14px; background: var(--card); border: 2px solid var(--border); border-radius: 100px; color: var(--muted); font-family: var(--body); font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.12s; }
-.who-btn.selected { background: rgba(232,80,10,0.12); border-color: var(--orange); color: var(--orange); }
-.photos-area { display: flex; flex-direction: column; gap: 8px; }
-.photos-grid { display: flex; flex-wrap: wrap; gap: 8px; }
-.photo-thumb-wrap { position: relative; width: 80px; height: 80px; flex-shrink: 0; }
-.photo-thumb-wrap img { width: 100%; height: 100%; object-fit: cover; border-radius: 4px; }
-.photo-remove { position: absolute; top: -6px; right: -6px; width: 18px; height: 18px; background: var(--red); border: none; border-radius: 50%; color: #fff; font-size: 11px; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; line-height: 1; }
-.add-photo-btn { width: 80px; height: 80px; background: var(--card); border: 2px dashed var(--border); border-radius: 4px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; cursor: pointer; color: var(--muted); font-family: var(--mono); font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; flex-shrink: 0; }
-.add-photo-btn:active { border-color: var(--orange); }
-.add-photo-icon { font-size: 22px; }
-.qty-control { display: flex; align-items: center; background: var(--card); border: 1.5px solid var(--border); border-radius: 4px; overflow: hidden; }
-.qty-btn { width: 54px; height: 54px; background: transparent; border: none; color: var(--text); font-size: 24px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: background 0.1s; }
-.qty-btn:active { background: #333; }
-.qty-val { flex: 1; text-align: center; font-family: var(--display); font-size: 36px; letter-spacing: 0.04em; color: var(--text); border: none; background: transparent; outline: none; width: 100%; }
-.loc-strip { background: var(--card); border: 1px solid var(--border); border-radius: 4px; padding: 11px 14px; display: flex; align-items: center; gap: 10px; }
-.loc-icon  { font-size: 18px; flex-shrink: 0; }
-.loc-label { font-family: var(--mono); font-size: 9px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--muted); }
-.loc-val   { font-size: 12px; font-weight: 500; margin-top: 1px; word-break: break-all; }
-.loc-val.loading { color: var(--muted); font-style: italic; }
-.loc-val.error   { color: var(--red); }
-.divider { display: flex; align-items: center; gap: 10px; font-family: var(--mono); font-size: 9px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--muted); }
-.divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
-.action-area { padding: 14px 20px 32px; display: flex; flex-direction: column; gap: 8px; flex-shrink: 0; background: var(--bg); border-top: 1px solid var(--border); }
-.btn-primary { width: 100%; padding: 17px; background: var(--orange); border: none; border-radius: 4px; color: #fff; font-family: var(--display); font-size: 20px; letter-spacing: 0.08em; cursor: pointer; transition: opacity 0.12s, transform 0.08s; -webkit-appearance: none; }
-.btn-primary:active   { opacity: 0.85; transform: scale(0.99); }
-.btn-primary:disabled { opacity: 0.3; cursor: not-allowed; }
-.btn-primary.green { background: var(--green); }
-.btn-primary.amber { background: var(--amber); }
-.btn-secondary { width: 100%; padding: 13px; background: transparent; border: 1.5px solid var(--border); border-radius: 4px; color: var(--muted); font-family: var(--mono); font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; cursor: pointer; transition: all 0.12s; -webkit-appearance: none; }
-.btn-secondary:active { border-color: var(--text); color: var(--text); }
-.load-sheet { position: fixed; inset: 0; z-index: 200; display: none; flex-direction: column; background: var(--bg); }
-.load-sheet.open { display: flex; }
-.load-sheet-header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 16px 20px; display: flex; align-items: center; justify-content: space-between; }
-.load-sheet-title { font-family: var(--display); font-size: 26px; letter-spacing: 0.06em; }
-.load-sheet-close { background: transparent; border: 1px solid var(--border); border-radius: 4px; color: var(--muted); padding: 6px 12px; font-family: var(--mono); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; cursor: pointer; }
-.load-event-name { padding: 14px 20px; border-bottom: 1px solid var(--border); font-family: var(--mono); font-size: 11px; letter-spacing: 0.1em; color: var(--orange); display: flex; align-items: center; gap: 8px; }
-.load-event-name span { color: var(--muted); }
-.load-items { flex: 1; overflow-y: auto; }
-.load-item-row { display: flex; align-items: center; padding: 14px 20px; border-bottom: 1px solid var(--border); gap: 12px; }
-.load-item-id   { font-family: var(--display); font-size: 22px; letter-spacing: 0.04em; color: var(--orange); width: 60px; flex-shrink: 0; }
-.load-item-name { flex: 1; font-size: 14px; font-weight: 600; line-height: 1.3; }
-.load-item-cat  { font-size: 11px; color: var(--muted); margin-top: 2px; }
-.load-item-qty  { font-family: var(--display); font-size: 28px; color: var(--text); width: 48px; text-align: right; flex-shrink: 0; }
-.load-item-remove { background: transparent; border: none; color: var(--muted); font-size: 18px; cursor: pointer; padding: 4px; flex-shrink: 0; }
-.load-empty { padding: 60px 24px; text-align: center; color: var(--muted); font-family: var(--mono); font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; }
-.load-footer { padding: 14px 20px 32px; border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: 8px; }
-.load-summary { display: flex; justify-content: space-between; font-family: var(--mono); font-size: 11px; letter-spacing: 0.1em; color: var(--muted); padding-bottom: 10px; }
-.load-summary strong { color: var(--text); }
-.success-wrap { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px 24px; text-align: center; gap: 14px; }
-.success-icon  { font-size: 60px; }
-.success-title { font-family: var(--display); font-size: 42px; letter-spacing: 0.06em; color: var(--green); }
-.success-title.orange { color: var(--orange); }
-.success-title.amber  { color: var(--amber); }
-.success-id     { font-family: var(--mono); font-size: 13px; color: var(--muted); letter-spacing: 0.1em; }
-.success-detail { font-size: 14px; color: var(--muted); line-height: 1.65; max-width: 280px; }
-.spinner { width: 34px; height: 34px; border: 3px solid var(--border); border-top-color: var(--orange); border-radius: 50%; animation: spin 0.7s linear infinite; margin: 0 auto; }
-@keyframes spin { to { transform: rotate(360deg); } }
-#toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px); background: #fff; color: #0a0a0a; padding: 11px 20px; border-radius: 100px; font-family: var(--mono); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; white-space: nowrap; transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1); z-index: 999; pointer-events: none; max-width: 85vw; overflow: hidden; text-overflow: ellipsis; }
-#toast.show    { transform: translateX(-50%) translateY(0); }
-#toast.error   { background: var(--red);   color: #fff; }
-#toast.success { background: var(--green); color: #fff; }
-#toast.queued  { background: var(--amber); color: #fff; }
-#offline-bar { display: none; position: fixed; top: 0; left: 0; right: 0; z-index: 1000; background: var(--amber); color: #fff; font-family: var(--mono); font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; padding: 6px 16px; align-items: center; justify-content: space-between; gap: 8px; }
-#offline-bar.visible { display: flex; }
-#offline-bar.syncing { background: var(--blue); }
-#offline-bar-msg { flex: 1; }
-#offline-bar-sync { background: rgba(255,255,255,0.25); border: none; border-radius: 100px; color: #fff; font-family: var(--mono); font-size: 10px; letter-spacing: 0.1em; padding: 2px 10px; cursor: pointer; }
-.photo-options-sheet { position: fixed; inset: 0; z-index: 300; display: none; align-items: flex-end; background: rgba(0,0,0,0.6); }
-.photo-options-sheet.open { display: flex; }
-.photo-options-inner { width: 100%; background: var(--surface); border-radius: 12px 12px 0 0; padding: 16px 20px 40px; display: flex; flex-direction: column; gap: 10px; }
-.photo-options-title { font-family: var(--mono); font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--muted); text-align: center; margin-bottom: 4px; }
-.photo-option-btn { width: 100%; padding: 16px; background: var(--card); border: 1.5px solid var(--border); border-radius: 4px; color: var(--text); font-family: var(--body); font-size: 16px; font-weight: 600; cursor: pointer; text-align: left; display: flex; align-items: center; gap: 14px; transition: border-color 0.12s; }
-.photo-option-btn:active { border-color: var(--orange); }
-.photo-option-icon { font-size: 22px; }
-.photo-cancel-btn { width: 100%; padding: 14px; background: transparent; border: 1.5px solid var(--border); border-radius: 4px; color: var(--muted); font-family: var(--mono); font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; cursor: pointer; margin-top: 4px; }
-.city-btn { padding: 14px 8px; background: var(--card); border: 2px solid var(--border); border-radius: 4px; color: var(--text); font-family: var(--body); font-size: 15px; font-weight: 600; cursor: pointer; transition: all 0.12s; text-align: center; }
-.city-btn:active, .city-btn.selected { background: rgba(232,80,10,0.12); border-color: var(--orange); color: var(--orange); }
-.search-result-item { display: flex; align-items: center; gap: 12px; padding: 12px 14px; background: var(--card); border: 1.5px solid var(--border); border-radius: 4px; cursor: pointer; margin-bottom: 6px; transition: border-color 0.12s; }
-.search-result-item:active { border-color: var(--orange); }
-.search-result-thumb { width: 44px; height: 44px; border-radius: 3px; object-fit: cover; flex-shrink: 0; background: #111; display: flex; align-items: center; justify-content: center; font-size: 18px; color: var(--muted); }
-.search-result-thumb img { width: 100%; height: 100%; object-fit: cover; border-radius: 3px; }
-.search-result-info { flex: 1; }
-.search-result-name { font-weight: 600; font-size: 14px; }
-.search-result-meta { font-family: var(--mono); font-size: 10px; color: var(--muted); letter-spacing: 0.08em; margin-top: 2px; }
-.search-result-stock { font-family: var(--display); font-size: 20px; color: var(--green); flex-shrink: 0; }
-.search-result-stock.low { color: var(--amber); }
-.search-result-stock.out { color: var(--red); }
-.new-item-btn { display: flex; align-items: center; gap: 12px; padding: 12px 14px; background: transparent; border: 2px dashed var(--orange); border-radius: 4px; cursor: pointer; margin-bottom: 6px; color: var(--orange); font-family: var(--body); font-size: 14px; font-weight: 600; width: 100%; }
-.delivery-list-row { display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: var(--card); border: 1px solid var(--border); border-radius: 4px; margin-bottom: 6px; }
-.delivery-list-id   { font-family: var(--display); font-size: 18px; color: var(--orange); width: 50px; flex-shrink: 0; }
-.delivery-list-name { flex: 1; font-size: 13px; font-weight: 600; line-height: 1.3; }
-.delivery-list-cat  { font-size: 11px; color: var(--muted); }
-.delivery-list-qty  { font-family: var(--display); font-size: 22px; color: var(--blue); flex-shrink: 0; }
-.delivery-list-type { font-family: var(--mono); font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; padding: 2px 6px; border-radius: 2px; flex-shrink: 0; }
-.delivery-list-type.new    { background: rgba(26,106,186,0.15); color: var(--blue); }
-.delivery-list-type.return { background: rgba(26,158,74,0.15);  color: var(--green); }
-.delivery-list-remove { background: transparent; border: none; color: var(--muted); font-size: 16px; cursor: pointer; padding: 2px; flex-shrink: 0; }
-.pending-row { display: flex; align-items: center; gap: 10px; padding: 12px 14px; background: var(--card); border: 1px solid var(--border); border-radius: 4px; margin-bottom: 6px; }
-.pending-row.in-flight { border-color: var(--blue); }
-.pending-row.error { border-color: var(--red); }
-.pending-row-info { flex: 1; min-width: 0; }
-.pending-row-action { font-family: var(--display); font-size: 16px; letter-spacing: 0.04em; }
-.pending-row-detail { font-family: var(--mono); font-size: 10px; color: var(--muted); letter-spacing: 0.06em; margin-top: 2px; word-break: break-all; }
-.pending-row-detail.error { color: var(--red); }
-.pending-row-badge { font-family: var(--mono); font-size: 9px; letter-spacing: 0.1em; padding: 3px 8px; border-radius: 100px; text-transform: uppercase; flex-shrink: 0; }
-.pending-row-badge.queued { background: rgba(212,130,10,0.18); color: var(--amber); }
-.pending-row-badge.sending { background: rgba(26,107,186,0.18); color: var(--blue); }
-.pending-row-badge.error { background: rgba(192,32,32,0.18); color: var(--red); }
-</style>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Item Logger</title>
+  <style>
+    body { font-family: Arial; padding: 20px; }
+    input, textarea, button {
+      width: 100%;
+      margin: 8px 0;
+      padding: 10px;
+      font-size: 16px;
+    }
+    .status { margin-top: 10px; }
+  </style>
 </head>
 <body>
 
-<!-- LOAD LIST OVERLAY -->
-<div class="load-sheet" id="load-sheet">
-  <div class="load-sheet-header">
-    <div class="load-sheet-title">📦 Load List</div>
-    <button class="load-sheet-close" onclick="closeLoadSheet()">Close</button>
-  </div>
-  <div class="load-event-name"><span>Event:</span><span id="load-event-display">—</span></div>
-  <div class="load-items" id="load-items-list">
-    <div class="load-empty">No items added yet.<br>Scan items and tap Take Out.</div>
-  </div>
-  <div class="load-footer">
-    <div class="load-summary">
-      <span><strong id="load-count">0</strong> items</span>
-      <span><strong id="load-units">0</strong> units total</span>
-    </div>
-    <button class="btn-primary" onclick="submitLoad()">✓ Confirm &amp; Submit Load</button>
-    <button class="btn-secondary" onclick="closeLoadSheet()">Continue Scanning</button>
-  </div>
-</div>
+<h2>Log Item</h2>
 
-<!-- PHOTO OPTIONS -->
-<div class="photo-options-sheet" id="photo-options-sheet" onclick="closePhotoOptions(event)">
-  <div class="photo-options-inner">
-    <div class="photo-options-title">Add Photo</div>
-    <button class="photo-option-btn" onclick="triggerPhotoCamera()"><span class="photo-option-icon">📷</span>Take Photo</button>
-    <button class="photo-option-btn" onclick="triggerPhotoLibrary()"><span class="photo-option-icon">🖼️</span>Choose from Library</button>
-    <button class="photo-cancel-btn" onclick="closePhotoOptions()">Cancel</button>
-  </div>
-</div>
+<input id="id" placeholder="ID" />
+<input id="name" placeholder="Name" />
+<input id="category" placeholder="Category" />
+<textarea id="description" placeholder="Description"></textarea>
 
-<!-- OFFLINE STATUS BAR -->
-<div id="offline-bar">
-  <span id="offline-bar-msg">📡 Offline — submissions queued</span>
-  <button id="offline-bar-sync" onclick="drainOutbox(true)">Sync now</button>
-</div>
+<input id="photos" type="file" accept="image/*" multiple />
 
-<!-- LOADING -->
-<div class="screen active" id="screen-loading">
-  <div class="screen-body" style="align-items:center;justify-content:center;gap:20px;">
-    <div class="logo">Funkified</div>
-    <div class="spinner"></div>
-    <div style="font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:0.14em;text-transform:uppercase;">Loading…</div>
-  </div>
-</div>
+<button onclick="save()">Save</button>
 
-<!-- SESSION SWITCHBOARD -->
-<div class="screen" id="screen-session">
-  <div class="app-header">
-    <div class="logo">Funkified</div>
-    <div class="header-right">
-      <button class="pending-chip" id="pending-chip-session" onclick="showPending()"><span class="pending-chip-dot"></span><span id="pending-chip-count-session">0</span></button>
-    </div>
-  </div>
-  <div class="screen-body" style="justify-content:center;gap:16px;">
-    <div id="shelf-bind-display-session" style="display:none;"></div>
-    <div class="divider">What are you here to do?</div>
-    <div>
-      <div style="font-family:var(--mono);font-size:9px;letter-spacing:0.18em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;">Who are you?</div>
-      <div class="who-grid" id="session-who-grid">
-        <button class="who-btn" onclick="selectSessionWho(this)">Jacob</button>
-        <button class="who-btn" onclick="selectSessionWho(this)">+ Add name</button>
-      </div>
-      <input class="form-input" type="text" id="session-who-custom" placeholder="Enter name" style="display:none;margin-top:8px;" />
-    </div>
-    <div style="display:flex;flex-direction:column;gap:8px;">
-      <button class="action-btn takeout" onclick="startMode('loadout')"><div class="action-icon">📦</div><div class="action-text"><div class="action-title">Equipment List</div><div class="action-sub">Build an equipment list for a job</div></div><div class="action-arrow">›</div></button>
-      <button class="action-btn" style="border-color:var(--blue);" onclick="startMode('delivery')"><div class="action-icon">➕</div><div class="action-text"><div class="action-title">New Item</div><div class="action-sub">Register new items into inventory</div></div><div class="action-arrow">›</div></button>
-      <button class="action-btn return" onclick="startMode('checkin')"><div class="action-icon">✅</div><div class="action-text"><div class="action-title">Incoming</div><div class="action-sub">Return items to storage</div></div><div class="action-arrow">›</div></button>
-      <button class="action-btn" onclick="startMode('browse')"><div class="action-icon">🔍</div><div class="action-text"><div class="action-title">Browse Inventory</div><div class="action-sub">Search and view stock levels</div></div><div class="action-arrow">›</div></button>
-      <button class="action-btn" onclick="showPending()" style="border-color:var(--amber);"><div class="action-icon">⏳</div><div class="action-text"><div class="action-title">Pending Sync</div><div class="action-sub" id="session-pending-sub">All submissions synced</div></div><div class="action-arrow">›</div></button>
-    </div>
-  </div>
-</div>
-
-<!-- PENDING SCREEN -->
-<div class="screen" id="screen-pending">
-  <div class="app-header">
-    <div class="logo">Funkified</div>
-    <div class="header-right"><div style="font-family:var(--mono);font-size:10px;color:var(--muted);" id="pending-header-status">—</div></div>
-  </div>
-  <div class="screen-body">
-    <div style="font-family:var(--display);font-size:32px;letter-spacing:0.04em;">Pending Sync</div>
-    <div style="font-size:13px;color:var(--muted);line-height:1.6;">Submissions waiting to reach the server. They will sync automatically when online; everything is safe in local storage.</div>
-    <div id="pending-list"></div>
-  </div>
-  <div class="action-area">
-    <button class="btn-primary" onclick="drainOutbox(true)">Sync Now</button>
-    <button class="btn-secondary" onclick="showScreen('screen-session')">← Back</button>
-  </div>
-</div>
-
-<!-- LOAD OUT — event name -->
-<div class="screen" id="screen-loadout-setup">
-  <div class="app-header"><div class="logo">Funkified</div></div>
-  <div class="screen-body" style="justify-content:center;gap:16px;">
-    <div style="font-family:var(--display);font-size:32px;letter-spacing:0.04em;line-height:1.2;">Equipment List<br><span style="color:var(--orange)" id="loadout-loc-label">Sydney</span></div>
-    <div class="form-group"><div class="form-label">Event Name</div><input class="form-input" type="text" id="session-event" placeholder="e.g. NRMA Hospo Suite — Jun 2025" /></div>
-  </div>
-  <div class="action-area"><button class="btn-primary" onclick="startSession()">Start Load Out</button><button class="btn-secondary" onclick="showScreen('screen-session')">← Back</button></div>
-</div>
-
-<!-- DELIVERY SETUP -->
-<div class="screen" id="screen-delivery-setup">
-  <div class="app-header"><div class="logo">Funkified</div></div>
-  <div class="screen-body" style="justify-content:center;gap:16px;">
-    <div style="font-family:var(--display);font-size:32px;letter-spacing:0.04em;line-height:1.2;">New Item<br><span style="color:var(--orange)" id="delivery-loc-label">Sydney</span></div>
-    <div class="form-group"><div class="form-label">Supplier Name</div><input class="form-input" type="text" id="delivery-supplier" placeholder="e.g. Staging Direct" autocomplete="off" /></div>
-    <div class="form-group"><div class="form-label">Notes (optional)</div><textarea class="form-input" id="delivery-notes-header" placeholder="e.g. Invoice #1234, partial delivery, damaged on arrival…" style="min-height:60px;"></textarea></div>
-  </div>
-  <div class="action-area"><button class="btn-primary" style="background:var(--blue);" onclick="startDelivery()">Start Receiving</button><button class="btn-secondary" onclick="showScreen('screen-session')">← Back</button></div>
-</div>
-
-<!-- DELIVERY ITEM INTAKE -->
-<div class="screen" id="screen-delivery">
-  <div class="app-header">
-    <div class="logo">Funkified</div>
-    <div class="header-right"><div style="font-family:var(--mono);font-size:10px;color:var(--orange);letter-spacing:0.08em;" id="delivery-count-badge">0 items</div></div>
-  </div>
-  <div class="screen-body">
-    <div id="shelf-bind-display-delivery" style="display:none;"></div>
-    <div style="font-family:var(--display);font-size:22px;letter-spacing:0.04em;color:var(--muted);">Receiving from <span style="color:var(--text)" id="delivery-supplier-display">—</span></div>
-    <div class="form-group"><div class="form-label">Search existing item or type new name</div><input class="form-input" type="text" id="delivery-search" placeholder="e.g. Crowd Barrier" autocomplete="off" oninput="searchInventory(this.value)" /></div>
-    <div id="delivery-search-results" style="display:none;"></div>
-    <div id="delivery-item-form" style="display:none;">
-      <div class="id-display" id="delivery-item-card" style="margin-bottom:0;"></div>
-      <div class="form-section" style="margin-top:12px;">
-        <div class="form-group" id="delivery-cat-group" style="display:none;">
-          <div class="form-label">Category / Group</div>
-          <div style="display:flex;gap:8px;">
-            <select class="form-input" id="delivery-cat" style="flex:1;"><option value="">— Select or add new —</option></select>
-            <button type="button" onclick="promptNewCategory()" style="flex-shrink:0;padding:0 14px;background:var(--card);border:1.5px solid var(--border);border-radius:4px;color:var(--orange);font-family:var(--mono);font-size:11px;letter-spacing:0.1em;text-transform:uppercase;cursor:pointer;white-space:nowrap;">+ New</button>
-          </div>
-        </div>
-        <div class="form-group"><div class="form-label">Shelf (optional)</div><input class="form-input" type="text" id="delivery-shelf" placeholder="e.g. A1" maxlength="4" style="text-transform:uppercase;" oninput="this.value=this.value.toUpperCase()" autocomplete="off" /></div>
-        <div class="form-group"><div class="form-label">Quantity Arriving</div>
-          <div class="qty-control"><button class="qty-btn" onclick="adjustQty('delivery-qty',-1)">−</button><input class="qty-val" type="number" id="delivery-qty" value="1" min="1" oninput="clampQty(this)" /><button class="qty-btn" onclick="adjustQty('delivery-qty',1)">+</button></div>
-        </div>
-        <div class="form-group"><div class="form-label">Notes (optional)</div><input class="form-input" type="text" id="delivery-item-notes" placeholder="e.g. Missing tag, damaged corner…" autocomplete="off" /></div>
-        <div class="divider">Photos</div>
-        <div class="photos-area"><div class="photos-grid" id="delivery-photos-grid"><div class="add-photo-btn" onclick="showPhotoOptions('delivery')"><span class="add-photo-icon">📷</span><span>Add</span></div></div></div>
-        <input type="file" id="photo-input-delivery-camera"  accept="image/*" capture="environment" onchange="handlePhotos(this,'delivery')" style="display:none;" />
-        <input type="file" id="photo-input-delivery-library" accept="image/*" multiple            onchange="handlePhotos(this,'delivery')" style="display:none;" />
-      </div>
-      <div style="display:flex;gap:8px;margin-top:8px;"><button class="btn-primary" id="btn-delivery-add" onclick="addDeliveryItem()" style="flex:1;">+ Add to Delivery</button><button class="btn-secondary" onclick="clearDeliveryItemForm()" style="width:80px;flex-shrink:0;">Clear</button></div>
-    </div>
-    <div id="delivery-list-section" style="display:none;"><div class="divider">Added so far</div><div id="delivery-list"></div></div>
-  </div>
-  <div class="action-area"><button class="btn-primary" style="background:var(--blue);" id="btn-delivery-submit" onclick="submitDelivery()">Submit Delivery</button><button class="btn-secondary" onclick="showScreen('screen-session')">← Cancel</button></div>
-</div>
-
-<!-- BROWSE -->
-<div class="screen" id="screen-browse">
-  <div class="app-header"><div class="logo">Funkified</div><div class="header-right"><div style="font-family:var(--mono);font-size:10px;color:var(--muted);" id="browse-loc-badge">—</div></div></div>
-  <div class="screen-body">
-    <div class="form-group"><input class="form-input" type="text" id="browse-search" placeholder="Search items or shelf (e.g. A1)…" oninput="browseSearch(this.value)" autocomplete="off" /></div>
-    <div id="browse-results"><div style="text-align:center;padding:40px 20px;color:var(--muted);font-family:var(--mono);font-size:10px;letter-spacing:0.12em;text-transform:uppercase;">Type to search inventory</div></div>
-  </div>
-  <div class="action-area"><button class="btn-secondary" onclick="showScreen('screen-session')">← Back</button></div>
-</div>
-
-<!-- MANUAL ID -->
-<div class="screen" id="screen-manual">
-  <div class="app-header">
-    <div class="logo">Funkified</div>
-    <div class="header-right">
-      <button class="pending-chip" id="pending-chip-manual" onclick="showPending()"><span class="pending-chip-dot"></span><span id="pending-chip-count-manual">0</span></button>
-      <button class="load-fab" id="fab-manual" onclick="openLoadSheet()"><span class="load-fab-icon">📦</span><span>List</span><span class="load-fab-count" id="fab-count-manual">0</span></button>
-    </div>
-  </div>
-  <div class="screen-body" style="justify-content:center;gap:16px;">
-    <div id="shelf-bind-display-manual" style="display:none;"></div>
-    <div style="font-family:var(--mono);font-size:9px;letter-spacing:0.2em;text-transform:uppercase;color:var(--muted);">Enter Item ID</div>
-    <input class="form-input large" type="text" id="manual-id" placeholder="A1" maxlength="10" />
-    <div style="font-size:12px;color:var(--muted);text-align:center;line-height:1.7;">e.g. A1, B12, VM001<br><span style="color:#444;">or tap your NFC tag to scan automatically</span></div>
-  </div>
-  <div class="action-area"><button class="btn-primary" onclick="submitManualId()">Look Up</button><button class="btn-secondary" onclick="showNoTagScreen()">Register item without NFC tag</button></div>
-</div>
-
-<!-- NO-TAG REGISTRATION -->
-<div class="screen" id="screen-notag">
-  <div class="app-header"><div class="logo">Funkified</div><div class="header-right"><button class="load-fab" id="fab-notag" onclick="openLoadSheet()"><span class="load-fab-icon">📦</span><span>List</span><span class="load-fab-count" id="fab-count-notag">0</span></button></div></div>
-  <div class="screen-body">
-    <div id="shelf-bind-display-notag" style="display:none;"></div>
-    <div class="status-pill pill-new"><div class="status-dot"></div>No Tag</div>
-    <div class="id-display" style="border-left-color:var(--muted);"><div class="id-label">Untagged Item</div><div class="id-value" style="font-size:28px;letter-spacing:0.02em;" id="notag-id-preview">—</div></div>
-    <div style="font-size:13px;color:var(--muted);line-height:1.6;">Use this for items like beanbags, bollards, or bulk goods that aren't individually tagged. Set the quantity to cover the full count.</div>
-    <div class="divider">Item Details</div>
-    <div class="form-section">
-      <div class="form-group"><div class="form-label">Item Name</div><input class="form-input" type="text" id="notag-name" placeholder="e.g. Beanbag" autocomplete="off" oninput="updateNoTagPreview()" /></div>
-      <div class="form-group"><div class="form-label">Category / Group</div>
-        <div style="display:flex;gap:8px;"><select class="form-input" id="notag-cat" onchange="handleNoTagCatSelect(this)" style="flex:1;"><option value="">— Select or add new —</option></select><button type="button" onclick="promptNewCategory()" style="flex-shrink:0;padding:0 14px;background:var(--card);border:1.5px solid var(--border);border-radius:4px;color:var(--orange);font-family:var(--mono);font-size:11px;letter-spacing:0.1em;text-transform:uppercase;cursor:pointer;white-space:nowrap;">+ New</button></div>
-        <div id="notag-cat-display" style="font-family:var(--mono);font-size:11px;color:var(--orange);letter-spacing:0.1em;margin-top:4px;display:none;"></div>
-      </div>
-      <div class="form-group"><div class="form-label">Shelf (optional)</div><input class="form-input" type="text" id="notag-shelf" placeholder="e.g. A1" maxlength="4" style="text-transform:uppercase;" oninput="this.value=this.value.toUpperCase()" autocomplete="off" /></div>
-      <div class="form-group"><div class="form-label">Total Quantity</div>
-        <div class="qty-control"><button class="qty-btn" onclick="adjustQty('notag-qty',-1)">−</button><input class="qty-val" type="number" id="notag-qty" value="1" min="1" oninput="clampQty(this)" /><button class="qty-btn" onclick="adjustQty('notag-qty',1)">+</button></div>
-      </div>
-      <div class="form-group"><div class="form-label">Notes</div><textarea class="form-input" id="notag-notes" placeholder="e.g. Stored in blue bags at rear of unit"></textarea></div>
-    </div>
-    <div class="divider">Photos</div>
-    <div class="photos-area"><div class="photos-grid" id="notag-photos-grid"><div class="add-photo-btn" onclick="showPhotoOptions('notag')"><span class="add-photo-icon">📷</span><span>Add</span></div></div></div>
-    <input type="file" id="photo-input-notag-camera"  accept="image/*" capture="environment" onchange="handlePhotos(this,'notag')" style="display:none;" />
-    <input type="file" id="photo-input-notag-library" accept="image/*" multiple            onchange="handlePhotos(this,'notag')" style="display:none;" />
-    <div class="divider">Location</div>
-    <div class="loc-strip"><div class="loc-icon">📍</div><div><div class="loc-label">Detected Location</div><div class="loc-val loading" id="loc-notag">Getting GPS…</div></div></div>
-    <div class="divider">Who's registering</div>
-    <div class="who-grid" id="who-grid-notag"></div>
-    <input class="form-input" type="text" id="custom-who-notag" placeholder="Enter name" style="display:none;margin-top:4px;" />
-  </div>
-  <div class="action-area"><button class="btn-primary" id="btn-notag" onclick="submitNoTag()">Register Item</button><button class="btn-secondary" onclick="showScreen('screen-manual')">← Back</button></div>
-</div>
-
-<!-- NEW ITEM -->
-<div class="screen" id="screen-new">
-  <div class="app-header"><div class="logo">Funkified</div><div class="header-right"><div class="header-id" id="new-header-id"></div><button class="load-fab" id="fab-new" onclick="openLoadSheet()"><span class="load-fab-icon">📦</span><span>List</span><span class="load-fab-count" id="fab-count-new">0</span></button></div></div>
-  <div class="screen-body">
-    <div id="shelf-bind-display-new" style="display:none;"></div>
-    <div class="status-pill pill-new"><div class="status-dot"></div>New Item</div>
-    <div class="id-display" id="new-id-display"><div class="id-label">Item ID</div><div class="id-value" id="new-id-val"></div></div>
-    <div id="new-id-input-wrap" style="display:none;"><div class="form-group"><div class="form-label">Item ID — type the code written on the tag</div><input class="form-input large" type="text" id="new-id-input" placeholder="e.g. A1, B12" maxlength="10" autocomplete="off" autocapitalize="characters" style="text-transform:uppercase;" oninput="this.value=this.value.toUpperCase()" /></div></div>
-    <div class="divider">Item Details</div>
-    <div class="form-section">
-      <div class="form-group"><div class="form-label">Item Name</div><input class="form-input" type="text" id="new-name" placeholder="e.g. NRMA teardrop flag" autocomplete="off" /></div>
-      <div class="form-group"><div class="form-label">Category / Group</div>
-        <div style="display:flex;gap:8px;"><select class="form-input" id="new-cat" onchange="handleCatSelect(this)" style="flex:1;"><option value="">— Select or add new —</option></select><button type="button" onclick="promptNewCategory()" style="flex-shrink:0;padding:0 14px;background:var(--card);border:1.5px solid var(--border);border-radius:4px;color:var(--orange);font-family:var(--mono);font-size:11px;letter-spacing:0.1em;text-transform:uppercase;cursor:pointer;white-space:nowrap;">+ New</button></div>
-        <div id="new-cat-display" style="font-family:var(--mono);font-size:11px;color:var(--orange);letter-spacing:0.1em;margin-top:4px;display:none;"></div>
-      </div>
-      <div class="form-group"><div class="form-label">Shelf (optional)</div><input class="form-input" type="text" id="new-shelf" placeholder="e.g. A1" maxlength="4" style="text-transform:uppercase;" oninput="this.value=this.value.toUpperCase()" autocomplete="off" /></div>
-      <div class="form-group"><div class="form-label">Total Quantity Owned</div>
-        <div class="qty-control"><button class="qty-btn" onclick="adjustQty('new-owned-qty',-1)">−</button><input class="qty-val" type="number" id="new-owned-qty" value="1" min="1" oninput="clampQty(this)" /><button class="qty-btn" onclick="adjustQty('new-owned-qty',1)">+</button></div>
-      </div>
-      <div class="form-group"><div class="form-label">Notes</div><textarea class="form-input" id="new-notes" placeholder="Any details worth noting…"></textarea></div>
-    </div>
-    <div class="divider">Photos</div>
-    <div class="photos-area"><div class="photos-grid" id="new-photos-grid"><div class="add-photo-btn" onclick="showPhotoOptions('new')"><span class="add-photo-icon">📷</span><span>Add</span></div></div></div>
-    <input type="file" id="photo-input-new-camera"  accept="image/*" capture="environment" onchange="handlePhotos(this,'new')" style="display:none;" />
-    <input type="file" id="photo-input-new-library" accept="image/*" multiple            onchange="handlePhotos(this,'new')" style="display:none;" />
-    <div class="divider">Location</div>
-    <div class="loc-strip"><div class="loc-icon">📍</div><div><div class="loc-label">Detected Location</div><div class="loc-val loading" id="loc-new">Getting GPS…</div></div></div>
-    <div class="divider">Who's registering</div>
-    <div class="who-grid" id="who-grid-new"></div>
-    <input class="form-input" type="text" id="custom-who-new" placeholder="Enter name" style="display:none;margin-top:4px;" />
-  </div>
-  <div class="action-area"><button class="btn-primary" id="btn-register" onclick="submitNew()">Register Item</button><button class="btn-secondary" id="btn-register-back" onclick="showScreen('screen-manual')">← Back</button></div>
-</div>
-
-<!-- EXISTING ITEM -->
-<div class="screen" id="screen-existing">
-  <div class="app-header"><div class="logo">Funkified</div><div class="header-right"><div class="header-id" id="exist-header-id"></div><button class="load-fab" id="fab-exist" onclick="openLoadSheet()"><span class="load-fab-icon">📦</span><span>List</span><span class="load-fab-count" id="fab-count-exist">0</span></button></div></div>
-  <div class="screen-body">
-    <div class="status-pill" id="exist-status-pill"><div class="status-dot"></div><span id="exist-status-text"></span></div>
-    <div id="exist-damage-banner" style="display:none;"></div>
-    <div class="id-display"><div class="id-label">Item ID</div><div class="id-value" id="exist-id-val"></div><div class="id-sub" id="exist-name-sub"></div></div>
-    <div class="item-card"><div id="exist-photos-area"></div><div class="item-meta" id="exist-meta"></div></div>
-    <div class="divider">Actions</div>
-    <div class="action-menu">
-      <button class="action-btn takeout" onclick="showTakeOut()"><div class="action-icon">📦</div><div class="action-text"><div class="action-title">Take Items Out</div><div class="action-sub">Add to active load list</div></div><div class="action-arrow">›</div></button>
-      <button class="action-btn return" onclick="showReturn()"><div class="action-icon">📥</div><div class="action-text"><div class="action-title">Return Items</div><div class="action-sub">Log back into storage</div></div><div class="action-arrow">›</div></button>
-      <button class="action-btn damage" onclick="showDamage()"><div class="action-icon">⚠️</div><div class="action-text"><div class="action-title">Log Damage</div><div class="action-sub">Photo + description + severity</div></div><div class="action-arrow">›</div></button>
-      <button class="action-btn photo" onclick="showUpdatePhoto()"><div class="action-icon">📷</div><div class="action-text"><div class="action-title">Update Photo</div><div class="action-sub">Replace or add item photos</div></div><div class="action-arrow">›</div></button>
-      <button class="action-btn edit" onclick="showEdit()"><div class="action-icon">✏️</div><div class="action-text"><div class="action-title">Edit Details</div><div class="action-sub">Name, category, notes, shelf</div></div><div class="action-arrow">›</div></button>
-    </div>
-  </div>
-  <div class="action-area"><button class="btn-secondary" onclick="showScreen('screen-manual')">← Scan Another</button></div>
-</div>
-
-<!-- TAKE OUT -->
-<div class="screen" id="screen-takeout">
-  <div class="app-header"><div class="logo">Funkified</div><div class="header-right"><div class="header-id" id="takeout-header-id"></div></div></div>
-  <div class="screen-body">
-    <div class="id-display"><div class="id-label">Taking Out</div><div class="id-value" id="takeout-id-val"></div><div class="id-sub" id="takeout-name-sub"></div></div>
-    <div class="form-group"><div class="form-label">How many are you taking?</div>
-      <div class="qty-control"><button class="qty-btn" onclick="adjustQty('takeout-qty',-1)">−</button><input class="qty-val" type="number" id="takeout-qty" value="1" min="1" oninput="clampQty(this)" /><button class="qty-btn" onclick="adjustQty('takeout-qty',1)">+</button></div>
-    </div>
-    <div class="divider">Who's taking</div>
-    <div class="who-grid" id="who-grid-takeout"></div>
-    <input class="form-input" type="text" id="custom-who-takeout" placeholder="Enter name" style="display:none;margin-top:4px;" />
-    <div class="loc-strip"><div class="loc-icon">📍</div><div><div class="loc-label">GPS</div><div class="loc-val loading" id="loc-takeout">Getting GPS…</div></div></div>
-  </div>
-  <div class="action-area"><button class="btn-primary" id="btn-takeout" onclick="submitTakeOut()">Add to Load List</button><button class="btn-secondary" onclick="showScreen('screen-existing')">← Back</button></div>
-</div>
-
-<!-- RETURN -->
-<div class="screen" id="screen-return">
-  <div class="app-header"><div class="logo">Funkified</div><div class="header-right"><div class="header-id" id="return-header-id"></div></div></div>
-  <div class="screen-body">
-    <div id="shelf-bind-display-return" style="display:none;"></div>
-    <div class="id-display"><div class="id-label">Returning</div><div class="id-value" id="return-id-val"></div><div class="id-sub" id="return-name-sub"></div></div>
-    <div class="form-group"><div class="form-label">How many are you returning?</div>
-      <div class="qty-control"><button class="qty-btn" onclick="adjustQty('return-qty',-1)">−</button><input class="qty-val" type="number" id="return-qty" value="1" min="1" oninput="clampQty(this)" /><button class="qty-btn" onclick="adjustQty('return-qty',1)">+</button></div>
-    </div>
-    <div class="form-group"><div class="form-label">Returning to shelf (optional)</div><input class="form-input" type="text" id="return-shelf" placeholder="e.g. A1" maxlength="4" style="text-transform:uppercase;" oninput="this.value=this.value.toUpperCase()" autocomplete="off" /></div>
-    <div class="form-group"><div class="form-label">Any damage to report?</div>
-      <div style="display:flex;gap:10px;"><button class="who-btn" id="damage-no-btn"  onclick="setDamageOnReturn(false)" style="flex:1;">No — all good</button><button class="who-btn" id="damage-yes-btn" onclick="setDamageOnReturn(true)"  style="flex:1;">Yes — log damage</button></div>
-    </div>
-    <div class="form-group"><div class="form-label">Notes (optional)</div><input class="form-input" type="text" id="return-notes" placeholder="Any notes on condition…" autocomplete="off" /></div>
-    <div class="divider">Who's returning</div>
-    <div class="who-grid" id="who-grid-return"></div>
-    <input class="form-input" type="text" id="custom-who-return" placeholder="Enter name" style="display:none;margin-top:4px;" />
-    <div class="loc-strip"><div class="loc-icon">📍</div><div><div class="loc-label">GPS</div><div class="loc-val loading" id="loc-return">Getting GPS…</div></div></div>
-  </div>
-  <div class="action-area"><button class="btn-primary green" id="btn-return" onclick="submitReturn()">Confirm Return</button><button class="btn-secondary" onclick="showScreen('screen-existing')">← Back</button></div>
-</div>
-
-<!-- DAMAGE -->
-<div class="screen" id="screen-damage">
-  <div class="app-header"><div class="logo">Funkified</div><div class="header-right"><div class="header-id" id="damage-header-id"></div></div></div>
-  <div class="screen-body">
-    <div class="status-pill pill-damage"><div class="status-dot"></div>Logging Damage</div>
-    <div class="id-display" style="border-left-color:var(--amber);"><div class="id-label">Item</div><div class="id-value" id="damage-id-val"></div><div class="id-sub" id="damage-name-sub"></div></div>
-    <div class="divider">Damage Photos</div>
-    <div class="photos-area"><div class="photos-grid" id="damage-photos-grid"><div class="add-photo-btn" onclick="showPhotoOptions('damage')"><span class="add-photo-icon">📷</span><span>Add</span></div></div></div>
-    <input type="file" id="photo-input-damage-camera"  accept="image/*" capture="environment" onchange="handlePhotos(this,'damage')" style="display:none;" />
-    <input type="file" id="photo-input-damage-library" accept="image/*" multiple            onchange="handlePhotos(this,'damage')" style="display:none;" />
-    <div class="divider">Details</div>
-    <div class="form-section">
-      <div class="form-group"><div class="form-label">Description</div><textarea class="form-input" id="damage-desc" placeholder="Describe the damage…"></textarea></div>
-      <div class="form-group"><div class="form-label">Severity</div>
-        <div class="severity-grid"><button class="severity-btn" id="sev-minor"  onclick="setSeverity('minor')">🔵 Minor<br><span style="font-size:8px;">Usable as-is</span></button><button class="severity-btn" id="sev-repair" onclick="setSeverity('repair')">🟡 Needs<br>Repair</button><button class="severity-btn" id="sev-out"    onclick="setSeverity('out')">🔴 Out of<br>Service</button></div>
-      </div>
-    </div>
-    <div class="divider">Who's reporting</div>
-    <div class="who-grid" id="who-grid-damage"></div>
-    <input class="form-input" type="text" id="custom-who-damage" placeholder="Enter name" style="display:none;margin-top:4px;" />
-  </div>
-  <div class="action-area"><button class="btn-primary amber" id="btn-damage" onclick="submitDamage()">Submit Damage Report</button><button class="btn-secondary" onclick="showScreen('screen-existing')">← Back</button></div>
-</div>
-
-<!-- UPDATE PHOTO -->
-<div class="screen" id="screen-photo">
-  <div class="app-header"><div class="logo">Funkified</div><div class="header-right"><div class="header-id" id="photo-header-id"></div></div></div>
-  <div class="screen-body">
-    <div class="id-display"><div class="id-label">Update Photos</div><div class="id-value" id="photo-id-val"></div><div class="id-sub" id="photo-name-sub"></div></div>
-    <div class="divider">New Photos</div>
-    <div class="photos-area"><div class="photos-grid" id="updatephoto-photos-grid"><div class="add-photo-btn" onclick="showPhotoOptions('updatephoto')"><span class="add-photo-icon">📷</span><span>Add</span></div></div></div>
-    <input type="file" id="photo-input-updatephoto-camera"  accept="image/*" capture="environment" onchange="handlePhotos(this,'updatephoto')" style="display:none;" />
-    <input type="file" id="photo-input-updatephoto-library" accept="image/*" multiple            onchange="handlePhotos(this,'updatephoto')" style="display:none;" />
-    <div style="font-size:12px;color:var(--muted);line-height:1.6;">Photos added here will be appended to the item's record.</div>
-  </div>
-  <div class="action-area"><button class="btn-primary" id="btn-updatephoto" onclick="submitUpdatePhoto()">Save Photos</button><button class="btn-secondary" onclick="showScreen('screen-existing')">← Back</button></div>
-</div>
-
-<!-- EDIT -->
-<div class="screen" id="screen-edit">
-  <div class="app-header"><div class="logo">Funkified</div><div class="header-right"><div class="header-id" id="edit-header-id"></div></div></div>
-  <div class="screen-body">
-    <div class="id-display"><div class="id-label">Editing</div><div class="id-value" id="edit-id-val"></div></div>
-    <div class="form-section">
-      <div class="form-group"><div class="form-label">Item Name</div><input class="form-input" type="text" id="edit-name" autocomplete="off" /></div>
-      <div class="form-group"><div class="form-label">Category</div><select class="form-input" id="edit-cat"></select></div>
-      <div class="form-group"><div class="form-label">Shelf</div><input class="form-input" type="text" id="edit-shelf" placeholder="e.g. A1" maxlength="4" style="text-transform:uppercase;" oninput="this.value=this.value.toUpperCase()" autocomplete="off" /></div>
-      <div class="form-group"><div class="form-label">Total Quantity Owned</div>
-        <div class="qty-control"><button class="qty-btn" onclick="adjustQty('edit-owned-qty',-1)">−</button><input class="qty-val" type="number" id="edit-owned-qty" value="1" min="1" oninput="clampQty(this)" /><button class="qty-btn" onclick="adjustQty('edit-owned-qty',1)">+</button></div>
-      </div>
-      <div class="form-group"><div class="form-label">Notes</div><textarea class="form-input" id="edit-notes"></textarea></div>
-    </div>
-  </div>
-  <div class="action-area"><button class="btn-primary" id="btn-edit" onclick="submitEdit()">Save Changes</button><button class="btn-secondary" onclick="showScreen('screen-existing')">← Cancel</button></div>
-</div>
-
-<!-- SUCCESS -->
-<div class="screen" id="screen-success">
-  <div class="success-wrap">
-    <div class="success-icon"   id="success-icon">✅</div>
-    <div class="success-title"  id="success-title">Done</div>
-    <div class="success-id"     id="success-id"></div>
-    <div class="success-detail" id="success-detail"></div>
-  </div>
-  <div class="action-area">
-    <button class="btn-primary" id="success-primary-btn" onclick="showScreen('screen-manual')">Scan Another</button>
-    <button class="btn-secondary" id="success-secondary-btn" onclick="openLoadSheet()">View Equipment List</button>
-  </div>
-</div>
-
-<div id="toast"></div>
+<div class="status" id="status"></div>
 
 <script>
-/* JS appended below */
+const API_URL = "https://script.google.com/macros/s/AKfycbwxhZiH_yrNp7oTWSht6qu7y5sWkKXnMTVAQyEXklnYXEbMQgYhacfhKU4ipJQ-rY6g8g/exec";
+
+let queue = JSON.parse(localStorage.getItem('queue') || '[]');
+
+function setStatus(msg) {
+  document.getElementById('status').innerText = msg;
+}
+
+// compress image
+function compress(file) {
+  return new Promise(resolve => {
+    const img = new Image();
+    const reader = new FileReader();
+
+    reader.onload = e => {
+      img.src = e.target.result;
+    };
+
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      const max = 800;
+      let w = img.width;
+      let h = img.height;
+
+      if (w > h && w > max) {
+        h *= max / w;
+        w = max;
+      } else if (h > max) {
+        w *= max / h;
+        h = max;
+      }
+
+      canvas.width = w;
+      canvas.height = h;
+
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, w, h);
+
+      resolve(canvas.toDataURL('image/jpeg', 0.6));
+    };
+
+    reader.readAsDataURL(file);
+  });
+}
+
+async function getPhotos() {
+  const files = document.getElementById('photos').files;
+  const arr = [];
+
+  for (let f of files) {
+    const c = await compress(f);
+    arr.push(c);
+  }
+
+  return arr;
+}
+
+async function save() {
+  const item = {
+    id: document.getElementById('id').value.trim(),
+    name: document.getElementById('name').value.trim(),
+    category: document.getElementById('category').value.trim(),
+    description: document.getElementById('description').value.trim(),
+    photos: await getPhotos()
+  };
+
+  if (!item.id) {
+    setStatus("ID required");
+    return;
+  }
+
+  queue.push(item);
+  localStorage.setItem('queue', JSON.stringify(queue));
+
+  setStatus("Saved locally");
+
+  sync();
+}
+
+// retry upload
+async function sync() {
+  if (!navigator.onLine) {
+    setStatus("Offline — waiting");
+    return;
+  }
+
+  for (let i = 0; i < queue.length; i++) {
+    try {
+      const res = await fetch(API_URL, {
+        method: "POST",
+        body: JSON.stringify(queue[i])
+      });
+
+      const json = await res.json();
+
+      if (json.success) {
+        queue.splice(i, 1);
+        i--;
+        setStatus("Synced");
+      } else {
+        setStatus("Error syncing");
+        break;
+      }
+
+    } catch (e) {
+      setStatus("Connection failed");
+      break;
+    }
+  }
+
+  localStorage.setItem('queue', JSON.stringify(queue));
+}
+
+// auto retry every 15s
+setInterval(sync, 15000);
+
 </script>
+
 </body>
 </html>
