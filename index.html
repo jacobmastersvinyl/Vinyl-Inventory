@@ -99,24 +99,17 @@
   <section id="screen-session" class="screen active">
     <div class="card">
       <h1>Who's on?</h1>
-      <div class="grid three">
-        <button data-team-opt="Alpha" onclick="setTeam('Alpha')">Alpha</button>
-        <button data-team-opt="Bravo" onclick="setTeam('Bravo')">Bravo</button>
-        <button data-team-opt="Charlie" onclick="setTeam('Charlie')">Charlie</button>
-      </div>
-      <div class="field" style="margin-top:10px">
-        <label>Or enter a name</label>
+      <div class="field">
+        <label>Your name</label>
         <input id="team-other" type="text" placeholder="e.g. Jacob" oninput="setTeam(this.value)"/>
       </div>
       <p class="muted">Team: <span data-team-display>—</span></p>
     </div>
     <div class="card switchboard stack">
       <h2>What are you doing?</h2>
-      <button class="primary" onclick="startMode('sort')">Sort / Inventory</button>
-      <button onclick="startMode('loadout')">Loadout for a Job</button>
+      <button class="primary" onclick="startMode('sort')">Search Inventory</button>
+      <button onclick="startMode('loadout')">Create Order</button>
       <button onclick="startMode('pack')">Pack a Client Order</button>
-      <button onclick="startMode('delivery')">Delivery / Transfer</button>
-      <button class="ghost" onclick="manualBindShelf()">Bind to shelf manually</button>
     </div>
   </section>
 
@@ -161,13 +154,19 @@
     </div>
   </section>
 
-  <!-- BROWSE (scan entry point for sort/loadout) -->
+  <!-- BROWSE — search inventory -->
   <section id="screen-browse" class="screen">
     <div class="shelf-bind-banner">Bound to shelf <span class="shelf-code"></span></div>
     <div class="card stack">
-      <h1>Scan or enter a shelf</h1>
-      <p class="muted">Tap an NFC tag, scan a QR, or type the shelf code.</p>
-      <button class="primary" onclick="browseManual()">Enter shelf manually</button>
+      <h1>Search inventory</h1>
+      <p class="muted">Search by item name, shelf code, brand or type. Partial words are fine.</p>
+      <div class="field">
+        <input id="inv-search" type="search" autocomplete="off" autocapitalize="off"
+               placeholder="e.g. candle, B1, NRMAi" oninput="searchInventory(this.value)"/>
+      </div>
+      <div id="inv-results" class="stack"></div>
+    </div>
+    <div class="card stack">
       <button onclick="browseNoTag()">Add a new item</button>
       <button class="ghost" onclick="show('screen-session')">Back</button>
     </div>
@@ -658,10 +657,9 @@ setInterval(()=>{if(navigator.onLine)drainOutbox().catch(()=>{});},DRAIN_RETRY_M
 /* ---------- Team + mode ---------- */
 function setTeam(t){state.team=(t||'').trim()||null;saveSession();updateTeamUI();}
 function updateTeamUI(){
-  document.querySelectorAll('[data-team-opt]').forEach(el=>el.classList.toggle('selected',el.dataset.teamOpt===state.team));
   document.querySelectorAll('[data-team-display]').forEach(el=>el.textContent=state.team||'—');
   const other=document.getElementById('team-other');
-  if(other && state.team && !['Alpha','Bravo','Charlie'].includes(state.team)) other.value=state.team;
+  if(other && state.team) other.value=state.team;
 }
 function startMode(mode){
   if(!state.team){toast('Pick a team first');return;}
@@ -789,6 +787,71 @@ async function submitDelivery(){
 /* ---------- Browse / lookup ---------- */
 function browseManual(){show('screen-manual');}
 function browseNoTag(){show('screen-notag');}
+
+/* ---------- Inventory search (fuzzy, multi-match) ---------- */
+let _searchDebounce = null;
+function searchInventory(q){
+  clearTimeout(_searchDebounce);
+  const host = document.getElementById('inv-results');
+  const term = (q || '').trim();
+  if (!term){ host.innerHTML = ''; return; }
+  host.innerHTML = '<div class="muted">Searching…</div>';
+  _searchDebounce = setTimeout(() => runSearch(term), 220);
+}
+
+async function runSearch(term){
+  const host = document.getElementById('inv-results');
+  try {
+    const url = ENDPOINT + '?action=search&q=' + encodeURIComponent(term);
+    const res = await fetch(url, { method:'GET' });
+    const data = await res.json();
+    if (!data || data.success === false){
+      host.innerHTML = '<div class="err-line">'+((data&&data.error)||'Search failed')+'</div>';
+      return;
+    }
+    renderSearchResults(data.items || []);
+  } catch(_) {
+    host.innerHTML = '<div class="err-line">Network error. Check connection.</div>';
+  }
+}
+
+function renderSearchResults(items){
+  const host = document.getElementById('inv-results');
+  if (!items.length){
+    host.innerHTML = '<div class="muted">No matches. Try a shorter word or a different spelling.</div>';
+    return;
+  }
+  const esc = s => String(s==null?'':s).replace(/[&<>"']/g,
+    c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  host.innerHTML = items.map(it => {
+    const out = Number(it.qtyOut)||0, total = Number(it.totalQty)||0;
+    const status = String(it.status||'—');
+    const pill = status==='out' ? 'pill pill-err'
+               : status==='partial' ? 'pill pill-warn'
+               : 'pill pill-ok';
+    const meta = [];
+    if (it.brand) meta.push(esc(it.brand));
+    if (it.type)  meta.push(esc(it.type));
+    return `
+      <div class="pending-item" style="cursor:pointer" onclick="openFromSearch('${esc(it.shelf)}')">
+        <div class="pending-row">
+          <span class="${pill}">${esc(status)}</span>
+          <strong>${esc(it.name||'(no name)')}</strong>
+          <span class="muted" style="font-size:12px">${esc(it.shelf||'(no shelf)')}</span>
+        </div>
+        <div class="pending-body">
+          <span class="muted">${out} of ${total} out</span>
+          ${meta.length ? ' · ' + meta.join(' · ') : ''}
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function openFromSearch(shelf){
+  if (!shelf){ toast('This item has no shelf yet — edit it from the inventory sheet first.'); return; }
+  state.currentShelf = shelf;
+  lookupAndRoute(shelf).catch(() => toast('Could not open item'));
+}
 async function submitManualShelf(){
   const v=(document.getElementById('manual-shelf')||{}).value?.trim()?.toUpperCase();
   if(!v){toast('Enter a shelf code');return;}
