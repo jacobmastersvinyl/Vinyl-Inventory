@@ -114,6 +114,7 @@
       <h2>What are you doing?</h2>
       <button class="primary" onclick="startMode('sort')">Sort / Inventory</button>
       <button onclick="startMode('loadout')">Loadout for a Job</button>
+      <button onclick="startMode('pack')">Pack a Client Order</button>
       <button onclick="startMode('delivery')">Delivery / Transfer</button>
       <button class="ghost" onclick="manualBindShelf()">Bind to shelf manually</button>
     </div>
@@ -367,6 +368,46 @@
       <p class="muted">Syncs automatically when online.</p>
       <button class="primary" onclick="goScanAnother()">Scan another</button>
       <button class="ghost" onclick="goHome()">Home</button>
+    </div>
+  </section>
+
+  <!-- PACK A CLIENT ORDER — job picker -->
+  <section id="screen-pack-picker" class="screen">
+    <div class="card stack">
+      <h1>Pack a client order</h1>
+      <p class="muted">Pending orders from the client portal. Tap one to start ticking items off.</p>
+      <div id="pack-jobs" class="stack"></div>
+      <button class="ghost" onclick="loadPendingJobs()">Refresh</button>
+      <button class="ghost" onclick="show('screen-session')">Back</button>
+    </div>
+  </section>
+
+  <!-- PACK A CLIENT ORDER — pack list (Stage 3 wires this up fully) -->
+  <section id="screen-pack-list" class="screen">
+    <div class="card">
+      <div id="pack-header"></div>
+    </div>
+    <div class="card stack">
+      <div class="field">
+        <label>Scan or type a shelf</label>
+        <input id="pack-shelf" data-shelf-input type="text" autocomplete="off"
+               placeholder="e.g. B3" oninput="this.value=this.value.toUpperCase()"/>
+      </div>
+      <div class="qty-row">
+        <button onclick="stepQty('pack-qty',-1)">−</button>
+        <input id="pack-qty" type="number" min="1" step="1" value="1"/>
+        <button onclick="stepQty('pack-qty',1)">+</button>
+      </div>
+      <button class="primary" onclick="packScan()">Tick off</button>
+    </div>
+    <div class="card">
+      <h2>Packing list</h2>
+      <div id="pack-lines" class="stack"></div>
+    </div>
+    <div class="card stack">
+      <button class="primary" onclick="completePack(true)">Complete checkout</button>
+      <button onclick="completePack(false)">Save progress (don't close)</button>
+      <button class="ghost" onclick="show('screen-pack-picker')">Back to jobs</button>
     </div>
   </section>
 
@@ -628,6 +669,7 @@ function startMode(mode){
   if(mode==='sort')show('screen-browse');
   else if(mode==='loadout')show('screen-loadout-setup');
   else if(mode==='delivery')show('screen-delivery-setup');
+  else if(mode==='pack'){show('screen-pack-picker'); loadPendingJobs();}
 }
 function submitLoadoutSetup(){
   const jobName=(document.getElementById('loadout-job')||{}).value?.trim();
@@ -635,6 +677,90 @@ function submitLoadoutSetup(){
   state.loadout={jobName,team:state.team}; saveSession();
   show('screen-browse');
 }
+
+/* ---------- Pack-a-client-order helpers ---------- */
+// directPost() is the read-side counterpart to enqueue(): it posts with a
+// fresh clientId (required by Code.gs) and returns the parsed JSON without
+// touching the outbox, because reads should never be queued for retry.
+async function directPost(action, payload){
+  const body = Object.assign({ clientId: uuid(), action }, payload || {});
+  const ctrl = new AbortController();
+  const tid = setTimeout(()=>ctrl.abort(), POST_TIMEOUT_MS);
+  try {
+    const res = await fetch(ENDPOINT, {
+      method:'POST', mode:'cors',
+      headers:{'Content-Type':'text/plain;charset=utf-8'},
+      body: JSON.stringify(body), signal: ctrl.signal
+    });
+    const txt = await res.text();
+    try { return JSON.parse(txt); }
+    catch(_){ throw new Error('Bad server response'); }
+  } finally { clearTimeout(tid); }
+}
+
+function fmtDate(iso){
+  if(!iso) return '—';
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return String(iso);
+  // e.g. "Tue 21 Apr · 14:30"
+  return d.toLocaleString('en-AU',{ weekday:'short', day:'numeric', month:'short',
+    hour:'2-digit', minute:'2-digit' });
+}
+
+async function loadPendingJobs(){
+  const host = document.getElementById('pack-jobs');
+  host.innerHTML = '<div class="muted">Loading…</div>';
+  try {
+    const res = await directPost('jobsPending', { team: state.team || '' });
+    if (!res || !res.success) {
+      host.innerHTML = '<div class="err-line">'+((res&&res.error)||'Could not load jobs')+'</div>';
+      return;
+    }
+    renderPackPicker(res.jobs || []);
+  } catch(e) {
+    host.innerHTML = '<div class="err-line">Network error. Check connection and tap Refresh.</div>';
+  }
+}
+
+function renderPackPicker(jobs){
+  const host = document.getElementById('pack-jobs');
+  if (!jobs.length){
+    host.innerHTML = '<div class="muted">No pending orders. When a client submits via the portal, it\'ll appear here.</div>';
+    return;
+  }
+  const esc = s => String(s==null?'':s).replace(/[&<>"']/g,
+    c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  host.innerHTML = jobs.map(j => {
+    const meta = j.meta || {};
+    const pillClass = j.status === 'Partial' ? 'pill pill-warn' : 'pill';
+    const outstanding = (j.unitsOutstanding != null) ? j.unitsOutstanding : j.unitsOrdered;
+    return `
+      <div class="pending-item" style="cursor:pointer" onclick="selectPackJob('${esc(j.orderId)}')">
+        <div class="pending-row">
+          <span class="${pillClass}">${esc(j.status||'Pending')}</span>
+          <strong>${esc(j.client||'')}</strong>
+          <span class="muted" style="font-size:12px">${esc(j.orderId)}</span>
+        </div>
+        <div class="pending-body">
+          <div><span class="muted">Drop-off:</span> ${esc(fmtDate(meta.dropoffWhen))}</div>
+          <div><span class="muted">To:</span> ${esc(meta.address||'—')}</div>
+          <div><span class="muted">Items:</span> ${j.lineCount} lines · ${outstanding} of ${j.unitsOrdered} units outstanding</div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function selectPackJob(orderId){
+  // Stage 3 will load the pack list here. For now, park the id and toast.
+  state.packJob = { orderId };
+  toast('Selected '+orderId+' — pack list coming next');
+  // Intentionally don't transition yet; Stage 3 will add loadPackJob() + show('screen-pack-list').
+}
+
+// Stage-3 placeholders (so existing onclick handlers don't throw if the
+// user finds their way to screen-pack-list via back-navigation).
+function packScan(){ toast('Scan tick-off lands in Stage 3'); }
+function completePack(closeOut){ toast('Complete checkout lands in Stage 3'); }
 function submitDeliverySetup(){
   const from=(document.getElementById('delivery-from')||{}).value?.trim();
   const to=(document.getElementById('delivery-to')||{}).value?.trim();
