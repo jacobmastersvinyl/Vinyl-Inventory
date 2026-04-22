@@ -56,8 +56,9 @@
   .pill-ok{background:rgba(34,197,94,.15);color:var(--ok)}
   .shelf-bind-banner{display:none;align-items:center;gap:8px;background:rgba(255,122,24,.12);
     border:1px solid rgba(255,122,24,.4);color:var(--accent2);padding:8px 12px;border-radius:10px;
-    font-size:13px;margin-bottom:10px}
+    font-size:13px;margin-bottom:10px;justify-content:space-between}
   .shelf-bind-banner .shelf-code{font-weight:700;color:var(--accent)}
+  .shelf-bind-banner button.small{background:transparent;border:1px solid rgba(255,122,24,.5);color:var(--accent2);padding:4px 10px}
   #offline-bar{display:none;background:var(--err);color:#fff;text-align:center;padding:6px;font-size:13px;
     position:sticky;top:0;z-index:10}
   #offline-bar.show{display:block}
@@ -143,7 +144,10 @@
 
   <!-- DELIVERY SCAN LOOP -->
   <section id="screen-delivery" class="screen">
-    <div class="shelf-bind-banner">Bound to shelf <span class="shelf-code"></span></div>
+    <div class="shelf-bind-banner">
+      <span>Bound to shelf <span class="shelf-code"></span></span>
+      <button class="small" onclick="clearShelfBind()">Clear</button>
+    </div>
     <div class="card stack">
       <h1>Delivery</h1>
       <p class="muted"><span data-team-display>—</span> · Scan each item as it moves.</p>
@@ -156,7 +160,10 @@
 
   <!-- BROWSE — search inventory -->
   <section id="screen-browse" class="screen">
-    <div class="shelf-bind-banner">Bound to shelf <span class="shelf-code"></span></div>
+    <div class="shelf-bind-banner">
+      <span>Bound to shelf <span class="shelf-code"></span></span>
+      <button class="small" onclick="clearShelfBind()">Clear</button>
+    </div>
     <div class="card stack">
       <h1>Search inventory</h1>
       <p class="muted">Search by item name, shelf code, brand or type. Partial words are fine.</p>
@@ -186,9 +193,13 @@
 
   <!-- NEW ITEM (shelf optional) -->
   <section id="screen-notag" class="screen">
+    <div class="shelf-bind-banner">
+      <span>Bound to shelf <span class="shelf-code"></span> — will auto-fill below</span>
+      <button class="small" onclick="clearShelfBind()">Clear</button>
+    </div>
     <div class="card stack">
       <h1>Add new item</h1>
-      <p class="muted">Shelf is optional — leave it blank if you don't have one yet.</p>
+      <p class="muted">Shelf is optional — leave it blank if you don't have one yet. If it's filled in already, you've got a shelf bind active.</p>
       <div class="field"><label>Shelf (optional)</label>
         <input id="notag-shelf" data-shelf-input type="text" placeholder="e.g. B4" oninput="this.value=this.value.toUpperCase()"/></div>
       <div class="field"><label>Name</label>
@@ -213,7 +224,10 @@
 
   <!-- NEW ITEM ON SHELF -->
   <section id="screen-new" class="screen">
-    <div class="shelf-bind-banner">Bound to shelf <span class="shelf-code"></span></div>
+    <div class="shelf-bind-banner">
+      <span>Bound to shelf <span class="shelf-code"></span></span>
+      <button class="small" onclick="clearShelfBind()">Clear</button>
+    </div>
     <div class="card stack">
       <h1>New shelf entry</h1>
       <p class="muted">Shelf <code id="new-shelf-display"></code> isn't set up yet.</p>
@@ -427,8 +441,15 @@
 
 <script>
 /* =========================================================
-   FUNKIFIED — Offline-first Storage client v6
-   Schema key: Shelf (primary). No ID field.
+   FUNKIFIED — Offline-first Storage client v7
+   Fixes:
+     • Shelf-bind is explicit & clearable (banner has Clear button,
+       and add-new-item flow warns before inheriting it)
+     • Search results route by shelf + expectedName so a stale result
+       cannot silently open a different (overwritten) item
+     • actRegister on the server refuses silent overwrites; here we
+       surface the conflict to the user and offer an explicit
+       "Overwrite anyway" choice
    ========================================================= */
 const ENDPOINT = 'https://script.google.com/macros/s/AKfycbwxhZiH_yrNp7oTWSht6qu7y5sWkKXnMTVAQyEXklnYXEbMQgYhacfhKU4ipJQ-rY6g8g/exec';
 const SHELF_BIND_MINUTES = 10;
@@ -563,8 +584,14 @@ async function drainOutbox(manual=false){
       if(result&&result.success){
         await idbDelete(STORE_OUTBOX,env.clientId);
       }else{
-        env.status='failed'; env.lastError=(result&&result.error)?result.error:'Unknown server error';
+        env.status='failed';
+        env.lastError=(result&&result.error)?result.error:'Unknown server error';
+        env.serverResponse=result||null;
         await idbPut(STORE_OUTBOX,env);
+        // Surface shelf-conflict errors immediately so the user can act.
+        if (result && result.conflict) {
+          toast(result.error || 'Shelf conflict — check queue');
+        }
       }
       updatePendingChip(); renderPendingList();
     }
@@ -599,6 +626,12 @@ function setShelfBind(code){
   sessionStorage.setItem('shelfBind',JSON.stringify(state.shelfBind));
   renderShelfBanners();
 }
+function clearShelfBind(){
+  setShelfBind(null);
+  // Also clear any auto-filled shelf input values so the user starts fresh.
+  document.querySelectorAll('input[data-shelf-input]').forEach(i=>{i.value='';});
+  toast('Shelf bind cleared');
+}
 function renderShelfBanners(){
   const code=getShelfBind();
   document.querySelectorAll('.shelf-bind-banner').forEach(b=>{
@@ -611,7 +644,7 @@ function renderShelfBanners(){
 /* ---------- URL params ---------- */
 function parseParams(){
   const p=new URLSearchParams(location.search);
-  const shelf=p.get('shelf')||p.get('id'); // legacy ?id= still treated as shelf
+  const shelf=p.get('shelf')||p.get('id');
   if(shelf) setShelfBind(shelf.toUpperCase());
   return{shelf};
 }
@@ -636,7 +669,7 @@ async function registerSW(){
   }catch(e){console.warn('SW register failed',e);}
 }
 
-/* ---------- GPS (best-effort, non-blocking) ---------- */
+/* ---------- GPS ---------- */
 function tryGetGPS(){
   if(!navigator.geolocation)return;
   navigator.geolocation.getCurrentPosition(pos=>{
@@ -677,9 +710,6 @@ function submitLoadoutSetup(){
 }
 
 /* ---------- Pack-a-client-order helpers ---------- */
-// directPost() is the read-side counterpart to enqueue(): it posts with a
-// fresh clientId (required by Code.gs) and returns the parsed JSON without
-// touching the outbox, because reads should never be queued for retry.
 async function directPost(action, payload){
   const body = Object.assign({ clientId: uuid(), action }, payload || {});
   const ctrl = new AbortController();
@@ -700,7 +730,6 @@ function fmtDate(iso){
   if(!iso) return '—';
   const d = new Date(iso);
   if (isNaN(d.getTime())) return String(iso);
-  // e.g. "Tue 21 Apr · 14:30"
   return d.toLocaleString('en-AU',{ weekday:'short', day:'numeric', month:'short',
     hour:'2-digit', minute:'2-digit' });
 }
@@ -749,14 +778,10 @@ function renderPackPicker(jobs){
 }
 
 function selectPackJob(orderId){
-  // Stage 3 will load the pack list here. For now, park the id and toast.
   state.packJob = { orderId };
   toast('Selected '+orderId+' — pack list coming next');
-  // Intentionally don't transition yet; Stage 3 will add loadPackJob() + show('screen-pack-list').
 }
 
-// Stage-3 placeholders (so existing onclick handlers don't throw if the
-// user finds their way to screen-pack-list via back-navigation).
 function packScan(){ toast('Scan tick-off lands in Stage 3'); }
 function completePack(closeOut){ toast('Complete checkout lands in Stage 3'); }
 function submitDeliverySetup(){
@@ -790,11 +815,12 @@ function browseNoTag(){show('screen-notag');}
 
 /* ---------- Inventory search (fuzzy, multi-match) ---------- */
 let _searchDebounce = null;
+let _lastSearchItems = [];
 function searchInventory(q){
   clearTimeout(_searchDebounce);
   const host = document.getElementById('inv-results');
   const term = (q || '').trim();
-  if (!term){ host.innerHTML = ''; return; }
+  if (!term){ host.innerHTML = ''; _lastSearchItems = []; return; }
   host.innerHTML = '<div class="muted">Searching…</div>';
   _searchDebounce = setTimeout(() => runSearch(term), 220);
 }
@@ -807,9 +833,11 @@ async function runSearch(term){
     const data = await res.json();
     if (!data || data.success === false){
       host.innerHTML = '<div class="err-line">'+((data&&data.error)||'Search failed')+'</div>';
+      _lastSearchItems = [];
       return;
     }
-    renderSearchResults(data.items || []);
+    _lastSearchItems = data.items || [];
+    renderSearchResults(_lastSearchItems);
   } catch(_) {
     host.innerHTML = '<div class="err-line">Network error. Check connection.</div>';
   }
@@ -823,7 +851,7 @@ function renderSearchResults(items){
   }
   const esc = s => String(s==null?'':s).replace(/[&<>"']/g,
     c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-  host.innerHTML = items.map(it => {
+  host.innerHTML = items.map((it, idx) => {
     const out = Number(it.qtyOut)||0, total = Number(it.totalQty)||0;
     const status = String(it.status||'—');
     const pill = status==='out' ? 'pill pill-err'
@@ -833,7 +861,7 @@ function renderSearchResults(items){
     if (it.brand) meta.push(esc(it.brand));
     if (it.type)  meta.push(esc(it.type));
     return `
-      <div class="pending-item" style="cursor:pointer" onclick="openFromSearch('${esc(it.shelf)}')">
+      <div class="pending-item" style="cursor:pointer" onclick="openFromSearch(${idx})">
         <div class="pending-row">
           <span class="${pill}">${esc(status)}</span>
           <strong>${esc(it.name||'(no name)')}</strong>
@@ -847,11 +875,22 @@ function renderSearchResults(items){
   }).join('');
 }
 
-function openFromSearch(shelf){
-  if (!shelf){ toast('This item has no shelf yet — edit it from the inventory sheet first.'); return; }
-  state.currentShelf = shelf;
-  lookupAndRoute(shelf).catch(() => toast('Could not open item'));
+// Route by the item snapshot captured at search time. Passing expectedName
+// to the server makes it detect drift: if the shelf has since been
+// reassigned, the server responds with mismatch:true and we tell the user
+// instead of silently opening whatever currently occupies that shelf.
+function openFromSearch(idx){
+  const it = _lastSearchItems[idx];
+  if (!it){ toast('Pick a result and try again'); return; }
+  if (!it.shelf){
+    // No shelf on file — offer edit via browse-new path.
+    toast('This item has no shelf yet. Edit it from the Inventory sheet first.');
+    return;
+  }
+  state.currentShelf = it.shelf;
+  lookupAndRoute(it.shelf, it.name).catch(() => toast('Could not open item'));
 }
+
 async function submitManualShelf(){
   const v=(document.getElementById('manual-shelf')||{}).value?.trim()?.toUpperCase();
   if(!v){toast('Enter a shelf code');return;}
@@ -862,12 +901,23 @@ function prefillNewShelf(shelf){
   const f=document.getElementById('new-shelf'); if(f)f.value=shelf;
   const d=document.getElementById('new-shelf-display'); if(d)d.textContent=shelf;
 }
-async function lookupAndRoute(shelf){
+
+// expectedName is optional; when present, the server verifies it still
+// matches the stored row's Name. Mismatch means the shelf was reassigned
+// since the caller last saw it (stale search result), so we refuse to
+// route and tell the user what's actually there.
+async function lookupAndRoute(shelf, expectedName){
   state.currentShelf=shelf;
   if(!navigator.onLine){prefillNewShelf(shelf);show('screen-new');return;}
   try{
-    const res=await fetch(ENDPOINT+'?action=lookup&shelf='+encodeURIComponent(shelf),{method:'GET'});
-    const data=await res.json();
+    let url = ENDPOINT + '?action=lookup&shelf=' + encodeURIComponent(shelf);
+    if (expectedName) url += '&expectedName=' + encodeURIComponent(expectedName);
+    const res = await fetch(url, { method:'GET' });
+    const data = await res.json();
+    if (data && data.mismatch) {
+      toast('Shelf '+shelf+' is now "'+(data.storedName||'—')+'", not "'+expectedName+'". Search again.');
+      return;
+    }
     if(data&&data.exists){
       state.currentItem=data.item;
       renderExistingItem(data.item);
@@ -896,7 +946,57 @@ function renderExistingItem(item){
     <div class="muted" style="font-size:12px">Last scanned by ${item.lastScannedBy||'—'}</div>`;
 }
 
-/* ---------- Submit handlers ---------- */
+/* ---------- Submit handlers ----------
+   Register paths now handle the server's conflict response: if the shelf
+   is already occupied by a different item, we surface it to the user and
+   offer an explicit "Overwrite anyway" confirmation.
+----------------------------------- */
+async function postRegisterWithConflictCheck(payload, kind /* 'register' | 'registerNoTag' */){
+  const body = Object.assign({ clientId: uuid(), action: kind }, payload);
+  const ctrl = new AbortController();
+  const tid = setTimeout(()=>ctrl.abort(), POST_TIMEOUT_MS);
+  try {
+    const res = await fetch(ENDPOINT, {
+      method:'POST', mode:'cors',
+      headers:{'Content-Type':'text/plain;charset=utf-8'},
+      body: JSON.stringify(body), signal: ctrl.signal
+    });
+    const txt = await res.text();
+    try { return JSON.parse(txt); }
+    catch(_){ throw new Error('Bad server response'); }
+  } finally { clearTimeout(tid); }
+}
+
+// Decide: if the user is online, do a pre-flight POST so we can show the
+// conflict dialog inline. If offline, fall back to the normal outbox.
+async function registerItem(payload, kind){
+  if (!navigator.onLine) {
+    await enqueue(kind, payload);
+    return { queued:true };
+  }
+  try {
+    const res = await postRegisterWithConflictCheck(payload, kind);
+    if (res && res.success) return res;
+    if (res && res.conflict) {
+      const ok = confirm(
+        (res.error || 'Shelf already registered.') +
+        '\n\nOverwrite anyway?'
+      );
+      if (!ok) return { cancelled:true };
+      // Retry with explicit allowOverwrite flag.
+      const retry = await postRegisterWithConflictCheck(
+        Object.assign({}, payload, { allowOverwrite:true }), kind);
+      return retry;
+    }
+    // Any other server error → surface.
+    return res || { success:false, error:'Unknown error' };
+  } catch (_) {
+    // Network error → fall back to queue.
+    await enqueue(kind, payload);
+    return { queued:true };
+  }
+}
+
 async function submitNew(){
   const shelf=((document.getElementById('new-shelf')||{}).value||'').trim().toUpperCase();
   const name=(document.getElementById('new-name')||{}).value?.trim();
@@ -906,28 +1006,47 @@ async function submitNew(){
   const notes=(document.getElementById('new-notes')||{}).value?.trim();
   if(!shelf){toast('Shelf required');return;}
   if(!name){toast('Name required');return;}
-  await enqueue('register',Object.assign({
+  const payload = Object.assign({
     shelf,name,brand,type,totalQty:Number(totalQty)||0,notes,
     team:state.team||'',photo:state.pendingPhoto?.dataUrl||'',ts:nowIso()
-  },gpsPayload()));
+  },gpsPayload());
+  const r = await registerItem(payload, 'register');
+  if (r.cancelled) { toast('Not saved'); return; }
   state.pendingPhoto=null;
-  toast('Queued: '+shelf+' — '+name);
+  if (r.queued) toast('Queued for sync: '+shelf+' — '+name);
+  else if (r.success) toast('Saved: '+shelf+' — '+name);
+  else { toast(r.error || 'Server error'); return; }
   show('screen-success');
 }
+
 async function submitNoTag(){
-  const shelf=((document.getElementById('notag-shelf')||{}).value||'').trim().toUpperCase()||getShelfBind()||'';
+  // NOTE on shelf-bind safety: we deliberately do NOT auto-fill from
+  // getShelfBind() here — the input already gets filled by
+  // renderShelfBanners() when a bind is active, and that's visible to the
+  // user. So whatever is in the textbox is what the user actually sees.
+  const shelf=((document.getElementById('notag-shelf')||{}).value||'').trim().toUpperCase();
   const name=(document.getElementById('notag-name')||{}).value?.trim();
   const brand=(document.getElementById('notag-brand')||{}).value?.trim()||'Funkified';
   const type=(document.getElementById('notag-type')||{}).value?.trim();
   const totalQty=(document.getElementById('notag-qty')||{}).value;
   const notes=(document.getElementById('notag-notes')||{}).value?.trim();
   if(!name){toast('Name required');return;}
-  await enqueue('registerNoTag',Object.assign({
+  const payload = Object.assign({
     shelf,name,brand,type,totalQty:Number(totalQty)||0,notes,
     team:state.team||'',photo:state.pendingPhoto?.dataUrl||'',ts:nowIso()
-  },gpsPayload()));
+  },gpsPayload());
+  const r = await registerItem(payload, 'registerNoTag');
+  if (r.cancelled) { toast('Not saved'); return; }
   state.pendingPhoto=null;
-  toast(shelf?('Queued: '+shelf+' — '+name):('Queued: '+name));
+  if (r.queued) toast(shelf?('Queued: '+shelf+' — '+name):('Queued: '+name));
+  else if (r.success) toast(shelf?('Saved: '+shelf+' — '+name):('Saved: '+name));
+  else { toast(r.error || 'Server error'); return; }
+  // Reset form so the next item starts blank (so the user has to consciously
+  // re-enter the shelf if they're continuing on the same shelf).
+  const ids=['notag-shelf','notag-name','notag-type','notag-notes'];
+  ids.forEach(id=>{const el=document.getElementById(id); if(el)el.value=id==='notag-shelf' && getShelfBind() ? getShelfBind() : '';});
+  const qtyEl=document.getElementById('notag-qty'); if(qtyEl)qtyEl.value=1;
+  const photoEl=document.getElementById('notag-photo'); if(photoEl){photoEl.style.display='none';photoEl.src='';}
   show('screen-success');
 }
 async function submitTakeOut(){
@@ -1008,12 +1127,17 @@ async function renderPendingList(){
     const label=env.status==='failed'?'FAILED':(env.status==='in_flight'?'SENDING':'QUEUED');
     const cls=env.status==='failed'?'pill pill-err':(env.status==='in_flight'?'pill pill-warn':'pill');
     const err=env.lastError?`<div class="err-line">${env.lastError}</div>`:'';
+    const isConflict = env.serverResponse && env.serverResponse.conflict;
+    const extraBtn = isConflict
+      ? `<button onclick="overwriteEnvelope('${env.clientId}')">Overwrite & retry</button>`
+      : '';
     return `<div class="pending-item">
       <div class="pending-row"><span class="${cls}">${label}</span><strong>${env.action}</strong>
         <span class="muted">${ago} · attempts ${env.attempts||0}</span></div>
       <div class="pending-body">${summarizePayload(env)}</div>${err}
       <div class="pending-actions">
         <button onclick="retryEnvelope('${env.clientId}')">Retry</button>
+        ${extraBtn}
         <button class="danger" onclick="discardEnvelope('${env.clientId}')">Discard</button>
       </div></div>`;
   }).join('');
@@ -1033,6 +1157,15 @@ function summarizePayload(env){
 async function retryEnvelope(cid){
   const env=await idbGet(STORE_OUTBOX,cid); if(!env)return;
   env.status='queued'; env.lastError=null; env.inFlightAt=null;
+  await idbPut(STORE_OUTBOX,env);
+  renderPendingList(); updatePendingChip();
+  drainOutbox(true).catch(()=>{});
+}
+async function overwriteEnvelope(cid){
+  const env=await idbGet(STORE_OUTBOX,cid); if(!env)return;
+  if(!confirm('Overwrite the existing item on that shelf?')) return;
+  env.payload = Object.assign({}, env.payload, { allowOverwrite:true });
+  env.status='queued'; env.lastError=null; env.inFlightAt=null; env.serverResponse=null;
   await idbPut(STORE_OUTBOX,env);
   renderPendingList(); updatePendingChip();
   drainOutbox(true).catch(()=>{});
