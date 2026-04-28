@@ -115,6 +115,15 @@
   .create-result .controls{display:flex;gap:6px;align-items:center}
   .create-result .controls input{width:48px;text-align:center;padding:6px}
   .create-result button.add-btn{width:auto;padding:8px 14px;font-size:13px}
+  /* Triage card */
+  .triage-photo{display:block;width:100%;max-width:520px;aspect-ratio:1/1;object-fit:cover;border-radius:14px;
+    margin:0 auto 8px;border:1px solid var(--border);background:#1c1c1c;cursor:zoom-in}
+  .triage-photo.empty{display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:13px;cursor:default}
+  .triage-photo.empty::before{content:'No photo on file'}
+  .triage-name{font-size:20px;font-weight:700;line-height:1.25;margin:0 0 4px}
+  .triage-meta{color:var(--muted);font-size:13px;margin-bottom:6px}
+  .triage-actions{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:6px}
+  .triage-actions button{min-height:54px;font-size:16px}
   /* Hero photo on the existing-item screen */
   .item-hero{display:block;width:100%;max-width:520px;aspect-ratio:1/1;object-fit:cover;border-radius:12px;
     margin:0 auto 12px;border:1px solid var(--border);background:#1c1c1c;cursor:zoom-in}
@@ -164,6 +173,7 @@
       <button onclick="startMode('create')">Create Order</button>
       <button onclick="startMode('pack')">Pack Order</button>
       <button onclick="startMode('return')">Return Order</button>
+      <button onclick="startMode('triage')">Keep It or Delete It</button>
     </div>
   </section>
 
@@ -490,6 +500,8 @@
         <input id="cr-client" type="text" placeholder="e.g. NRMAi, Vodafone"/></div>
       <div class="field"><label>Drop-off date / time</label>
         <input id="cr-dropoff" type="datetime-local"/></div>
+      <div class="field"><label>Access notes (optional)</label>
+        <textarea id="cr-notes" placeholder="Loading dock, contact name &amp; number, parking, lift code…"></textarea></div>
       <button class="primary" onclick="startCreateCart()">Continue</button>
       <button class="ghost" onclick="show('screen-session')">Back</button>
     </div>
@@ -552,6 +564,20 @@
       <div id="return-summary" class="muted" style="font-size:13px"></div>
       <button class="primary" id="btn-return-submit" onclick="submitReturn()">Submit returns</button>
       <button class="ghost" onclick="show('screen-return-picker')">Back to orders</button>
+    </div>
+  </section>
+
+  <!-- KEEP IT OR DELETE IT -->
+  <section id="screen-triage" class="screen">
+    <div class="card">
+      <h1>Keep it or delete it</h1>
+      <p class="muted" style="font-size:13px"><span data-team-display>—</span> · One vote per item — Keep or Delete locks it in for the whole team. Skip moves it to the back of your queue.</p>
+      <div id="triage-progress" class="muted" style="font-size:13px;margin-top:4px"></div>
+    </div>
+    <div id="triage-card" class="card stack"></div>
+    <div class="card stack">
+      <button class="ghost" onclick="loadTriageList()">Refresh list</button>
+      <button class="ghost" onclick="goHome()">Back home</button>
     </div>
   </section>
 
@@ -920,6 +946,7 @@ function startMode(mode){
   else if(mode==='pack'){show('screen-pack-picker'); loadPendingJobs();}
   else if(mode==='create'){show('screen-create-setup');}
   else if(mode==='return'){show('screen-return-picker'); loadReturnableJobs();}
+  else if(mode==='triage'){show('screen-triage'); loadTriageList();}
 }
 function submitLoadoutSetup(){
   const jobName=(document.getElementById('loadout-job')||{}).value?.trim();
@@ -948,6 +975,139 @@ document.addEventListener('keydown', e => {
   if (e.key === 'Escape') closePhotoLightbox();
 });
 
+/* ---------- Keep It or Delete It (triage) ----------
+   Whole team works off the same server-side list of undecided items.
+   Keep/Delete writes to the inventory sheet (and removes the row from
+   everyone's list next time they refresh). Skip is purely local — the
+   row drops to the bottom of *your* queue but stays available for
+   teammates to decide.
+*/
+let _triageQueue = [];
+let _triageDecided = []; // rowIdx values you've voted on this session
+let _triageBusy = false;
+
+async function loadTriageList(){
+  const card = document.getElementById('triage-card');
+  const prog = document.getElementById('triage-progress');
+  if (card) card.innerHTML = '<div class="muted">Loading…</div>';
+  if (prog) prog.textContent = '';
+  try {
+    const url = ENDPOINT + '?action=triageList';
+    const res = await fetch(url, { method:'GET' });
+    const data = await res.json();
+    if (!data || data.success === false){
+      if (card) card.innerHTML = '<div class="err-line">'+((data&&data.error)||'Could not load list')+'</div>';
+      return;
+    }
+    _triageQueue = (data.items || []).filter(it => _triageDecided.indexOf(it.rowIdx) === -1);
+    renderTriage();
+  } catch(_) {
+    if (card) card.innerHTML = '<div class="err-line">Network error. Tap Refresh.</div>';
+  }
+}
+
+function renderTriage(){
+  const card = document.getElementById('triage-card');
+  const prog = document.getElementById('triage-progress');
+  if (!card) return;
+  if (!_triageQueue.length){
+    card.innerHTML = `
+      <div class="center stack">
+        <h2>All done ✓</h2>
+        <p class="muted">No undecided items left. Nice work.</p>
+      </div>`;
+    if (prog) prog.textContent = '';
+    return;
+  }
+  if (prog) prog.textContent = _triageQueue.length + ' item' + (_triageQueue.length===1?'':'s') + ' to go';
+  const it = _triageQueue[0];
+  const esc = s => String(s==null?'':s).replace(/[&<>"']/g,
+    c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const out = Number(it.qtyOut)||0, total = Number(it.totalQty)||0;
+  const status = String(it.status||'—');
+  const pill = status==='out' ? 'pill pill-err'
+             : status==='partial' ? 'pill pill-warn'
+             : 'pill pill-ok';
+  const meta = [];
+  if (it.brand) meta.push(esc(it.brand));
+  if (it.type)  meta.push(esc(it.type));
+  if (it.city)  meta.push('📍 ' + esc(it.city));
+  const photo = it.thumbUrl
+    ? `<img class="triage-photo" src="${esc(it.thumbUrl)}" alt=""
+            onclick="openPhotoLightbox('${esc(it.thumbUrl)}','${esc(it.name||'')}')"
+            onerror="this.outerHTML='<div class=&quot;triage-photo empty&quot;></div>'"/>`
+    : `<div class="triage-photo empty"></div>`;
+  const reg = it.registered ? fmtDate(it.registered) : '';
+  const ls  = it.lastScanned ? fmtDate(it.lastScanned) : '';
+  const audit = [];
+  if (reg)            audit.push('Registered ' + esc(reg) + (it.registeredBy ? ' by ' + esc(it.registeredBy) : ''));
+  if (ls && ls!==reg) audit.push('Last scanned ' + esc(ls) + (it.lastScannedBy ? ' by ' + esc(it.lastScannedBy) : ''));
+  const auditBlock = audit.length
+    ? `<div class="muted" style="font-size:12px;margin-top:8px">${audit.join(' · ')}</div>`
+    : '';
+  const notesBlock = it.notes
+    ? `<div style="margin-top:8px"><span class="muted">Notes:</span> ${esc(it.notes)}</div>`
+    : '';
+  card.innerHTML = `
+    ${photo}
+    <div class="big-shelf" style="text-align:center">${esc(it.shelf||'(no shelf)')}</div>
+    <div class="triage-name">${esc(it.name||'(no name)')}</div>
+    <div><span class="${pill}">${esc(status)}</span>
+         <span class="muted" style="margin-left:6px">${out} of ${total} out</span></div>
+    <div class="triage-meta">${meta.join(' · ')}</div>
+    ${notesBlock}
+    ${auditBlock}
+    <div class="triage-actions">
+      <button class="primary" onclick="triageDecide('Keep')">Keep</button>
+      <button class="danger" onclick="triageDecide('Delete')">Delete</button>
+      <button class="ghost" onclick="triageSkip()">Skip</button>
+    </div>`;
+}
+
+function triageSkip(){
+  if (_triageBusy) return;
+  if (!_triageQueue.length) return;
+  if (_triageQueue.length > 1){
+    const head = _triageQueue.shift();
+    _triageQueue.push(head);
+    renderTriage();
+  } else {
+    toast('Only one left — Keep or Delete it.');
+  }
+}
+
+async function triageDecide(decision){
+  if (_triageBusy) return;
+  if (!_triageQueue.length) return;
+  const it = _triageQueue[0];
+  _triageBusy = true;
+  try {
+    const res = await directPost('triageDecide', {
+      rowIdx: it.rowIdx,
+      shelf:  it.shelf || '',
+      decision: decision,
+      team:   state.team || '',
+      ts:     nowIso()
+    });
+    if (!res || res.success === false){
+      toast((res && res.error) || 'Could not save — try again', true);
+      return;
+    }
+    if (res.alreadyDecided){
+      toast('Already marked "'+res.decision+'" by '+(res.decidedBy||'someone'));
+    } else {
+      toast(decision === 'Keep' ? 'Kept ✓' : 'Marked for delete');
+    }
+    _triageDecided.push(it.rowIdx);
+    _triageQueue.shift();
+    renderTriage();
+  } catch(_) {
+    toast('Network error — your vote was not saved. Try again.', true);
+  } finally {
+    _triageBusy = false;
+  }
+}
+
 /* ---------- Create-Order flow ----------
    Warehouse-side cart-and-submit. Same model as the client portal —
    collect items, set Job/Client/Drop-off, submit. Server lands the
@@ -957,6 +1117,7 @@ const createOrderState = {
   jobName: '',
   client: '',
   dropoffWhen: '',
+  notes: '',
   cart: new Map(),    // name -> { name, qty, available, thumbUrl }
   lastResults: [],
   searchDebounce: null,
@@ -967,12 +1128,14 @@ function startCreateCart(){
   const job    = (document.getElementById('cr-job')||{}).value?.trim();
   const client = (document.getElementById('cr-client')||{}).value?.trim();
   const drop   = (document.getElementById('cr-dropoff')||{}).value?.trim();
+  const notes  = (document.getElementById('cr-notes')||{}).value?.trim() || '';
   if (!job)    { toast('Job name required'); return; }
   if (!client) { toast('Client required'); return; }
   if (!drop)   { toast('Drop-off date required'); return; }
   createOrderState.jobName = job;
   createOrderState.client  = client;
   createOrderState.dropoffWhen = drop;
+  createOrderState.notes   = notes;
   createOrderState.cart.clear();
   createOrderState.lastResults = [];
   document.getElementById('cr-search').value = '';
@@ -1100,6 +1263,7 @@ async function submitCreateOrder(){
       client:      createOrderState.client,
       jobName:     createOrderState.jobName,
       dropoffWhen: createOrderState.dropoffWhen,
+      notes:       createOrderState.notes || '',
       placedBy:    state.team || '',
       team:        state.team || '',
       items
