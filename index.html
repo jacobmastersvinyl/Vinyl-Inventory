@@ -471,8 +471,9 @@ const SHELF_BIND_MINUTES = 10;
 const DRAIN_RETRY_MS = 15000;
 const POST_TIMEOUT_MS = 30000;
 const IN_FLIGHT_TIMEOUT_MS = 60000;
-const PHOTO_MAX_DIM = 1600;
-const PHOTO_QUALITY = 0.8;
+const PHOTO_MAX_DIM = 1600;       // (legacy) max pre-crop side
+const PHOTO_OUTPUT_DIM = 1000;    // every saved photo ends up this size on each side
+const PHOTO_QUALITY = 0.85;       // JPEG quality, slightly higher now we're cropping
 
 const state = {
   team:null, mode:null, loadout:null, delivery:null,
@@ -541,15 +542,40 @@ function buildEnvelope(action,payload){
 }
 function fileToDataUrl(f){return new Promise((r,j)=>{const x=new FileReader();x.onload=()=>r(x.result);x.onerror=()=>j(x.error);x.readAsDataURL(f);});}
 function loadImage(u){return new Promise((r,j)=>{const i=new Image();i.onload=()=>r(i);i.onerror=()=>j(new Error('img'));i.src=u;});}
+// Square-crop + uniform-resize. Every saved photo is exactly
+// PHOTO_OUTPUT_DIM × PHOTO_OUTPUT_DIM JPEG. This makes the catalogue
+// grid look intentional even when individual photos are scrappy:
+//   1. Centre-crop the source to its largest inscribed square.
+//   2. High-quality scale that square to the output dimension.
+//   3. Encode as JPEG at PHOTO_QUALITY.
+// Browsers respect EXIF orientation when drawing modern HTML <img> to
+// canvas, so portrait phone shots come out the right way up.
 async function compressImage(file){
   if(!file)return null;
   const dataUrl=await fileToDataUrl(file);
   const img=await loadImage(dataUrl);
-  let w=img.width,h=img.height;
-  if(w>PHOTO_MAX_DIM||h>PHOTO_MAX_DIM){const s=Math.min(PHOTO_MAX_DIM/w,PHOTO_MAX_DIM/h);w=Math.round(w*s);h=Math.round(h*s);}
-  const c=document.createElement('canvas');c.width=w;c.height=h;
-  c.getContext('2d').drawImage(img,0,0,w,h);
-  return c.toDataURL('image/jpeg',PHOTO_QUALITY);
+  const w=img.naturalWidth||img.width, h=img.naturalHeight||img.height;
+  if(!w||!h) throw new Error('image has no dimensions');
+
+  // Largest centred square that fits in the source.
+  const side=Math.min(w,h);
+  const sx=Math.round((w-side)/2);
+  const sy=Math.round((h-side)/2);
+
+  // Output canvas — fixed dimension, regardless of source size.
+  const c=document.createElement('canvas');
+  c.width=PHOTO_OUTPUT_DIM; c.height=PHOTO_OUTPUT_DIM;
+  const ctx=c.getContext('2d');
+  // Higher-quality bilinear scaling on browsers that support it.
+  if('imageSmoothingQuality' in ctx) ctx.imageSmoothingQuality='high';
+  ctx.imageSmoothingEnabled=true;
+  // White fill underneath in case the JPEG encoder ever sees transparency
+  // (rare with <img>, but defensive — keeps any edge artifacts white).
+  ctx.fillStyle='#ffffff';
+  ctx.fillRect(0,0,PHOTO_OUTPUT_DIM,PHOTO_OUTPUT_DIM);
+  ctx.drawImage(img, sx, sy, side, side, 0, 0, PHOTO_OUTPUT_DIM, PHOTO_OUTPUT_DIM);
+
+  return c.toDataURL('image/jpeg', PHOTO_QUALITY);
 }
 async function handlePhotoInput(ev,previewId){
   const f=ev.target.files&&ev.target.files[0]; if(!f)return;
