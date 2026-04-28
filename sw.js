@@ -4,7 +4,7 @@
    - Passes through POSTs and external endpoints without touching them.
    - Supports skipWaiting on demand.
 */
-const VERSION = 'funkified-v8-2026-04-28-pack-thumbs-fastlookup';
+const VERSION = 'funkified-v9-2026-04-28-create-return-lightbox';
 const APP_SHELL = [
   './',
   './index.html',
