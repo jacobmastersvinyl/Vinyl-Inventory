@@ -111,6 +111,7 @@
       <button class="primary" onclick="startMode('sort')">Search Inventory</button>
       <button onclick="startMode('loadout')">Create Order</button>
       <button onclick="startMode('pack')">Pack a Client Order</button>
+      <button onclick="startMode('triage')">Keep It or Delete It</button>
     </div>
   </section>
 
@@ -188,6 +189,19 @@
       </div>
       <button class="primary" onclick="submitManualShelf()">Look up</button>
       <button class="ghost" onclick="show('screen-browse')">Back</button>
+    </div>
+  </section>
+
+  <!-- SHELF PICKER (multiple items on one shelf) -->
+  <section id="screen-shelf-picker" class="screen">
+    <div class="card">
+      <h1>Items on shelf <span id="picker-shelf-display"></span></h1>
+      <p class="muted">More than one item lives here. Tap the one you want, or add another.</p>
+    </div>
+    <div id="picker-list" class="card stack"></div>
+    <div class="card stack">
+      <button class="primary" onclick="addAnotherToShelf()">Add another item to this shelf</button>
+      <button class="ghost" onclick="show('screen-browse')">Back to search</button>
     </div>
   </section>
 
@@ -384,6 +398,20 @@
     </div>
   </section>
 
+  <!-- KEEP IT OR DELETE IT (triage) -->
+  <section id="screen-triage" class="screen">
+    <div class="card">
+      <h1>Keep it or delete it</h1>
+      <p class="muted"><span data-team-display>—</span> · One vote per item — Keep or Delete locks it in for the whole team. Skip just moves it to the back of your queue.</p>
+      <div id="triage-progress" class="muted" style="font-size:13px;margin-top:4px"></div>
+    </div>
+    <div id="triage-card" class="card stack"></div>
+    <div class="card stack">
+      <button class="ghost" onclick="loadTriageList()">Refresh list</button>
+      <button class="ghost" onclick="goHome()">Back home</button>
+    </div>
+  </section>
+
   <!-- PACK A CLIENT ORDER — job picker -->
   <section id="screen-pack-picker" class="screen">
     <div class="card stack">
@@ -445,11 +473,13 @@
    Fixes:
      • Shelf-bind is explicit & clearable (banner has Clear button,
        and add-new-item flow warns before inheriting it)
-     • Search results route by shelf + expectedName so a stale result
-       cannot silently open a different (overwritten) item
-     • actRegister on the server refuses silent overwrites; here we
-       surface the conflict to the user and offer an explicit
-       "Overwrite anyway" choice
+     • Multiple items per shelf: shelves are *locations*, not keys.
+       Uniqueness is (Shelf, Name). Lookup routes you to a picker if
+       the shelf has 2+ items; per-item screens stash rowIdx so every
+       takeOut/return/edit/etc. targets the exact row.
+     • Search results carry rowIdx and open the item directly without
+       a second server round-trip — there's no shelf ambiguity to
+       resolve since the row is named.
    ========================================================= */
 const ENDPOINT = 'https://script.google.com/macros/s/AKfycbwxhZiH_yrNp7oTWSht6qu7y5sWkKXnMTVAQyEXklnYXEbMQgYhacfhKU4ipJQ-rY6g8g/exec';
 const SHELF_BIND_MINUTES = 10;
@@ -701,6 +731,7 @@ function startMode(mode){
   else if(mode==='loadout')show('screen-loadout-setup');
   else if(mode==='delivery')show('screen-delivery-setup');
   else if(mode==='pack'){show('screen-pack-picker'); loadPendingJobs();}
+  else if(mode==='triage'){show('screen-triage'); loadTriageList();}
 }
 function submitLoadoutSetup(){
   const jobName=(document.getElementById('loadout-job')||{}).value?.trim();
@@ -784,6 +815,152 @@ function selectPackJob(orderId){
 
 function packScan(){ toast('Scan tick-off lands in Stage 3'); }
 function completePack(closeOut){ toast('Complete checkout lands in Stage 3'); }
+
+/* ---------- Keep It or Delete It (triage) ----------
+   The whole team works off the same server-side list of undecided
+   items. Keep/Delete writes to the sheet (and removes the row from
+   everyone's list next time they refresh). Skip is purely local —
+   the row drops to the bottom of *your* queue, but stays available
+   to teammates so someone else can decide it.
+*/
+let _triageQueue = [];   // local order — Skip rotates items inside this
+let _triageDecided = []; // rowIdx values you've already voted on this session
+let _triageBusy = false;
+
+async function loadTriageList(){
+  const card = document.getElementById('triage-card');
+  const prog = document.getElementById('triage-progress');
+  card.innerHTML = '<div class="muted">Loading…</div>';
+  prog.textContent = '';
+  try {
+    const url = ENDPOINT + '?action=triageList';
+    const res = await fetch(url, { method:'GET' });
+    const data = await res.json();
+    if (!data || data.success === false){
+      card.innerHTML = '<div class="err-line">'+((data&&data.error)||'Could not load list')+'</div>';
+      return;
+    }
+    // Drop anything we've already decided this session — server filters
+    // these out too on next load, but this saves a stale flash if your
+    // own write hasn't propagated yet.
+    _triageQueue = (data.items || []).filter(it => _triageDecided.indexOf(it.rowIdx) === -1);
+    renderTriage();
+  } catch(_) {
+    card.innerHTML = '<div class="err-line">Network error. Check connection and tap Refresh.</div>';
+  }
+}
+
+function renderTriage(){
+  const card = document.getElementById('triage-card');
+  const prog = document.getElementById('triage-progress');
+  if (!_triageQueue.length){
+    card.innerHTML = `
+      <div class="center stack">
+        <h2>All done ✓</h2>
+        <p class="muted">No undecided items left in the list. Nice work.</p>
+      </div>`;
+    prog.textContent = '';
+    return;
+  }
+  prog.textContent = _triageQueue.length + ' item' + (_triageQueue.length===1?'':'s') + ' to go';
+  const it = _triageQueue[0];
+  const esc = s => String(s==null?'':s).replace(/[&<>"']/g,
+    c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const out = Number(it.qtyOut)||0, total = Number(it.totalQty)||0;
+  const status = String(it.status||'—');
+  const pill = status==='out' ? 'pill pill-err'
+             : status==='partial' ? 'pill pill-warn'
+             : 'pill pill-ok';
+  const meta = [];
+  if (it.brand) meta.push(esc(it.brand));
+  if (it.type)  meta.push(esc(it.type));
+  const notes = it.notes ? `<div style="margin-top:8px"><span class="muted">Notes:</span> ${esc(it.notes)}</div>` : '';
+  // Photo: show the thumbnail saved on the Drive folder. If there's a
+  // full-res URL in the cell note, link the thumbnail to it so a tap
+  // can open the original.
+  let photoBlock = '';
+  if (it.photoThumb){
+    const href = it.photoUrl || it.photoThumb;
+    photoBlock = `
+      <a href="${esc(href)}" target="_blank" rel="noopener" style="display:block;margin:8px 0">
+        <img src="${esc(it.photoThumb)}" alt="" style="max-width:100%;border-radius:10px;display:block"
+             onerror="this.style.display='none'"/>
+      </a>`;
+  }
+  // Audit footer — when registered, who by, and last scan info.
+  const reg = it.registered ? fmtDate(it.registered) : '';
+  const ls  = it.lastScanned ? fmtDate(it.lastScanned) : '';
+  const audit = [];
+  if (reg)            audit.push('Registered ' + esc(reg) + (it.registeredBy ? ' by ' + esc(it.registeredBy) : ''));
+  if (ls && ls!==reg) audit.push('Last scanned ' + esc(ls) + (it.lastScannedBy ? ' by ' + esc(it.lastScannedBy) : ''));
+  const auditBlock = audit.length
+    ? `<div class="muted" style="font-size:12px;margin-top:8px">${audit.join(' · ')}</div>`
+    : '';
+  card.innerHTML = `
+    <div class="big-shelf">${esc(it.shelf||'(no shelf)')}</div>
+    <div class="pending-row" style="margin-top:6px">
+      <span class="${pill}">${esc(status)}</span>
+      <strong style="font-size:18px">${esc(it.name||'(no name)')}</strong>
+    </div>
+    <div class="pending-body">
+      <span class="muted">${out} of ${total} out</span>
+      ${meta.length ? ' · ' + meta.join(' · ') : ''}
+    </div>
+    ${photoBlock}
+    ${notes}
+    ${auditBlock}
+    <div class="grid three" style="margin-top:12px">
+      <button class="primary" onclick="triageDecide('Keep')">Keep</button>
+      <button class="danger" onclick="triageDecide('Delete')">Delete</button>
+      <button class="ghost" onclick="triageSkip()">Skip</button>
+    </div>`;
+}
+
+function triageSkip(){
+  if (_triageBusy) return;
+  if (!_triageQueue.length) return;
+  // Move the head of the queue to the tail so it comes back later.
+  // Nothing is written server-side; teammates still see this item.
+  if (_triageQueue.length > 1){
+    const head = _triageQueue.shift();
+    _triageQueue.push(head);
+    renderTriage();
+  } else {
+    toast('Only one left — Keep or Delete it.');
+  }
+}
+
+async function triageDecide(decision){
+  if (_triageBusy) return;
+  if (!_triageQueue.length) return;
+  const it = _triageQueue[0];
+  _triageBusy = true;
+  try {
+    const res = await directPost('triageDecide', {
+      rowIdx: it.rowIdx,
+      shelf: it.shelf || '',
+      decision: decision,
+      team: state.team || '',
+      ts: nowIso()
+    });
+    if (!res || res.success === false){
+      toast((res && res.error) || 'Could not save — try again');
+      return;
+    }
+    if (res.alreadyDecided){
+      toast('Already marked "'+res.decision+'" by '+(res.decidedBy||'someone'));
+    } else {
+      toast(decision === 'Keep' ? 'Kept ✓' : 'Marked for delete');
+    }
+    _triageDecided.push(it.rowIdx);
+    _triageQueue.shift();
+    renderTriage();
+  } catch(_) {
+    toast('Network error — your vote was not saved. Try again.');
+  } finally {
+    _triageBusy = false;
+  }
+}
 function submitDeliverySetup(){
   const from=(document.getElementById('delivery-from')||{}).value?.trim();
   const to=(document.getElementById('delivery-to')||{}).value?.trim();
@@ -875,20 +1052,28 @@ function renderSearchResults(items){
   }).join('');
 }
 
-// Route by the item snapshot captured at search time. Passing expectedName
-// to the server makes it detect drift: if the shelf has since been
-// reassigned, the server responds with mismatch:true and we tell the user
-// instead of silently opening whatever currently occupies that shelf.
+// Search results carry rowIdx — we can open the item directly without
+// another server round-trip. State is enriched with rowIdx so every
+// subsequent submit (takeOut, return, etc.) keys off the row, not the
+// shelf, which keeps things correct even when 20 items share a shelf.
 function openFromSearch(idx){
   const it = _lastSearchItems[idx];
   if (!it){ toast('Pick a result and try again'); return; }
-  if (!it.shelf){
-    // No shelf on file — offer edit via browse-new path.
-    toast('This item has no shelf yet. Edit it from the Inventory sheet first.');
-    return;
+  openExistingItem(it);
+}
+
+// Centralised "drop into the existing-item screen" routine. Takes a
+// snapshot we already trust (search result, picker click, lookup hit).
+function openExistingItem(item){
+  state.currentShelf = item.shelf || '';
+  state.currentItem = Object.assign({}, item);
+  renderExistingItem(state.currentItem);
+  document.getElementById('btn-load').classList.toggle('hidden', state.mode!=='loadout');
+  if (state.mode === 'loadout'){
+    const j = document.getElementById('load-job-display');
+    if (j) j.textContent = state.loadout?.jobName || '—';
   }
-  state.currentShelf = it.shelf;
-  lookupAndRoute(it.shelf, it.name).catch(() => toast('Could not open item'));
+  show('screen-existing');
 }
 
 async function submitManualShelf(){
@@ -902,33 +1087,74 @@ function prefillNewShelf(shelf){
   const d=document.getElementById('new-shelf-display'); if(d)d.textContent=shelf;
 }
 
-// expectedName is optional; when present, the server verifies it still
-// matches the stored row's Name. Mismatch means the shelf was reassigned
-// since the caller last saw it (stale search result), so we refuse to
-// route and tell the user what's actually there.
-async function lookupAndRoute(shelf, expectedName){
-  state.currentShelf=shelf;
-  if(!navigator.onLine){prefillNewShelf(shelf);show('screen-new');return;}
-  try{
-    let url = ENDPOINT + '?action=lookup&shelf=' + encodeURIComponent(shelf);
-    if (expectedName) url += '&expectedName=' + encodeURIComponent(expectedName);
+// Multi-item-per-shelf flow:
+//   • 0 items on shelf → "add new item" form, shelf pre-filled.
+//   • 1 item        → drop straight into the existing-item screen.
+//   • 2+ items      → shelf picker: tap one to open it, or add another.
+async function lookupAndRoute(shelf){
+  state.currentShelf = shelf;
+  if (!navigator.onLine){ prefillNewShelf(shelf); show('screen-new'); return; }
+  try {
+    const url = ENDPOINT + '?action=lookup&shelf=' + encodeURIComponent(shelf);
     const res = await fetch(url, { method:'GET' });
     const data = await res.json();
-    if (data && data.mismatch) {
-      toast('Shelf '+shelf+' is now "'+(data.storedName||'—')+'", not "'+expectedName+'". Search again.');
+    const items = (data && data.items) || [];
+    if (!data || data.exists === false || !items.length){
+      prefillNewShelf(shelf); show('screen-new'); return;
+    }
+    if (items.length === 1){
+      openExistingItem(items[0]);
       return;
     }
-    if(data&&data.exists){
-      state.currentItem=data.item;
-      renderExistingItem(data.item);
-      document.getElementById('btn-load').classList.toggle('hidden',state.mode!=='loadout');
-      if(state.mode==='loadout'){
-        const j=document.getElementById('load-job-display');
-        if(j) j.textContent=state.loadout?.jobName||'—';
-      }
-      show('screen-existing');
-    }else{prefillNewShelf(shelf);show('screen-new');}
-  }catch(_){prefillNewShelf(shelf);show('screen-new');}
+    showShelfPicker(shelf, items);
+  } catch(_) {
+    prefillNewShelf(shelf); show('screen-new');
+  }
+}
+
+let _shelfPickerItems = [];
+function showShelfPicker(shelf, items){
+  _shelfPickerItems = items.slice();
+  const lbl = document.getElementById('picker-shelf-display');
+  if (lbl) lbl.textContent = shelf || '';
+  const host = document.getElementById('picker-list');
+  const esc = s => String(s==null?'':s).replace(/[&<>"']/g,
+    c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  host.innerHTML = items.map((it, idx) => {
+    const out = Number(it.qtyOut)||0, total = Number(it.totalQty)||0;
+    const status = String(it.status||'—');
+    const pill = status==='out' ? 'pill pill-err'
+               : status==='partial' ? 'pill pill-warn'
+               : 'pill pill-ok';
+    const meta = [];
+    if (it.brand) meta.push(esc(it.brand));
+    if (it.type)  meta.push(esc(it.type));
+    return `
+      <div class="pending-item" style="cursor:pointer" onclick="pickShelfItem(${idx})">
+        <div class="pending-row">
+          <span class="${pill}">${esc(status)}</span>
+          <strong>${esc(it.name||'(no name)')}</strong>
+        </div>
+        <div class="pending-body">
+          <span class="muted">${out} of ${total} out</span>
+          ${meta.length ? ' · ' + meta.join(' · ') : ''}
+        </div>
+      </div>`;
+  }).join('');
+  show('screen-shelf-picker');
+}
+
+function pickShelfItem(idx){
+  const it = _shelfPickerItems[idx];
+  if (!it){ toast('Pick an item and try again'); return; }
+  openExistingItem(it);
+}
+
+function addAnotherToShelf(){
+  // Drop into the new-item form with this shelf already filled in.
+  const shelf = state.currentShelf || '';
+  prefillNewShelf(shelf);
+  show('screen-new');
 }
 function renderExistingItem(item){
   const host=document.getElementById('existing-details'); if(!host)return;
@@ -947,48 +1173,20 @@ function renderExistingItem(item){
 }
 
 /* ---------- Submit handlers ----------
-   Register paths now handle the server's conflict response: if the shelf
-   is already occupied by a different item, we surface it to the user and
-   offer an explicit "Overwrite anyway" confirmation.
+   Multi-item-per-shelf: the server appends a new row when (shelf, name)
+   doesn't yet exist, and tops up the row when it does. There's no
+   conflict to dialog through — duplicate-name on the same shelf simply
+   tops up qty rather than creating a second row, which is the right
+   behaviour for "20 silver bollards on D1".
 ----------------------------------- */
-async function postRegisterWithConflictCheck(payload, kind /* 'register' | 'registerNoTag' */){
-  const body = Object.assign({ clientId: uuid(), action: kind }, payload);
-  const ctrl = new AbortController();
-  const tid = setTimeout(()=>ctrl.abort(), POST_TIMEOUT_MS);
-  try {
-    const res = await fetch(ENDPOINT, {
-      method:'POST', mode:'cors',
-      headers:{'Content-Type':'text/plain;charset=utf-8'},
-      body: JSON.stringify(body), signal: ctrl.signal
-    });
-    const txt = await res.text();
-    try { return JSON.parse(txt); }
-    catch(_){ throw new Error('Bad server response'); }
-  } finally { clearTimeout(tid); }
-}
-
-// Decide: if the user is online, do a pre-flight POST so we can show the
-// conflict dialog inline. If offline, fall back to the normal outbox.
 async function registerItem(payload, kind){
   if (!navigator.onLine) {
     await enqueue(kind, payload);
     return { queued:true };
   }
   try {
-    const res = await postRegisterWithConflictCheck(payload, kind);
+    const res = await directPost(kind, payload);
     if (res && res.success) return res;
-    if (res && res.conflict) {
-      const ok = confirm(
-        (res.error || 'Shelf already registered.') +
-        '\n\nOverwrite anyway?'
-      );
-      if (!ok) return { cancelled:true };
-      // Retry with explicit allowOverwrite flag.
-      const retry = await postRegisterWithConflictCheck(
-        Object.assign({}, payload, { allowOverwrite:true }), kind);
-      return retry;
-    }
-    // Any other server error → surface.
     return res || { success:false, error:'Unknown error' };
   } catch (_) {
     // Network error → fall back to queue.
@@ -1049,23 +1247,34 @@ async function submitNoTag(){
   const photoEl=document.getElementById('notag-photo'); if(photoEl){photoEl.style.display='none';photoEl.src='';}
   show('screen-success');
 }
+// itemKey() returns the keys we send to pin a row server-side. rowIdx is
+// the strongest handle (survives shelf moves and renames); shelf+name is
+// the fallback for queued submissions made before rowIdx was available.
+function itemKey(){
+  const it = state.currentItem || {};
+  return {
+    rowIdx: it.rowIdx || '',
+    shelf: it.shelf || state.currentShelf || '',
+    name: it.name || ''
+  };
+}
 async function submitTakeOut(){
   const qty=Math.max(1,parseInt((document.getElementById('takeout-qty')||{}).value)||1);
   const reason=(document.getElementById('takeout-reason')||{}).value?.trim();
-  await enqueue('takeOut',{shelf:state.currentShelf,qty,reason,team:state.team||'',ts:nowIso()});
+  await enqueue('takeOut',Object.assign({},itemKey(),{qty,reason,team:state.team||'',ts:nowIso()}));
   toast('Queued take-out ×'+qty);
   show('screen-success');
 }
 async function submitLoad(){
   const qty=Math.max(1,parseInt((document.getElementById('load-qty')||{}).value)||1);
-  await enqueue('load',{shelf:state.currentShelf,qty,jobName:state.loadout?.jobName||'',team:state.team||'',ts:nowIso()});
+  await enqueue('load',Object.assign({},itemKey(),{qty,jobName:state.loadout?.jobName||'',team:state.team||'',ts:nowIso()}));
   toast('Loaded ×'+qty+' onto '+(state.loadout?.jobName||''));
   show('screen-success');
 }
 async function submitReturn(){
   const qty=Math.max(1,parseInt((document.getElementById('return-qty')||{}).value)||1);
   const notes=(document.getElementById('return-notes')||{}).value?.trim();
-  await enqueue('return',{shelf:state.currentShelf,qty,notes,team:state.team||'',ts:nowIso()});
+  await enqueue('return',Object.assign({},itemKey(),{qty,notes,team:state.team||'',ts:nowIso()}));
   toast('Queued return ×'+qty);
   show('screen-success');
 }
@@ -1073,8 +1282,8 @@ async function submitDamage(){
   const desc=(document.getElementById('damage-desc')||{}).value?.trim();
   const severity=(document.getElementById('damage-severity')||{}).value||'minor';
   if(!desc){toast('Describe the damage');return;}
-  await enqueue('damage',Object.assign({
-    shelf:state.currentShelf,name:state.currentItem?.name||'',description:desc,severity,
+  await enqueue('damage',Object.assign(itemKey(),{
+    description:desc,severity,
     team:state.team||'',photo:state.pendingPhoto?.dataUrl||'',ts:nowIso()
   },gpsPayload()));
   state.pendingPhoto=null;
@@ -1083,7 +1292,7 @@ async function submitDamage(){
 }
 async function submitUpdatePhoto(){
   if(!state.pendingPhoto){toast('Take a photo first');return;}
-  await enqueue('updatePhoto',{shelf:state.currentShelf,photo:state.pendingPhoto.dataUrl,team:state.team||'',ts:nowIso()});
+  await enqueue('updatePhoto',Object.assign({},itemKey(),{photo:state.pendingPhoto.dataUrl,team:state.team||'',ts:nowIso()}));
   state.pendingPhoto=null;
   toast('Queued photo');
   show('screen-success');
@@ -1105,8 +1314,14 @@ async function submitEdit(){
   const totalQty=(document.getElementById('edit-qty')||{}).value;
   const newShelf=((document.getElementById('edit-newshelf')||{}).value||'').trim().toUpperCase();
   const notes=(document.getElementById('edit-notes')||{}).value;
+  // The row is anchored by rowIdx (always present once an item screen has
+  // been opened). p.name is the *new* name to write — the server's
+  // resolveRow short-circuits on rowIdx so it never confuses old vs new.
+  const key = itemKey();
   await enqueue('edit',{
-    shelf:state.currentShelf,name,brand,type,
+    rowIdx: key.rowIdx,
+    shelf: key.shelf,
+    name,brand,type,
     totalQty:totalQty===''?'':Number(totalQty)||0,
     newShelf,notes,team:state.team||'',ts:nowIso()
   });
