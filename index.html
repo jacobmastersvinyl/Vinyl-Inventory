@@ -115,6 +115,11 @@
   .create-result .controls{display:flex;gap:6px;align-items:center}
   .create-result .controls input{width:48px;text-align:center;padding:6px}
   .create-result button.add-btn{width:auto;padding:8px 14px;font-size:13px}
+  /* Triage edit modal */
+  .triage-edit-bg{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:180;display:none;align-items:flex-start;justify-content:center;padding:24px 16px;overflow-y:auto}
+  .triage-edit-bg.show{display:flex}
+  .triage-edit-card{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:18px;width:100%;max-width:480px;margin-top:6vh}
+  .triage-edit-card .small{width:auto;padding:4px 10px}
   /* Triage card */
   .triage-photo{display:block;width:100%;max-width:520px;aspect-ratio:1/1;object-fit:cover;border-radius:14px;
     margin:0 auto 8px;border:1px solid var(--border);background:#1c1c1c;cursor:zoom-in}
@@ -580,6 +585,31 @@
       <button class="ghost" onclick="goHome()">Back home</button>
     </div>
   </section>
+
+  <!-- TRIAGE EDIT MODAL -->
+  <div id="triage-edit-modal" class="triage-edit-bg" onclick="closeTriageEditOnBg(event)">
+    <div class="triage-edit-card" onclick="event.stopPropagation()">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+        <h2 style="flex:1;margin:0;font-size:18px">Edit item</h2>
+        <button class="small" onclick="closeTriageEdit()">×</button>
+      </div>
+      <div class="field"><label>Name</label>
+        <input id="te-name" type="text"/></div>
+      <div class="field"><label>Brand</label>
+        <input id="te-brand" type="text"/></div>
+      <div class="field"><label>Type</label>
+        <input id="te-type" type="text"/></div>
+      <div class="field"><label>Total qty</label>
+        <input id="te-qty" type="number" min="0" step="1"/></div>
+      <div class="field"><label>Shelf (leave blank to keep)</label>
+        <input id="te-newshelf" type="text" placeholder="e.g. D3" oninput="this.value=this.value.toUpperCase()"/></div>
+      <div class="field"><label>Notes</label>
+        <textarea id="te-notes"></textarea></div>
+      <button class="primary" id="btn-te-save" onclick="saveTriageEdit()">Save changes</button>
+      <button class="ghost" onclick="closeTriageEdit()">Cancel</button>
+      <div class="err-line" id="te-err"></div>
+    </div>
+  </div>
 
   <!-- PHOTO LIGHTBOX -->
   <div id="photo-lightbox" class="photo-lightbox" onclick="closePhotoLightbox(event)">
@@ -1103,7 +1133,8 @@ function renderTriage(){
       <button class="primary" onclick="triageDecide('Keep')">Keep</button>
       <button class="danger" onclick="triageDecide('Delete')">Delete</button>
       <button class="ghost" onclick="triageSkip()">Skip</button>
-    </div>`;
+    </div>
+    <button class="ghost small" onclick="openTriageEdit()" style="margin-top:10px">Edit details</button>`;
 }
 
 function triageSkip(){
@@ -1114,6 +1145,77 @@ function triageSkip(){
     renderTriage();
   } else {
     toast('Only one left — Keep or Delete it.');
+  }
+}
+
+// Edit modal — pre-fills with the current triage item, saves via the
+// existing actEdit action (no new server endpoint needed). On success
+// updates the local queue item so the card reflects the new info, and
+// the user can keep triaging from the same item.
+function openTriageEdit(){
+  const it = _triageQueue[0]; if (!it) return;
+  document.getElementById('te-name').value     = it.name || '';
+  document.getElementById('te-brand').value    = it.brand || '';
+  document.getElementById('te-type').value     = it.type || '';
+  document.getElementById('te-qty').value      = it.totalQty || 0;
+  document.getElementById('te-newshelf').value = '';
+  document.getElementById('te-notes').value    = it.notes || '';
+  document.getElementById('te-err').textContent = '';
+  document.getElementById('triage-edit-modal').classList.add('show');
+}
+function closeTriageEdit(){
+  document.getElementById('triage-edit-modal').classList.remove('show');
+}
+function closeTriageEditOnBg(e){
+  // Only close when the backdrop itself is clicked.
+  if (e.target.id === 'triage-edit-modal') closeTriageEdit();
+}
+async function saveTriageEdit(){
+  const it = _triageQueue[0]; if (!it){ closeTriageEdit(); return; }
+  const name  = (document.getElementById('te-name')||{}).value?.trim();
+  const brand = (document.getElementById('te-brand')||{}).value?.trim();
+  const type  = (document.getElementById('te-type')||{}).value?.trim();
+  const qtyStr = (document.getElementById('te-qty')||{}).value;
+  const newShelf = ((document.getElementById('te-newshelf')||{}).value || '').trim().toUpperCase();
+  const notes = (document.getElementById('te-notes')||{}).value || '';
+  if (!name){
+    document.getElementById('te-err').textContent = 'Name can\'t be blank.';
+    return;
+  }
+  const btn = document.getElementById('btn-te-save');
+  if (btn){ btn.disabled = true; btn.textContent = 'Saving…'; }
+  try {
+    const payload = {
+      rowIdx:   it.rowIdx,
+      shelf:    it.shelf || '',
+      name:     name,
+      brand:    brand,
+      type:     type,
+      totalQty: qtyStr === '' ? '' : (Number(qtyStr) || 0),
+      newShelf: newShelf,
+      notes:    notes,
+      team:     state.team || '',
+      ts:       nowIso()
+    };
+    const res = await directPost('edit', payload);
+    if (!res || res.success === false){
+      document.getElementById('te-err').textContent = (res && res.error) || 'Could not save';
+      return;
+    }
+    // Reflect changes in the local triage card without re-fetching.
+    it.name = name;
+    it.brand = brand;
+    it.type = type;
+    if (qtyStr !== '') it.totalQty = Number(qtyStr) || 0;
+    if (newShelf) it.shelf = newShelf;
+    it.notes = notes;
+    closeTriageEdit();
+    renderTriage();
+    toast('Item updated');
+  } catch(_) {
+    document.getElementById('te-err').textContent = 'Network error — try again.';
+  } finally {
+    if (btn){ btn.disabled = false; btn.textContent = 'Save changes'; }
   }
 }
 
