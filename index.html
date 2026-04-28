@@ -96,6 +96,9 @@
   .pack-line{background:var(--panel2);border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-bottom:8px}
   .pack-line.done{background:rgba(34,197,94,.07);border-color:rgba(34,197,94,.4)}
   .pack-row{display:flex;align-items:center;gap:10px}
+  .pack-thumb{width:48px;height:48px;border-radius:8px;background:#1c1c1c center/cover no-repeat;flex-shrink:0;border:1px solid var(--border)}
+  .pack-thumb.empty{display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:10px}
+  .pack-thumb.empty::before{content:'no img'}
   .pack-tick{display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;
     border:1px solid var(--border);border-radius:50%;background:var(--panel);color:var(--muted);
     font-size:18px;cursor:pointer;flex-shrink:0;user-select:none}
@@ -959,21 +962,34 @@ function renderPackLines(){
     if (noneOutstanding) cls.push('done');
     const indicator = (fullyPacked || noneOutstanding) ? '✓' : (local > 0 ? '◐' : '○');
     const availLine = (it.available != null)
-      ? `<span class="muted">Available on shelf: ${it.available}</span>`
-      : '<span class="muted">Shelf not on inventory yet</span>';
+      ? `<span class="muted">${it.available} available</span>`
+      : '<span class="muted">Not on inventory</span>';
+    const shelfLabel = it.shelf || '(no shelf)';
+    const altCount = (it.alternateShelves || []).length;
+    const altNote = altCount > 1
+      ? `<div class="pack-meta" style="margin-top:2px"><span class="muted">Also on:</span> ${
+          it.alternateShelves.slice(1).map(a => esc(a.shelf)+' ('+a.available+')').join(' · ')
+        }</div>`
+      : '';
+    const thumbStyle = it.thumbUrl
+      ? `style="background-image:url('${esc(it.thumbUrl)}')"`
+      : '';
+    const thumbCls = it.thumbUrl ? 'pack-thumb' : 'pack-thumb empty';
     return `
       <div class="${cls.join(' ')}" data-idx="${idx}">
         <div class="pack-row">
           <span class="pack-tick" onclick="togglePackLine(${idx})">${indicator}</span>
+          <div class="${thumbCls}" ${thumbStyle}></div>
           <div style="flex:1;min-width:0">
             <div class="pack-name">${esc(it.itemName||'(no name)')}</div>
             <div class="pack-meta">
-              <span><strong>${esc(it.shelf||'(no shelf)')}</strong></span>
+              <span><strong>${esc(shelfLabel)}</strong></span>
               <span class="muted">·</span>
               <span>${noneOutstanding ? 'Already packed' : (outstanding + ' to pack')}</span>
               <span class="muted">·</span>
               ${availLine}
             </div>
+            ${altNote}
           </div>
         </div>
         ${noneOutstanding ? '' : `
