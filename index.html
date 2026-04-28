@@ -96,9 +96,31 @@
   .pack-line{background:var(--panel2);border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-bottom:8px}
   .pack-line.done{background:rgba(34,197,94,.07);border-color:rgba(34,197,94,.4)}
   .pack-row{display:flex;align-items:center;gap:10px}
-  .pack-thumb{width:48px;height:48px;border-radius:8px;background:#1c1c1c center/cover no-repeat;flex-shrink:0;border:1px solid var(--border)}
-  .pack-thumb.empty{display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:10px}
+  .pack-thumb{width:48px;height:48px;border-radius:8px;background:#1c1c1c center/cover no-repeat;flex-shrink:0;border:1px solid var(--border);cursor:zoom-in}
+  .pack-thumb.empty{display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:10px;cursor:default}
   .pack-thumb.empty::before{content:'no img'}
+  /* Origin / status pill colours on the pack picker */
+  .pending-item.origin-internal{border-color:rgba(255,178,107,.4)}
+  .pending-item .pill-origin{display:inline-flex;align-items:center;padding:2px 8px;font-size:10px;border-radius:999px;
+    text-transform:uppercase;letter-spacing:.4px;font-weight:700;margin-right:6px}
+  .pending-item .pill-origin.portal{background:rgba(34,197,94,.12);color:var(--ok);border:1px solid rgba(34,197,94,.4)}
+  .pending-item .pill-origin.internal{background:rgba(255,178,107,.15);color:var(--accent2);border:1px solid rgba(255,178,107,.4)}
+  /* Create-order search results */
+  .create-result{background:var(--panel2);border:1px solid var(--border);border-radius:10px;padding:10px;margin-bottom:8px;
+    display:flex;gap:10px;align-items:center}
+  .create-result .pack-thumb{width:54px;height:54px}
+  .create-result .info{flex:1;min-width:0}
+  .create-result .name{font-weight:600;font-size:14px}
+  .create-result .meta{color:var(--muted);font-size:12px;margin-top:2px}
+  .create-result .controls{display:flex;gap:6px;align-items:center}
+  .create-result .controls input{width:48px;text-align:center;padding:6px}
+  .create-result button.add-btn{width:auto;padding:8px 14px;font-size:13px}
+  /* Photo lightbox */
+  .photo-lightbox{position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:200;display:none;
+    align-items:center;justify-content:center;padding:20px;flex-direction:column;gap:14px;cursor:zoom-out}
+  .photo-lightbox.show{display:flex}
+  .photo-lightbox img{max-width:100%;max-height:80vh;border-radius:12px;box-shadow:0 0 40px rgba(0,0,0,.6)}
+  .photo-lightbox-cap{color:#fff;font-size:14px;text-align:center;max-width:80%}
   .pack-tick{display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;
     border:1px solid var(--border);border-radius:50%;background:var(--panel);color:var(--muted);
     font-size:18px;cursor:pointer;flex-shrink:0;user-select:none}
@@ -136,8 +158,9 @@
     <div class="card switchboard stack">
       <h2>What are you doing?</h2>
       <button class="primary" onclick="startMode('sort')">Search Inventory</button>
-      <button onclick="startMode('loadout')">Create Order</button>
-      <button onclick="startMode('pack')">Pack a Client Order</button>
+      <button onclick="startMode('create')">Create Order</button>
+      <button onclick="startMode('pack')">Pack Order</button>
+      <button onclick="startMode('return')">Return Order</button>
     </div>
   </section>
 
@@ -452,6 +475,88 @@
       <button class="ghost" onclick="show('screen-pack-picker')">Back to jobs</button>
     </div>
   </section>
+
+  <!-- CREATE ORDER — setup (job, client, drop-off) -->
+  <section id="screen-create-setup" class="screen">
+    <div class="card stack">
+      <h1>New order</h1>
+      <p class="muted" style="font-size:13px">Build a pack list yourself — no client portal involved. Anyone on the team can pack it later.</p>
+      <div class="field"><label>Job / event name</label>
+        <input id="cr-job" type="text" placeholder="e.g. Spring Launch — Carriageworks"/></div>
+      <div class="field"><label>Client</label>
+        <input id="cr-client" type="text" placeholder="e.g. NRMAi, Vodafone"/></div>
+      <div class="field"><label>Drop-off date / time</label>
+        <input id="cr-dropoff" type="datetime-local"/></div>
+      <button class="primary" onclick="startCreateCart()">Continue</button>
+      <button class="ghost" onclick="show('screen-session')">Back</button>
+    </div>
+  </section>
+
+  <!-- CREATE ORDER — search & cart -->
+  <section id="screen-create-cart" class="screen">
+    <div class="card">
+      <div id="cr-header"></div>
+    </div>
+    <div class="card stack">
+      <div class="field">
+        <input id="cr-search" type="search" autocomplete="off" autocapitalize="off"
+               placeholder="Search items to add" oninput="searchCreate(this.value)"/>
+      </div>
+      <div id="cr-results" class="stack"></div>
+    </div>
+    <div class="card">
+      <h2 style="margin-bottom:8px">Cart <span class="muted" id="cr-cart-count" style="font-size:13px"></span></h2>
+      <div id="cr-cart" class="stack"></div>
+    </div>
+    <div class="card stack">
+      <button class="primary" id="btn-cr-submit" onclick="submitCreateOrder()">Submit order</button>
+      <button class="ghost" onclick="show('screen-create-setup')">Back</button>
+    </div>
+  </section>
+
+  <!-- CREATE ORDER — post-submit choice -->
+  <section id="screen-create-done" class="screen">
+    <div class="card center stack">
+      <h1>Order saved ✓</h1>
+      <p class="muted" id="cr-done-summary"></p>
+      <button class="primary" onclick="packCreatedNow()">Pack now</button>
+      <button onclick="goHome()">Save for later</button>
+    </div>
+  </section>
+
+  <!-- RETURN ORDER — picker -->
+  <section id="screen-return-picker" class="screen">
+    <div class="card stack">
+      <h1>Return order</h1>
+      <p class="muted">Orders that are out on a job and have items still un-returned.</p>
+      <div id="return-jobs" class="stack"></div>
+      <button class="ghost" onclick="loadReturnableJobs()">Refresh</button>
+      <button class="ghost" onclick="show('screen-session')">Back</button>
+    </div>
+  </section>
+
+  <!-- RETURN ORDER — line list -->
+  <section id="screen-return-list" class="screen">
+    <div class="card">
+      <div id="return-header"></div>
+    </div>
+    <div class="card">
+      <h2 style="margin-bottom:8px">Items returned</h2>
+      <p class="muted" style="font-size:13px;margin-top:0">Tap each row as you put items back. Tap again to undo.</p>
+      <div id="return-lines" class="stack"></div>
+    </div>
+    <div class="card stack">
+      <div id="return-summary" class="muted" style="font-size:13px"></div>
+      <button class="primary" id="btn-return-submit" onclick="submitReturn()">Submit returns</button>
+      <button class="ghost" onclick="show('screen-return-picker')">Back to orders</button>
+    </div>
+  </section>
+
+  <!-- PHOTO LIGHTBOX -->
+  <div id="photo-lightbox" class="photo-lightbox" onclick="closePhotoLightbox(event)">
+    <img id="photo-lightbox-img" alt=""/>
+    <div class="photo-lightbox-cap" id="photo-lightbox-cap"></div>
+  </div>
 
   <!-- PENDING -->
   <section id="screen-pending" class="screen">
@@ -810,12 +915,401 @@ function startMode(mode){
   else if(mode==='loadout')show('screen-loadout-setup');
   else if(mode==='delivery')show('screen-delivery-setup');
   else if(mode==='pack'){show('screen-pack-picker'); loadPendingJobs();}
+  else if(mode==='create'){show('screen-create-setup');}
+  else if(mode==='return'){show('screen-return-picker'); loadReturnableJobs();}
 }
 function submitLoadoutSetup(){
   const jobName=(document.getElementById('loadout-job')||{}).value?.trim();
   if(!jobName){toast('Enter a job name');return;}
   state.loadout={jobName,team:state.team}; saveSession();
   show('screen-browse');
+}
+
+/* ---------- Photo lightbox ----------
+   Tap any thumbnail to enlarge. Backdrop / ESC closes.
+*/
+function openPhotoLightbox(url, caption){
+  if (!url) return;
+  const lb = document.getElementById('photo-lightbox');
+  document.getElementById('photo-lightbox-img').src = url;
+  document.getElementById('photo-lightbox-cap').textContent = caption || '';
+  lb.classList.add('show');
+}
+function closePhotoLightbox(e){
+  // Only close if clicked on the backdrop or via ESC — not on the image
+  // itself. (Tapping the image counts because we made the wrapper close
+  // on click — easier UX on mobile.)
+  document.getElementById('photo-lightbox').classList.remove('show');
+}
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closePhotoLightbox();
+});
+
+/* ---------- Create-Order flow ----------
+   Warehouse-side cart-and-submit. Same model as the client portal —
+   collect items, set Job/Client/Drop-off, submit. Server lands the
+   order on "<Client> Orders" with Origin=Internal, Status=Scheduled.
+*/
+const createOrderState = {
+  jobName: '',
+  client: '',
+  dropoffWhen: '',
+  cart: new Map(),    // name -> { name, qty, available, thumbUrl }
+  lastResults: [],
+  searchDebounce: null,
+  lastOrderId: null
+};
+
+function startCreateCart(){
+  const job    = (document.getElementById('cr-job')||{}).value?.trim();
+  const client = (document.getElementById('cr-client')||{}).value?.trim();
+  const drop   = (document.getElementById('cr-dropoff')||{}).value?.trim();
+  if (!job)    { toast('Job name required'); return; }
+  if (!client) { toast('Client required'); return; }
+  if (!drop)   { toast('Drop-off date required'); return; }
+  createOrderState.jobName = job;
+  createOrderState.client  = client;
+  createOrderState.dropoffWhen = drop;
+  createOrderState.cart.clear();
+  createOrderState.lastResults = [];
+  document.getElementById('cr-search').value = '';
+  document.getElementById('cr-results').innerHTML = '';
+  renderCreateHeader();
+  renderCreateCart();
+  show('screen-create-cart');
+}
+function renderCreateHeader(){
+  const host = document.getElementById('cr-header');
+  if (!host) return;
+  const esc = s => String(s==null?'':s).replace(/[&<>"']/g,
+    c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  host.innerHTML = `
+    <h1 style="margin:0 0 4px">${esc(createOrderState.jobName)}</h1>
+    <div class="muted" style="font-size:12px">For <strong>${esc(createOrderState.client)}</strong> · Drop-off ${esc(fmtDate(createOrderState.dropoffWhen))}</div>`;
+}
+
+function searchCreate(q){
+  clearTimeout(createOrderState.searchDebounce);
+  const host = document.getElementById('cr-results');
+  const term = (q||'').trim();
+  if (!term){ host.innerHTML = ''; createOrderState.lastResults = []; return; }
+  host.innerHTML = '<div class="muted">Searching…</div>';
+  createOrderState.searchDebounce = setTimeout(async () => {
+    try {
+      const url = ENDPOINT + '?action=search&q=' + encodeURIComponent(term);
+      const res = await fetch(url, { method:'GET' });
+      const data = await res.json();
+      if (!data || data.success === false){
+        host.innerHTML = '<div class="err-line">'+((data&&data.error)||'Search failed')+'</div>';
+        return;
+      }
+      createOrderState.lastResults = data.items || [];
+      renderCreateResults();
+    } catch(_) { host.innerHTML = '<div class="err-line">Network error</div>'; }
+  }, 220);
+}
+
+function renderCreateResults(){
+  const host = document.getElementById('cr-results');
+  const items = createOrderState.lastResults;
+  if (!items.length){ host.innerHTML = '<div class="muted">No matches.</div>'; return; }
+  const esc = s => String(s==null?'':s).replace(/[&<>"']/g,
+    c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  host.innerHTML = items.map((it, idx) => {
+    const inCart = createOrderState.cart.get(it.name);
+    const avail = Math.max(0, (Number(it.totalQty)||0) - (Number(it.qtyOut)||0));
+    const thumbCls = it.thumbUrl ? 'pack-thumb' : 'pack-thumb empty';
+    const thumbStyle = it.thumbUrl ? `style="background-image:url('${esc(it.thumbUrl)}')"` : '';
+    const meta = [it.brand, it.type].filter(Boolean).map(esc).join(' · ');
+    return `
+      <div class="create-result" data-idx="${idx}">
+        <div class="${thumbCls}" ${thumbStyle} onclick="openPhotoLightbox('${esc(it.thumbUrl||'')}', '${esc(it.name||'')}')"></div>
+        <div class="info">
+          <div class="name">${esc(it.name||'')}</div>
+          <div class="meta">${esc(it.shelf||'(no shelf)')}${meta?' · '+meta:''} · ${avail} available</div>
+        </div>
+        <div class="controls">
+          <input type="number" min="1" value="${inCart?inCart.qty:1}" id="cr-qty-${idx}"/>
+          <button class="add-btn ${inCart?'':'primary'}" onclick="addToCreateCart(${idx})">${inCart?'In cart':'Add'}</button>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function addToCreateCart(idx){
+  const it = createOrderState.lastResults[idx];
+  if (!it) return;
+  const qtyInput = document.getElementById('cr-qty-'+idx);
+  const qty = Math.max(1, parseInt(qtyInput?.value, 10) || 1);
+  const avail = Math.max(0, (Number(it.totalQty)||0) - (Number(it.qtyOut)||0));
+  createOrderState.cart.set(it.name, {
+    name: it.name, qty: qty, available: avail, thumbUrl: it.thumbUrl || ''
+  });
+  toast('Added '+qty+' × '+it.name);
+  renderCreateResults();
+  renderCreateCart();
+}
+
+function renderCreateCart(){
+  const host = document.getElementById('cr-cart');
+  const counter = document.getElementById('cr-cart-count');
+  const cart = [...createOrderState.cart.values()];
+  if (counter) counter.textContent = cart.length ? '· '+cart.length+' line'+(cart.length===1?'':'s') : '';
+  if (!cart.length){ host.innerHTML = '<div class="muted" style="font-size:13px">No items yet.</div>'; return; }
+  const esc = s => String(s==null?'':s).replace(/[&<>"']/g,
+    c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  host.innerHTML = cart.map(it => {
+    const thumbCls = it.thumbUrl ? 'pack-thumb' : 'pack-thumb empty';
+    const thumbStyle = it.thumbUrl ? `style="background-image:url('${esc(it.thumbUrl)}')"` : '';
+    return `
+      <div class="create-result" data-name="${esc(it.name)}">
+        <div class="${thumbCls}" ${thumbStyle} onclick="openPhotoLightbox('${esc(it.thumbUrl||'')}', '${esc(it.name)}')"></div>
+        <div class="info">
+          <div class="name">${esc(it.name)}</div>
+          <div class="meta">${it.qty} × · ${it.available} available</div>
+        </div>
+        <div class="controls">
+          <button class="small" onclick="bumpCreateCart('${esc(it.name)}',-1)">−</button>
+          <button class="small" onclick="bumpCreateCart('${esc(it.name)}',1)">+</button>
+          <button class="small danger" onclick="removeFromCreateCart('${esc(it.name)}')">✕</button>
+        </div>
+      </div>`;
+  }).join('');
+}
+function bumpCreateCart(name, delta){
+  const it = createOrderState.cart.get(name); if (!it) return;
+  it.qty = Math.max(1, (it.qty||1) + delta);
+  renderCreateCart();
+}
+function removeFromCreateCart(name){
+  createOrderState.cart.delete(name);
+  renderCreateCart();
+  renderCreateResults();
+}
+
+async function submitCreateOrder(){
+  if (!createOrderState.cart.size){ toast('Cart is empty'); return; }
+  const btn = document.getElementById('btn-cr-submit');
+  if (btn){ btn.disabled = true; btn.textContent = 'Submitting…'; }
+  try {
+    const items = [...createOrderState.cart.values()].map(it => ({ name: it.name, qty: it.qty }));
+    const res = await directPost('internalOrder', {
+      client:      createOrderState.client,
+      jobName:     createOrderState.jobName,
+      dropoffWhen: createOrderState.dropoffWhen,
+      placedBy:    state.team || '',
+      team:        state.team || '',
+      items
+    });
+    console.log('[Funkified] internalOrder response:', res);
+    if (!res || !res.success){ toast((res && res.error) || 'Submit failed', true); return; }
+    createOrderState.lastOrderId = res.orderId;
+    document.getElementById('cr-done-summary').textContent =
+      createOrderState.jobName + ' · ' + items.length + ' line' + (items.length===1?'':'s');
+    show('screen-create-done');
+  } catch(_) {
+    toast('Network error', true);
+  } finally {
+    if (btn){ btn.disabled = false; btn.textContent = 'Submit order'; }
+  }
+}
+
+function packCreatedNow(){
+  if (!createOrderState.lastOrderId){ goHome(); return; }
+  selectPackJob(createOrderState.lastOrderId);
+}
+
+/* ---------- Return-Order flow ---------- */
+const returnState = {
+  job: null,           // { orderId, client, jobName, items: [...] }
+};
+
+async function loadReturnableJobs(){
+  const host = document.getElementById('return-jobs');
+  if (host) host.innerHTML = '<div class="muted">Loading…</div>';
+  try {
+    const res = await directPost('returnsList', { team: state.team || '' });
+    console.log('[Funkified] returnsList response:', res);
+    if (!res || !res.success){ host.innerHTML = '<div class="err-line">'+((res&&res.error)||'Could not load')+'</div>'; return; }
+    const jobs = res.jobs || [];
+    if (!jobs.length){ host.innerHTML = '<div class="muted">Nothing to return right now.</div>'; return; }
+    const esc = s => String(s==null?'':s).replace(/[&<>"']/g,
+      c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    host.innerHTML = jobs.map(j => {
+      const meta = j.meta || {};
+      const title = j.jobName || j.orderId;
+      const originCls = j.origin === 'Internal' ? 'origin-internal' : '';
+      const originPill = j.origin === 'Internal' ? 'internal' : 'portal';
+      return `
+        <div class="pending-item ${originCls}" style="cursor:pointer" onclick="selectReturnJob('${esc(j.orderId)}')">
+          <div class="pending-row">
+            <span class="pill-origin ${originPill}">${esc(j.origin||'Portal')}</span>
+            <span class="pill pill-warn">${esc(j.status)}</span>
+            <strong>${esc(title)}</strong>
+          </div>
+          <div class="pending-body">
+            <div><span class="muted">Client:</span> ${esc(j.client)}</div>
+            <div><span class="muted">Drop-off:</span> ${esc(fmtDate(meta.dropoffWhen))}</div>
+            <div><span class="muted">Items:</span> ${j.lineCount} lines · ${j.unitsOutstanding} of ${j.unitsPacked} units to return</div>
+          </div>
+        </div>`;
+    }).join('');
+  } catch(_) { host.innerHTML = '<div class="err-line">Network error</div>'; }
+}
+
+async function selectReturnJob(orderId){
+  const host = document.getElementById('return-lines');
+  if (host) host.innerHTML = '<div class="muted">Loading…</div>';
+  show('screen-return-list');
+  try {
+    // Reuse jobPack — it has the line items, photos, shelves, and counts.
+    const res = await directPost('jobPack', { orderId, team: state.team || '' });
+    console.log('[Funkified] jobPack(return) response:', res);
+    if (!res || !res.success){ if (host) host.innerHTML = '<div class="err-line">'+((res&&res.error)||'Could not load')+'</div>'; return; }
+    const items = (res.items || []).map(it => Object.assign({}, it, {
+      // Returnable = packed - already-returned. Server already did the
+      // "qtyOutstanding" math for packing — for returns we need fresh
+      // numbers. Default the return qty to 0 (user ticks to set).
+      qtyOnJob: Math.max(0, (Number(it.qtyPacked)||0)),
+      returnLocal: 0
+    }));
+    returnState.job = {
+      orderId,
+      client:    res.client,
+      status:    res.status,
+      jobName:   res.jobName || '',
+      meta:      res.meta || {},
+      items: items
+    };
+    renderReturnHeader();
+    renderReturnLines();
+    updateReturnSummary();
+  } catch(_) { if (host) host.innerHTML = '<div class="err-line">Network error</div>'; }
+}
+
+function renderReturnHeader(){
+  const host = document.getElementById('return-header');
+  if (!host || !returnState.job) return;
+  const j = returnState.job;
+  const meta = j.meta || {};
+  const esc = s => String(s==null?'':s).replace(/[&<>"']/g,
+    c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  host.innerHTML = `
+    <h1 style="margin:0 0 4px">${esc(j.jobName || j.orderId)}</h1>
+    <div class="muted" style="font-size:12px;margin-bottom:6px">${esc(j.client)} · <code>${esc(j.orderId)}</code></div>
+    <div><span class="muted">Drop-off:</span> ${esc(fmtDate(meta.dropoffWhen))}</div>
+    <div><span class="muted">To:</span> ${esc(meta.address||'—')}</div>
+  `;
+}
+
+function renderReturnLines(){
+  const host = document.getElementById('return-lines');
+  if (!host || !returnState.job) return;
+  const items = returnState.job.items;
+  const esc = s => String(s==null?'':s).replace(/[&<>"']/g,
+    c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  host.innerHTML = items.map((it, idx) => {
+    const onJob = Number(it.qtyOnJob) || 0;
+    const local = Number(it.returnLocal) || 0;
+    const fully = local >= onJob && onJob > 0;
+    const cls = ['pack-line']; if (fully) cls.push('done');
+    const ind = fully ? '✓' : (local > 0 ? '◐' : '○');
+    const thumbStyle = it.thumbUrl ? `style="background-image:url('${esc(it.thumbUrl)}')"` : '';
+    const thumbCls = it.thumbUrl ? 'pack-thumb' : 'pack-thumb empty';
+    return `
+      <div class="${cls.join(' ')}" data-idx="${idx}">
+        <div class="pack-row">
+          <span class="pack-tick" onclick="toggleReturnLine(${idx})">${ind}</span>
+          <div class="${thumbCls}" ${thumbStyle} onclick="openPhotoLightbox('${esc(it.thumbUrl||'')}', '${esc(it.itemName||'')}')"></div>
+          <div style="flex:1;min-width:0">
+            <div class="pack-name">${esc(it.itemName||'(no name)')}</div>
+            <div class="pack-meta">
+              <span><strong>${esc(it.shelf||'(no shelf)')}</strong></span>
+              <span class="muted">·</span>
+              <span>${onJob} on job</span>
+            </div>
+          </div>
+        </div>
+        ${onJob === 0 ? '' : `
+          <div class="pack-stepper">
+            <button class="small" onclick="adjustReturnLocal(${idx},-1)">−</button>
+            <input type="number" min="0" max="${onJob}" value="${local}"
+                   onchange="setReturnLocal(${idx}, this.value)"/>
+            <button class="small" onclick="adjustReturnLocal(${idx},1)">+</button>
+            <span class="muted" style="margin-left:8px;font-size:12px">of ${onJob}</span>
+          </div>`}
+      </div>`;
+  }).join('');
+}
+
+function toggleReturnLine(idx){
+  const it = returnState.job && returnState.job.items[idx]; if (!it) return;
+  const onJob = Number(it.qtyOnJob) || 0;
+  if (onJob <= 0) return;
+  it.returnLocal = (Number(it.returnLocal) || 0) >= onJob ? 0 : onJob;
+  renderReturnLines(); updateReturnSummary();
+}
+function setReturnLocal(idx, v){
+  const it = returnState.job && returnState.job.items[idx]; if (!it) return;
+  const onJob = Number(it.qtyOnJob) || 0;
+  let n = parseInt(v, 10) || 0;
+  if (n < 0) n = 0; if (n > onJob) n = onJob;
+  it.returnLocal = n;
+  renderReturnLines(); updateReturnSummary();
+}
+function adjustReturnLocal(idx, delta){
+  const it = returnState.job && returnState.job.items[idx]; if (!it) return;
+  setReturnLocal(idx, (Number(it.returnLocal) || 0) + delta);
+}
+function updateReturnSummary(){
+  const host = document.getElementById('return-summary');
+  if (!host || !returnState.job) return;
+  const items = returnState.job.items;
+  const totalOnJob = items.reduce((s, it) => s + (Number(it.qtyOnJob) || 0), 0);
+  const totalLocal = items.reduce((s, it) => s + (Number(it.returnLocal) || 0), 0);
+  const remaining = Math.max(0, totalOnJob - totalLocal);
+  const allDone = totalOnJob > 0 && remaining === 0;
+  host.textContent = allDone
+    ? 'All ' + totalOnJob + ' units ticked — submit to return them.'
+    : (totalLocal + ' of ' + totalOnJob + ' units ticked · ' + remaining + ' remaining');
+}
+
+async function submitReturn(){
+  if (!returnState.job){ toast('No order loaded'); return; }
+  const items = returnState.job.items;
+  const returns = items
+    .filter(it => (Number(it.returnLocal) || 0) > 0)
+    .map(it => ({ shelf: it.shelf, itemName: it.itemName, qty: Number(it.returnLocal) || 0 }));
+  if (!returns.length){ toast('Tick at least one item first'); return; }
+  const btn = document.getElementById('btn-return-submit');
+  if (btn){ btn.disabled = true; btn.textContent = 'Submitting…'; }
+  try {
+    const res = await directPost('returnOrder', {
+      orderId: returnState.job.orderId,
+      team:    state.team || '',
+      returns
+    });
+    console.log('[Funkified] returnOrder response:', res);
+    if (!res || !res.success){ toast((res && res.error) || 'Return failed', true); return; }
+    const warns = res.warnings || [];
+    if (warns.length){
+      const lines = warns.map(w => (w.shelf?w.shelf+' · ':'') + (w.name||'') + ' — ' + (w.reason||'')).join('\n');
+      alert((res.applied||[]).length + ' returns applied, ' + warns.length + ' warning(s):\n\n' + lines);
+    } else {
+      toast(res.status === 'Returned' ? 'All items returned ✓' : 'Returns saved');
+    }
+    if (res.status === 'Returned'){
+      returnState.job = null;
+      show('screen-return-picker');
+      loadReturnableJobs();
+    } else {
+      selectReturnJob(returnState.job.orderId);
+    }
+  } catch(_) {
+    toast('Network error', true);
+  } finally {
+    if (btn){ btn.disabled = false; btn.textContent = 'Submit returns'; }
+  }
 }
 
 /* ---------- Pack-a-client-order helpers ---------- */
@@ -872,13 +1366,18 @@ function renderPackPicker(jobs){
     const outstanding = (j.unitsOutstanding != null) ? j.unitsOutstanding : j.unitsOrdered;
     const title = j.jobName || j.orderId;
     const placedBy = j.placedBy ? `<div><span class="muted">Placed by:</span> ${esc(j.placedBy)}</div>` : '';
+    const origin = j.origin || 'Portal';
+    const originCls = origin === 'Internal' ? 'origin-internal' : '';
+    const originPill = origin === 'Internal' ? 'internal' : 'portal';
     return `
-      <div class="pending-item" style="cursor:pointer" onclick="selectPackJob('${esc(j.orderId)}')">
+      <div class="pending-item ${originCls}" style="cursor:pointer" onclick="selectPackJob('${esc(j.orderId)}')">
         <div class="pending-row">
+          <span class="pill-origin ${originPill}">${esc(origin)}</span>
           <span class="${pillClass}">${esc(j.status||'Scheduled')}</span>
           <strong>${esc(title)}</strong>
         </div>
         <div class="pending-body">
+          <div><span class="muted">Client:</span> ${esc(j.client||'—')}</div>
           <div><span class="muted">Drop-off:</span> ${esc(fmtDate(meta.dropoffWhen))}</div>
           <div><span class="muted">To:</span> ${esc(meta.address||'—')}</div>
           ${placedBy}
@@ -982,7 +1481,7 @@ function renderPackLines(){
       <div class="${cls.join(' ')}" data-idx="${idx}">
         <div class="pack-row">
           <span class="pack-tick" onclick="togglePackLine(${idx})">${indicator}</span>
-          <div class="${thumbCls}" ${thumbStyle}></div>
+          <div class="${thumbCls}" ${thumbStyle} onclick="openPhotoLightbox('${esc(it.thumbUrl||'')}','${esc(it.itemName||'')}')"></div>
           <div style="flex:1;min-width:0">
             <div class="pack-name">${esc(it.itemName||'(no name)')}</div>
             <div class="pack-meta">
@@ -1063,12 +1562,26 @@ async function completePack(closeOut){
       gpsPayload()
     );
     const res = await directPost('jobComplete', payload);
-    if (!res || !res.success){ toast((res && res.error) || 'Submit failed'); return; }
-    const warn = (res.warnings || []).length;
-    const msg = warn
-      ? 'Submitted ('+warn+' warnings — check the queue)'
-      : (res.status === 'On-site' ? 'Order packed and marked On-site' : 'Saved progress');
-    toast(msg);
+    console.log('[Funkified] jobComplete response:', res);
+    if (!res || !res.success){ toast((res && res.error) || 'Submit failed', true); return; }
+    const warns = res.warnings || [];
+    const applied = res.applied || [];
+    if (warns.length){
+      // Show the actual reasons. Most common: 'shelf-not-in-inventory'
+      // (resolved shelf doesn't exist in Inventory) or 'over-packed'
+      // (inventory updated fine, but the order line couldn't be matched
+      // by name — typically a name mismatch between order and inventory).
+      const lines = warns.map(w => {
+        const head = w.shelf ? (w.shelf + (w.name ? ' · ' + w.name : '')) : '';
+        return (head ? head + ' — ' : '') + (w.reason || 'unknown');
+      }).join('\n');
+      const summary = applied.length
+        ? applied.length + ' lines packed, ' + warns.length + ' warning(s):'
+        : 'Nothing was packed. Reasons:';
+      alert(summary + '\n\n' + lines + '\n\n(Open browser console for full details.)');
+    } else {
+      toast(res.status === 'On-site' ? 'Order packed and marked On-site' : 'Saved progress');
+    }
     if (res.status === 'On-site') {
       state.packJob = null;
       show('screen-pack-picker');
