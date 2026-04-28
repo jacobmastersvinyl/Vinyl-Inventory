@@ -905,6 +905,7 @@ async function selectPackJob(orderId){
   show('screen-pack-list');
   try {
     const res = await directPost('jobPack', { orderId, team: state.team || '' });
+    console.log('[Funkified] jobPack response:', res);
     if (!res || !res.success){
       if (host) host.innerHTML = '<div class="err-line">'+((res&&res.error)||'Could not load')+'</div>';
       return;
@@ -922,7 +923,9 @@ async function selectPackJob(orderId){
     renderPackLines();
     updatePackSummary();
   } catch(e) {
-    if (host) host.innerHTML = '<div class="err-line">Network error. Tap Refresh on the picker.</div>';
+    console.error('[Funkified] jobPack failed:', e);
+    if (host) host.innerHTML = '<div class="err-line">Could not load: '+
+      ((e && e.message) ? e.message : 'network/timeout — open the dev console for details')+'</div>';
   }
 }
 
@@ -1050,7 +1053,7 @@ async function completePack(closeOut){
   const items = state.packJob.items || [];
   const scans = items
     .filter(it => (Number(it.packLocal) || 0) > 0)
-    .map(it => ({ shelf: it.shelf, qty: Number(it.packLocal) || 0 }));
+    .map(it => ({ shelf: it.shelf, itemName: it.itemName, qty: Number(it.packLocal) || 0 }));
   if (!scans.length){ toast('Tick at least one item first'); return; }
   const btn = document.getElementById('btn-pack-submit');
   if (btn) { btn.disabled = true; btn.textContent = 'Submitting…'; }
