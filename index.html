@@ -1,398 +1,1532 @@
-// ═══════════════════════════════════════════════════════════════
-// FUNKIFIED — Job Packing extension
-// Lets the Funkified PWA "Pack a client order" against a pending
-// portal order (e.g. NRMAi). Scanning ticks items off the packing
-// list, decrements the Inventory sheet, stamps the order rows, and
-// logs each scan to the Scan Log.
-//
-// Paste this as a NEW file inside the same Apps Script project as
-// Code.gs and ClientPortal.gs:
-//   Apps Script editor → + (next to Files) → Script → name it
-//   "JobPacking".
-//
-// Globals from Code.gs (CONFIG, ss(), getSheet(), INV_COLS, etc.)
-// are in scope automatically.
-//
-// Dispatch (wire these two snippets into Code.gs — see bottom):
-//   POST {action:'jobsPending',  team:'Jacob'}
-//   POST {action:'jobPack',      orderId:'NRMAi-20260421-…'}
-//   POST {action:'jobComplete',  orderId:'NRMAi-…', scans:[{shelf,qty,extra}], closeOut:true|false}
-// ═══════════════════════════════════════════════════════════════
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+<meta name="theme-color" content="#0a0a0a"/>
+<title>Funkified — Storage</title>
+<link rel="manifest" href="./manifest.json"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+  :root{
+    --bg:#0a0a0a; --panel:#141414; --panel2:#1c1c1c; --border:#2a2a2a;
+    --text:#f2f2f2; --muted:#9a9a9a; --accent:#ff7a18; --accent2:#ffb347;
+    --ok:#22c55e; --warn:#facc15; --err:#ef4444;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--text);
+    font-family:'Inter',system-ui,-apple-system,sans-serif;
+    -webkit-tap-highlight-color:transparent;overscroll-behavior:none}
+  body{padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)}
+  .app{max-width:640px;margin:0 auto;padding:16px}
+  header{display:flex;align-items:center;justify-content:space-between;padding:8px 4px 16px}
+  .brand{display:flex;align-items:center;gap:10px;font-weight:700;letter-spacing:.5px}
+  .brand .dot{width:14px;height:14px;border-radius:50%;background:var(--accent);box-shadow:0 0 12px var(--accent)}
+  .pending-chip{display:none;align-items:center;justify-content:center;min-width:22px;height:22px;padding:0 8px;
+    border-radius:11px;background:var(--accent);color:#111;font-size:12px;font-weight:700}
+  .screen{display:none}
+  .screen.active{display:block;animation:fade .2s ease-out}
+  @keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+  h1{font-size:22px;margin:0 0 4px}
+  h2{font-size:18px;margin:0 0 12px}
+  p{line-height:1.45}
+  .muted{color:var(--muted)}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:12px}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .grid.three{grid-template-columns:1fr 1fr 1fr}
+  button,.btn{appearance:none;border:1px solid var(--border);background:var(--panel2);color:var(--text);
+    padding:14px 16px;border-radius:12px;font-size:16px;font-weight:600;cursor:pointer;width:100%}
+  button.primary,.btn.primary{background:var(--accent);color:#111;border-color:transparent}
+  button.ghost{background:transparent}
+  button.danger{background:transparent;color:var(--err);border-color:rgba(239,68,68,.4)}
+  button.small{padding:8px 10px;font-size:13px;width:auto}
+  .row{display:flex;gap:8px}
+  label{display:block;font-size:13px;color:var(--muted);margin:6px 0 4px}
+  input[type=text],input[type=number],input[type=search],textarea,select{
+    width:100%;padding:12px;border-radius:10px;border:1px solid var(--border);background:#0f0f0f;
+    color:var(--text);font-size:16px;font-family:inherit}
+  textarea{min-height:70px;resize:vertical}
+  .field{margin-bottom:10px}
+  .stack>*+*{margin-top:10px}
+  .center{text-align:center}
+  .pill{display:inline-flex;align-items:center;padding:2px 8px;font-size:11px;border-radius:999px;
+    background:#222;color:#ccc;text-transform:uppercase;letter-spacing:.5px}
+  .pill-warn{background:rgba(250,204,21,.15);color:var(--warn)}
+  .pill-err{background:rgba(239,68,68,.15);color:var(--err)}
+  .pill-ok{background:rgba(34,197,94,.15);color:var(--ok)}
+  .shelf-bind-banner{display:none;align-items:center;gap:8px;background:rgba(255,122,24,.12);
+    border:1px solid rgba(255,122,24,.4);color:var(--accent2);padding:8px 12px;border-radius:10px;
+    font-size:13px;margin-bottom:10px;justify-content:space-between}
+  .shelf-bind-banner .shelf-code{font-weight:700;color:var(--accent)}
+  .shelf-bind-banner button.small{background:transparent;border:1px solid rgba(255,122,24,.5);color:var(--accent2);padding:4px 10px}
+  #offline-bar{display:none;background:var(--err);color:#fff;text-align:center;padding:6px;font-size:13px;
+    position:sticky;top:0;z-index:10}
+  #offline-bar.show{display:block}
+  #toast{position:fixed;left:50%;bottom:32px;transform:translateX(-50%) translateY(60px);
+    background:#fff;color:#111;padding:10px 16px;border-radius:999px;font-weight:600;
+    opacity:0;transition:all .25s;pointer-events:none;z-index:20;max-width:90%;text-align:center}
+  #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  .hidden{display:none!important}
+  .photo-preview{max-width:100%;border-radius:10px;margin-top:8px;display:none}
+  .pending-item{background:var(--panel2);border:1px solid var(--border);border-radius:10px;padding:10px;margin-bottom:8px}
+  .pending-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:4px}
+  .pending-body{font-size:14px;color:#ddd;margin-bottom:6px}
+  .err-line{color:var(--err);font-size:12px;margin-bottom:6px;word-break:break-word}
+  .pending-actions{display:flex;gap:8px}
+  .pending-actions button{width:auto;padding:8px 12px;font-size:13px}
+  code{background:#000;padding:1px 6px;border-radius:6px;font-size:13px}
+  [data-team-opt]{cursor:pointer}
+  [data-team-opt].selected{background:var(--accent);color:#111;border-color:transparent}
+  .recent-names{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
+  .recent-names .name-chip{display:inline-flex;align-items:center;gap:0;padding:0;border-radius:999px;
+    background:var(--panel2);border:1px solid var(--border);color:var(--text);font-weight:600;
+    overflow:hidden;width:auto}
+  .recent-names .name-chip .pick{padding:8px 14px;background:transparent;border:none;color:inherit;
+    font:inherit;cursor:pointer;font-weight:600}
+  .recent-names .name-chip.selected{background:var(--accent);color:#111;border-color:transparent}
+  .recent-names .name-chip .x{padding:8px 10px;background:transparent;border:none;border-left:1px solid var(--border);
+    color:var(--muted);font-size:14px;cursor:pointer;width:auto}
+  .recent-names .name-chip.selected .x{color:#111;border-left-color:rgba(0,0,0,.2)}
+  .recent-names .name-chip .x:hover{color:var(--err)}
+  .big-shelf{font-size:28px;font-weight:800;letter-spacing:2px;color:var(--accent)}
+  .switchboard button{min-height:72px;font-size:18px}
+  .qty-row{display:flex;gap:8px;align-items:center}
+  .qty-row button{width:44px;padding:10px 0}
+  .qty-row input{flex:1;text-align:center}
+  .pack-line{background:var(--panel2);border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-bottom:8px}
+  .pack-line.done{background:rgba(34,197,94,.07);border-color:rgba(34,197,94,.4)}
+  .pack-row{display:flex;align-items:center;gap:10px}
+  .pack-tick{display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;
+    border:1px solid var(--border);border-radius:50%;background:var(--panel);color:var(--muted);
+    font-size:18px;cursor:pointer;flex-shrink:0;user-select:none}
+  .pack-line.done .pack-tick{background:var(--ok);color:#0a0a0a;border-color:transparent;font-weight:700}
+  .pack-name{font-weight:600;font-size:15px;line-height:1.3}
+  .pack-meta{font-size:12px;color:#ddd;display:flex;gap:6px;flex-wrap:wrap;margin-top:2px}
+  .pack-stepper{display:flex;gap:6px;align-items:center;margin-top:8px;padding-left:46px}
+  .pack-stepper button.small{width:32px;padding:6px 0;font-size:14px}
+  .pack-stepper input{width:60px;text-align:center;padding:6px}
+</style>
+</head>
+<body>
+<div id="offline-bar">Offline — submissions are being queued</div>
+<div class="app">
+  <header>
+    <div class="brand"><span class="dot"></span><span>FUNKIFIED</span></div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <span class="muted" style="font-size:12px">Pending</span>
+      <span class="pending-chip"></span>
+      <button class="small ghost" onclick="show('screen-pending');renderPendingList()">Queue</button>
+    </div>
+  </header>
 
-const JOB_CONFIG = {
-  // Which clients to scan for jobs. Each must have a
-  // "<Client> Orders" sheet managed by ClientPortal.gs.
-  CLIENTS: ['NRMAi'],
-  // Statuses that should appear in the warehouse job picker.
-  // Pending orders are still being edited by the client and aren't
-  // ready to pack yet — only Scheduled (quoted + agreed) and Partial
-  // (already started) jobs show up here.
-  PICKABLE_STATUSES: ['Scheduled', 'Partial'],
-  // Terminal status when every line is packed in full.
-  STATUS_ON_SITE: 'On-site',
-  // Status when we close a job with shortfall.
-  STATUS_PARTIAL: 'Partial',
-  // Columns we add to the Orders sheet if not already present.
-  // These are appended to whatever ORDER_HEADER ClientPortal.gs wrote.
-  EXTRA_HEADERS: ['Packed Qty', 'Packed By', 'Packed At']
+  <!-- SESSION SWITCHBOARD -->
+  <section id="screen-session" class="screen active">
+    <div class="card">
+      <h1>Who's on?</h1>
+      <div id="recent-names" class="recent-names"></div>
+      <div class="field">
+        <label>Or add a new name</label>
+        <input id="team-other" type="text" placeholder="e.g. Jacob" oninput="setTeam(this.value)" onblur="rememberCurrentName()"/>
+      </div>
+      <p class="muted">Team: <span data-team-display>—</span></p>
+    </div>
+    <div class="card switchboard stack">
+      <h2>What are you doing?</h2>
+      <button class="primary" onclick="startMode('sort')">Search Inventory</button>
+      <button onclick="startMode('loadout')">Create Order</button>
+      <button onclick="startMode('pack')">Pack a Client Order</button>
+    </div>
+  </section>
+
+  <!-- LOADOUT SETUP -->
+  <section id="screen-loadout-setup" class="screen">
+    <div class="card stack">
+      <h1>Loadout</h1>
+      <div class="field">
+        <label>Job / Event name</label>
+        <input id="loadout-job" type="text" placeholder="e.g. Daffodils 2026"/>
+      </div>
+      <button class="primary" onclick="submitLoadoutSetup()">Start loadout</button>
+      <button class="ghost" onclick="show('screen-session')">Back</button>
+    </div>
+  </section>
+
+  <!-- DELIVERY SETUP -->
+  <section id="screen-delivery-setup" class="screen">
+    <div class="card stack">
+      <h1>Delivery</h1>
+      <div class="field"><label>From</label>
+        <input id="delivery-from" type="text" placeholder="Warehouse / Venue / Truck"/></div>
+      <div class="field"><label>To</label>
+        <input id="delivery-to" type="text" placeholder="Warehouse / Venue / Truck"/></div>
+      <div class="field"><label>Note (optional)</label>
+        <textarea id="delivery-note"></textarea></div>
+      <button class="primary" onclick="submitDeliverySetup()">Start delivery</button>
+      <button class="ghost" onclick="show('screen-session')">Back</button>
+    </div>
+  </section>
+
+  <!-- DELIVERY SCAN LOOP -->
+  <section id="screen-delivery" class="screen">
+    <div class="shelf-bind-banner">
+      <span>Bound to shelf <span class="shelf-code"></span></span>
+      <button class="small" onclick="clearShelfBind()">Clear</button>
+    </div>
+    <div class="card stack">
+      <h1>Delivery</h1>
+      <p class="muted"><span data-team-display>—</span> · Scan each item as it moves.</p>
+      <div class="field"><label>Shelf</label>
+        <input id="delivery-shelf" data-shelf-input type="text" placeholder="e.g. B1"/></div>
+      <button class="primary" onclick="submitDelivery()">Queue scan</button>
+      <button class="ghost" onclick="show('screen-session')">Finish delivery</button>
+    </div>
+  </section>
+
+  <!-- BROWSE — search inventory -->
+  <section id="screen-browse" class="screen">
+    <div class="shelf-bind-banner">
+      <span>Bound to shelf <span class="shelf-code"></span></span>
+      <button class="small" onclick="clearShelfBind()">Clear</button>
+    </div>
+    <div class="card stack">
+      <h1>Search inventory</h1>
+      <p class="muted">Search by item name, shelf code, brand or type. Partial words are fine.</p>
+      <div class="field">
+        <input id="inv-search" type="search" autocomplete="off" autocapitalize="off"
+               placeholder="e.g. candle, B1, NRMAi" oninput="searchInventory(this.value)"/>
+      </div>
+      <div id="inv-results" class="stack"></div>
+    </div>
+    <div class="card stack">
+      <button onclick="browseNoTag()">Add a new item</button>
+      <button class="ghost" onclick="show('screen-session')">Back</button>
+    </div>
+  </section>
+
+  <!-- MANUAL SHELF -->
+  <section id="screen-manual" class="screen">
+    <div class="card stack">
+      <h1>Enter shelf</h1>
+      <div class="field">
+        <input id="manual-shelf" type="text" autocomplete="off" placeholder="e.g. B1" oninput="this.value=this.value.toUpperCase()"/>
+      </div>
+      <button class="primary" onclick="submitManualShelf()">Look up</button>
+      <button class="ghost" onclick="show('screen-browse')">Back</button>
+    </div>
+  </section>
+
+  <!-- SHELF PICKER (multiple items on one shelf) -->
+  <section id="screen-shelf-picker" class="screen">
+    <div class="card">
+      <h1>Items on shelf <span id="picker-shelf-display"></span></h1>
+      <p class="muted">More than one item lives here. Tap the one you want, or add another.</p>
+    </div>
+    <div id="picker-list" class="card stack"></div>
+    <div class="card stack">
+      <button class="primary" onclick="addAnotherToShelf()">Add another item to this shelf</button>
+      <button class="ghost" onclick="show('screen-browse')">Back to search</button>
+    </div>
+  </section>
+
+  <!-- NEW ITEM (shelf optional) -->
+  <section id="screen-notag" class="screen">
+    <div class="shelf-bind-banner">
+      <span>Bound to shelf <span class="shelf-code"></span> — will auto-fill below</span>
+      <button class="small" onclick="clearShelfBind()">Clear</button>
+    </div>
+    <div class="card stack">
+      <h1>Add new item</h1>
+      <p class="muted">Shelf is optional — leave it blank if you don't have one yet. If it's filled in already, you've got a shelf bind active.</p>
+      <div class="field"><label>Shelf (optional)</label>
+        <input id="notag-shelf" data-shelf-input type="text" placeholder="e.g. B4" oninput="this.value=this.value.toUpperCase()"/></div>
+      <div class="field"><label>Name</label>
+        <input id="notag-name" type="text" placeholder="e.g. Silver bollard"/></div>
+      <div class="field"><label>Brand</label>
+        <input id="notag-brand" type="text" value="Funkified"/></div>
+      <div class="field"><label>Type</label>
+        <input id="notag-type" type="text" placeholder="e.g. Infrastructure / Styling / Owned asset"/></div>
+      <div class="field"><label>Total Qty</label>
+        <input id="notag-qty" type="number" min="0" step="1" value="1"/></div>
+      <div class="field"><label>Notes</label>
+        <textarea id="notag-notes" placeholder="Saved to the Inventory row"></textarea></div>
+      <div class="field">
+        <label>Photo</label>
+        <input type="file" accept="image/*" capture="environment" onchange="handlePhotoInput(event,'notag-photo')"/>
+        <img id="notag-photo" class="photo-preview"/>
+      </div>
+      <button class="primary" onclick="submitNoTag()">Queue item</button>
+      <button class="ghost" onclick="show('screen-browse')">Back</button>
+    </div>
+  </section>
+
+  <!-- NEW ITEM ON SHELF -->
+  <section id="screen-new" class="screen">
+    <div class="shelf-bind-banner">
+      <span>Bound to shelf <span class="shelf-code"></span></span>
+      <button class="small" onclick="clearShelfBind()">Clear</button>
+    </div>
+    <div class="card stack">
+      <h1>New shelf entry</h1>
+      <p class="muted">Shelf <code id="new-shelf-display"></code> isn't set up yet.</p>
+      <div class="field"><label>Shelf</label>
+        <input id="new-shelf" data-shelf-input type="text" oninput="this.value=this.value.toUpperCase()"/></div>
+      <div class="field"><label>Name</label>
+        <input id="new-name" type="text"/></div>
+      <div class="field"><label>Brand</label>
+        <input id="new-brand" type="text" value="Funkified"/></div>
+      <div class="field"><label>Type</label>
+        <input id="new-type" type="text" placeholder="e.g. Infrastructure / Styling / Owned asset"/></div>
+      <div class="field"><label>Total Qty</label>
+        <input id="new-qty" type="number" min="0" step="1" value="1"/></div>
+      <div class="field"><label>Notes</label>
+        <textarea id="new-notes" placeholder="Saved to the Inventory row"></textarea></div>
+      <div class="field">
+        <label>Photo</label>
+        <input type="file" accept="image/*" capture="environment" onchange="handlePhotoInput(event,'new-photo')"/>
+        <img id="new-photo" class="photo-preview"/>
+      </div>
+      <button class="primary" onclick="submitNew()">Register</button>
+      <button class="ghost" onclick="show('screen-browse')">Back</button>
+    </div>
+  </section>
+
+  <!-- EXISTING ITEM MENU -->
+  <section id="screen-existing" class="screen">
+    <div class="card">
+      <div id="existing-details" class="stack"></div>
+    </div>
+    <div class="card stack">
+      <button class="primary" onclick="show('screen-takeout')">Take out</button>
+      <button onclick="show('screen-return')">Return</button>
+      <button onclick="show('screen-damage')">Log damage</button>
+      <button onclick="show('screen-photo')">Add photo</button>
+      <button onclick="show('screen-edit');prefillEdit()">Edit details</button>
+      <button id="btn-load" class="hidden" onclick="show('screen-load')">Load onto job</button>
+      <button class="ghost" onclick="show('screen-browse')">Back</button>
+    </div>
+  </section>
+
+  <!-- TAKE OUT -->
+  <section id="screen-takeout" class="screen">
+    <div class="card stack">
+      <h1>Take out</h1>
+      <div class="field"><label>Qty</label>
+        <div class="qty-row">
+          <button onclick="stepQty('takeout-qty',-1)">−</button>
+          <input id="takeout-qty" type="number" min="1" step="1" value="1"/>
+          <button onclick="stepQty('takeout-qty',1)">+</button>
+        </div></div>
+      <div class="field"><label>Reason / Job</label>
+        <input id="takeout-reason" type="text"/></div>
+      <button class="primary" onclick="submitTakeOut()">Queue take-out</button>
+      <button class="ghost" onclick="show('screen-existing')">Back</button>
+    </div>
+  </section>
+
+  <!-- LOAD (take out AND add to job sheet) -->
+  <section id="screen-load" class="screen">
+    <div class="card stack">
+      <h1>Load onto job</h1>
+      <p class="muted">Job: <strong id="load-job-display">—</strong></p>
+      <div class="field"><label>Qty</label>
+        <div class="qty-row">
+          <button onclick="stepQty('load-qty',-1)">−</button>
+          <input id="load-qty" type="number" min="1" step="1" value="1"/>
+          <button onclick="stepQty('load-qty',1)">+</button>
+        </div></div>
+      <button class="primary" onclick="submitLoad()">Queue load</button>
+      <button class="ghost" onclick="show('screen-existing')">Back</button>
+    </div>
+  </section>
+
+  <!-- RETURN -->
+  <section id="screen-return" class="screen">
+    <div class="card stack">
+      <h1>Return</h1>
+      <div class="field"><label>Qty</label>
+        <div class="qty-row">
+          <button onclick="stepQty('return-qty',-1)">−</button>
+          <input id="return-qty" type="number" min="1" step="1" value="1"/>
+          <button onclick="stepQty('return-qty',1)">+</button>
+        </div></div>
+      <div class="field"><label>Notes</label>
+        <textarea id="return-notes"></textarea></div>
+      <button class="primary" onclick="submitReturn()">Queue return</button>
+      <button class="ghost" onclick="show('screen-existing')">Back</button>
+    </div>
+  </section>
+
+  <!-- DAMAGE -->
+  <section id="screen-damage" class="screen">
+    <div class="card stack">
+      <h1>Log damage</h1>
+      <div class="field"><label>Description</label>
+        <textarea id="damage-desc" placeholder="What broke, how"></textarea></div>
+      <div class="field"><label>Severity</label>
+        <select id="damage-severity">
+          <option value="minor">Minor</option>
+          <option value="major">Major</option>
+          <option value="destroyed">Destroyed</option>
+        </select></div>
+      <div class="field">
+        <label>Photo</label>
+        <input type="file" accept="image/*" capture="environment" onchange="handlePhotoInput(event,'damage-photo')"/>
+        <img id="damage-photo" class="photo-preview"/>
+      </div>
+      <button class="primary" onclick="submitDamage()">Queue damage report</button>
+      <button class="ghost" onclick="show('screen-existing')">Back</button>
+    </div>
+  </section>
+
+  <!-- PHOTO UPDATE -->
+  <section id="screen-photo" class="screen">
+    <div class="card stack">
+      <h1>Add photo</h1>
+      <p class="muted">Appends to the Photos column — existing photos are kept.</p>
+      <input type="file" accept="image/*" capture="environment" onchange="handlePhotoInput(event,'update-photo')"/>
+      <img id="update-photo" class="photo-preview"/>
+      <button class="primary" onclick="submitUpdatePhoto()">Queue photo</button>
+      <button class="ghost" onclick="show('screen-existing')">Back</button>
+    </div>
+  </section>
+
+  <!-- EDIT DETAILS -->
+  <section id="screen-edit" class="screen">
+    <div class="card stack">
+      <h1>Edit details</h1>
+      <div class="field"><label>Name</label>
+        <input id="edit-name" type="text"/></div>
+      <div class="field"><label>Brand</label>
+        <input id="edit-brand" type="text"/></div>
+      <div class="field"><label>Type</label>
+        <input id="edit-type" type="text"/></div>
+      <div class="field"><label>Total Qty</label>
+        <input id="edit-qty" type="number" min="0" step="1"/></div>
+      <div class="field"><label>Move to shelf (optional)</label>
+        <input id="edit-newshelf" type="text" placeholder="leave blank to keep" oninput="this.value=this.value.toUpperCase()"/></div>
+      <div class="field"><label>Notes</label>
+        <textarea id="edit-notes" placeholder="Saved to the Inventory row"></textarea></div>
+      <button class="primary" onclick="submitEdit()">Queue edit</button>
+      <button class="ghost" onclick="show('screen-existing')">Back</button>
+    </div>
+  </section>
+
+  <!-- SUCCESS -->
+  <section id="screen-success" class="screen">
+    <div class="card center stack">
+      <h1>Queued ✓</h1>
+      <p class="muted">Syncs automatically when online.</p>
+      <button class="primary" onclick="goScanAnother()">Scan another</button>
+      <button class="ghost" onclick="goHome()">Home</button>
+    </div>
+  </section>
+
+  <!-- PACK A CLIENT ORDER — job picker -->
+  <section id="screen-pack-picker" class="screen">
+    <div class="card stack">
+      <h1>Pack a client order</h1>
+      <p class="muted">Scheduled orders ready to pack. Pending orders are still being edited by the client and don't appear here.</p>
+      <div id="pack-jobs" class="stack"></div>
+      <button class="ghost" onclick="loadPendingJobs()">Refresh</button>
+      <button class="ghost" onclick="show('screen-session')">Back</button>
+    </div>
+  </section>
+
+  <!-- PACK A CLIENT ORDER — pack list -->
+  <section id="screen-pack-list" class="screen">
+    <div class="card">
+      <div id="pack-header"></div>
+    </div>
+    <div class="card">
+      <h2 style="margin-bottom:8px">Items to pack</h2>
+      <p class="muted" style="font-size:13px;margin-top:0">Tap each row as you put it on the trolley. Tap again to undo. Use −/+ if you only packed part of a line.</p>
+      <div id="pack-lines" class="stack"></div>
+    </div>
+    <div class="card stack">
+      <div id="pack-summary" class="muted" style="font-size:13px"></div>
+      <button class="primary" id="btn-pack-submit" onclick="completePack(true)">Submit packed items</button>
+      <button onclick="completePack(false)">Save progress (don't close)</button>
+      <button class="ghost" onclick="show('screen-pack-picker')">Back to jobs</button>
+    </div>
+  </section>
+
+  <!-- PENDING -->
+  <section id="screen-pending" class="screen">
+    <div class="card">
+      <h1>Pending sync</h1>
+      <p class="muted">Items waiting to reach the sheet. Retries happen automatically when online.</p>
+      <div id="pending-list" class="stack"></div>
+      <div class="row" style="margin-top:10px">
+        <button onclick="retryAll()">Retry all</button>
+        <button class="ghost" onclick="show('screen-session')">Back</button>
+      </div>
+    </div>
+  </section>
+</div>
+<div id="toast"></div>
+
+<script>
+/* =========================================================
+   FUNKIFIED — Offline-first Storage client v7
+   Fixes:
+     • Shelf-bind is explicit & clearable (banner has Clear button,
+       and add-new-item flow warns before inheriting it)
+     • Multiple items per shelf: shelves are *locations*, not keys.
+       Uniqueness is (Shelf, Name). Lookup routes you to a picker if
+       the shelf has 2+ items; per-item screens stash rowIdx so every
+       takeOut/return/edit/etc. targets the exact row.
+     • Search results carry rowIdx and open the item directly without
+       a second server round-trip — there's no shelf ambiguity to
+       resolve since the row is named.
+   ========================================================= */
+const ENDPOINT = 'https://script.google.com/macros/s/AKfycbwxhZiH_yrNp7oTWSht6qu7y5sWkKXnMTVAQyEXklnYXEbMQgYhacfhKU4ipJQ-rY6g8g/exec';
+const SHELF_BIND_MINUTES = 10;
+const DRAIN_RETRY_MS = 15000;
+const POST_TIMEOUT_MS = 30000;
+const IN_FLIGHT_TIMEOUT_MS = 60000;
+const PHOTO_MAX_DIM = 1600;       // (legacy) max pre-crop side
+const PHOTO_OUTPUT_DIM = 1000;    // every saved photo ends up this size on each side
+const PHOTO_QUALITY = 0.85;       // JPEG quality, slightly higher now we're cropping
+
+const state = {
+  team:null, mode:null, loadout:null, delivery:null,
+  currentShelf:null, currentItem:null, pendingPhoto:null,
+  shelfBind:null, gps:null
 };
 
-// ─────────── Dispatch shims (called from Code.gs) ───────────
-function jobPackGet(action, params) {
-  // Currently no GET endpoints — keep the hook for future use.
-  return null;
+function toast(msg, ms=2400){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  clearTimeout(toast._t);
+  toast._t=setTimeout(()=>t.classList.remove('show'), ms);
 }
 
-function jobPackPost(action, body) {
-  if (action === 'jobspending') return jsonOut(listPendingJobs_(body));
-  if (action === 'jobpack')     return jsonOut(getJobPack_(body));
-  if (action === 'jobcomplete') return jsonOut(completeJobPack_(body));
-  return null;
+function uuid(){
+  if(crypto&&crypto.randomUUID) return crypto.randomUUID();
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,c=>{
+    const r=Math.random()*16|0,v=c=='x'?r:(r&0x3|0x8); return v.toString(16);});
+}
+function nowIso(){ return new Date().toISOString(); }
+function stepQty(id,delta){
+  const el=document.getElementById(id); if(!el) return;
+  const v=Math.max(1,(parseInt(el.value)||1)+delta);
+  el.value=v;
 }
 
-// ─────────── Sheet helpers specific to Orders sheets ───────────
-function orderSheetName_(client) { return client + ' Orders'; }
-
-// Build a { headerName -> 1-based column index } map from the sheet header row.
-function headerMap_(sheet) {
-  const last = sheet.getLastColumn();
-  if (last < 1) return {};
-  const row = sheet.getRange(1, 1, 1, last).getValues()[0];
-  const map = {};
-  for (let i = 0; i < row.length; i++) {
-    const k = String(row[i] || '').trim();
-    if (k) map[k] = i + 1;
-  }
-  return map;
-}
-
-// Make sure the extra packing columns exist. Returns the up-to-date header map.
-function ensurePackingHeaders_(sheet) {
-  let map = headerMap_(sheet);
-  let nextCol = sheet.getLastColumn() + 1;
-  for (let i = 0; i < JOB_CONFIG.EXTRA_HEADERS.length; i++) {
-    const h = JOB_CONFIG.EXTRA_HEADERS[i];
-    if (!map[h]) {
-      sheet.getRange(1, nextCol).setValue(h).setFontWeight('bold');
-      map[h] = nextCol;
-      nextCol++;
+/* ---------- IndexedDB outbox ---------- */
+const DB_NAME='funkified-db', DB_VERSION=1, STORE_OUTBOX='outbox';
+function openDB(){return new Promise((res,rej)=>{
+  const req=indexedDB.open(DB_NAME,DB_VERSION);
+  req.onupgradeneeded=e=>{
+    const db=e.target.result;
+    if(!db.objectStoreNames.contains(STORE_OUTBOX)){
+      const s=db.createObjectStore(STORE_OUTBOX,{keyPath:'clientId'});
+      s.createIndex('createdAt','createdAt');
+      s.createIndex('status','status');
     }
-  }
-  sheet.setFrozenRows(1);
-  return map;
-}
-
-// Read all rows of an Orders sheet with a header-name lookup.
-// Returns { headers, rows: [{ _row, Order ID, ... }] }.
-function readOrders_(sheet) {
-  const last = sheet.getLastRow();
-  if (last < 2) return { headers: headerMap_(sheet), rows: [] };
-  const width = sheet.getLastColumn();
-  const values = sheet.getRange(2, 1, last - 1, width).getValues();
-  const headers = headerMap_(sheet);
-  const rows = [];
-  for (let i = 0; i < values.length; i++) {
-    const o = { _row: i + 2 };
-    for (const k in headers) {
-      o[k] = values[i][headers[k] - 1];
-    }
-    rows.push(o);
-  }
-  return { headers, rows };
-}
-
-// Pull the display-friendly drop-off date and address fields from an order row,
-// regardless of whether the sheet uses the original "Delivered By/Picked Up By/
-// Drop-off Address" schema or the newer schedule schema ("Drop-off Date/Time /
-// Pick-up Date/Time / Delivery Address / Access Notes").
-function extractMeta_(row) {
-  const dropoffWhen =
-    row['Drop-off Date/Time'] || row['Drop-off Date'] || '';
-  const pickupWhen =
-    row['Pick-up Date/Time'] || row['Pick-up Date'] || '';
-  const address =
-    row['Delivery Address'] || row['Drop-off Address'] || '';
-  const notes =
-    row['Access Notes'] || row['Notes'] || '';
-  const deliveredBy = row['Delivered By'] || '';
-  const pickedUpBy  = row['Picked Up By']  || '';
-  return {
-    dropoffWhen: dropoffWhen instanceof Date ? dropoffWhen.toISOString() : String(dropoffWhen || ''),
-    pickupWhen:  pickupWhen  instanceof Date ? pickupWhen.toISOString()  : String(pickupWhen  || ''),
-    address: String(address || ''),
-    notes:   String(notes || ''),
-    deliveredBy: String(deliveredBy || ''),
-    pickedUpBy:  String(pickedUpBy || '')
   };
+  req.onsuccess=()=>res(req.result); req.onerror=()=>rej(req.error);
+});}
+function idbTx(store,mode='readonly'){return openDB().then(db=>{const tx=db.transaction(store,mode);return{tx,store:tx.objectStore(store)};});}
+async function idbPut(s,v){const{store}=await idbTx(s,'readwrite');return new Promise((r,j)=>{const q=store.put(v);q.onsuccess=()=>r(q.result);q.onerror=()=>j(q.error);});}
+async function idbGet(s,k){const{store}=await idbTx(s);return new Promise((r,j)=>{const q=store.get(k);q.onsuccess=()=>r(q.result);q.onerror=()=>j(q.error);});}
+async function idbDelete(s,k){const{store}=await idbTx(s,'readwrite');return new Promise((r,j)=>{const q=store.delete(k);q.onsuccess=()=>r();q.onerror=()=>j(q.error);});}
+async function idbGetAll(s){const{store}=await idbTx(s);return new Promise((r,j)=>{const q=store.getAll();q.onsuccess=()=>r(q.result||[]);q.onerror=()=>j(q.error);});}
+async function idbCount(s){const{store}=await idbTx(s);return new Promise((r,j)=>{const q=store.count();q.onsuccess=()=>r(q.result);q.onerror=()=>j(q.error);});}
+
+/* ---------- Online bar + pending chip ---------- */
+function updateOnlineBar(){
+  const bar=document.getElementById('offline-bar'); if(!bar)return;
+  navigator.onLine?bar.classList.remove('show'):bar.classList.add('show');
 }
-
-// ─────────── Action: list pending jobs ───────────
-function listPendingJobs_(body) {
-  const jobs = [];
-  for (let c = 0; c < JOB_CONFIG.CLIENTS.length; c++) {
-    const client = JOB_CONFIG.CLIENTS[c];
-    const sheet = ss().getSheetByName(orderSheetName_(client));
-    if (!sheet) continue;
-    const { rows } = readOrders_(sheet);
-
-    // Group rows by Order ID so each job is a single picker item.
-    const byOrder = {};
-    for (let i = 0; i < rows.length; i++) {
-      const r = rows[i];
-      const status = String(r['Status'] || '').trim();
-      if (JOB_CONFIG.PICKABLE_STATUSES.indexOf(status) < 0) continue;
-      const id = String(r['Order ID'] || '').trim();
-      if (!id) continue;
-      if (!byOrder[id]) {
-        byOrder[id] = {
-          orderId: id,
-          client,
-          status,
-          jobName: String(r['Job Name'] || '').trim(),
-          placedBy: String(r['Placed By'] || '').trim(),
-          createdAt: r['Timestamp'] instanceof Date ? r['Timestamp'].toISOString() : String(r['Timestamp'] || ''),
-          meta: extractMeta_(r),
-          lineCount: 0,
-          unitsOrdered: 0,
-          unitsPacked: 0
-        };
-      }
-      const qty    = Number(r['Qty']) || 0;
-      const packed = Number(r['Packed Qty']) || 0;
-      byOrder[id].lineCount++;
-      byOrder[id].unitsOrdered += qty;
-      byOrder[id].unitsPacked  += packed;
-    }
-    for (const id in byOrder) {
-      const j = byOrder[id];
-      j.unitsOutstanding = Math.max(0, j.unitsOrdered - j.unitsPacked);
-      jobs.push(j);
-    }
-  }
-  // Sort by drop-off date ascending (closest delivery first), then by
-  // status so Scheduled appears before Partial.
-  jobs.sort(function (a, b) {
-    const ad = Date.parse(a.meta.dropoffWhen) || 0;
-    const bd = Date.parse(b.meta.dropoffWhen) || 0;
-    if (ad !== bd) return ad - bd;
-    if (a.status !== b.status) return a.status === 'Scheduled' ? -1 : 1;
-    return String(a.createdAt).localeCompare(String(b.createdAt));
-  });
-  return { success: true, jobs };
-}
-
-// ─────────── Action: get a single job's pack-list ───────────
-function getJobPack_(body) {
-  const orderId = String(body.orderId || '').trim();
-  if (!orderId) return { success: false, error: 'orderId required' };
-
-  // Find which client sheet the order is on.
-  let sheet = null, rowsForOrder = [];
-  for (let c = 0; c < JOB_CONFIG.CLIENTS.length; c++) {
-    const client = JOB_CONFIG.CLIENTS[c];
-    const s = ss().getSheetByName(orderSheetName_(client));
-    if (!s) continue;
-    const { rows } = readOrders_(s);
-    const match = rows.filter(function (r) { return String(r['Order ID'] || '').trim() === orderId; });
-    if (match.length) { sheet = s; rowsForOrder = match; break; }
-  }
-  if (!sheet || !rowsForOrder.length) return { success: false, error: 'Order not found: ' + orderId };
-
-  const inv = getSheet(CONFIG.SHEET_INVENTORY); ensureHeaders(inv, INV_HEADER);
-  const head = rowsForOrder[0];
-  const meta = extractMeta_(head);
-
-  // Build the packing lines. Look up current available for each shelf.
-  const items = rowsForOrder.map(function (r) {
-    const shelf = normShelf(r['Shelf']);
-    const qty   = Number(r['Qty']) || 0;
-    const packed = Number(r['Packed Qty']) || 0;
-    let available = null, invName = '', totalQty = 0, qtyOut = 0;
-    if (shelf) {
-      const rIdx = findRowByShelf(inv, shelf);
-      if (rIdx > 0) {
-        const cur = readRow(inv, rIdx);
-        invName = cur.name;
-        totalQty = Number(cur.totalQty) || 0;
-        qtyOut   = Number(cur.qtyOut) || 0;
-        available = Math.max(0, totalQty - qtyOut);
-      }
-    }
-    return {
-      shelf,
-      itemName: String(r['Item Name'] || invName || ''),
-      qtyOrdered: qty,
-      qtyPacked: packed,
-      qtyOutstanding: Math.max(0, qty - packed),
-      available,       // null if shelf unknown / not registered yet
-      totalQty,
-      qtyOut
-    };
-  });
-
-  return {
-    success: true,
-    orderId,
-    client: String(head['Client'] || '').trim(),
-    status: String(head['Status'] || '').trim(),
-    jobName: String(head['Job Name'] || '').trim(),
-    placedBy: String(head['Placed By'] || '').trim(),
-    createdAt: head['Timestamp'] instanceof Date ? head['Timestamp'].toISOString() : String(head['Timestamp'] || ''),
-    meta,
-    items
-  };
-}
-
-// ─────────── Action: complete (scan off) a job's items ───────────
-//
-// body.scans: [{ shelf, qty, extra? }]
-//   - shelf is the key; qty is how many to pack in THIS call
-//   - extra=true means it isn't on the packing list (still decrements
-//     inventory + logs, but doesn't count against any order line)
-// body.closeOut: if true, set the order's final status now:
-//   - On-site if every line fully packed
-//   - Partial otherwise (stays pickable — you can finish later)
-//
-function completeJobPack_(body) {
-  const orderId = String(body.orderId || '').trim();
-  if (!orderId) return { success: false, error: 'orderId required' };
-  const scans = Array.isArray(body.scans) ? body.scans : [];
-  if (!scans.length) return { success: false, error: 'No scans submitted' };
-
-  // Find the order sheet and rows.
-  let sheet = null, rowMap = {}, client = '';
-  for (let c = 0; c < JOB_CONFIG.CLIENTS.length; c++) {
-    const s = ss().getSheetByName(orderSheetName_(JOB_CONFIG.CLIENTS[c]));
-    if (!s) continue;
-    const { rows } = readOrders_(s);
-    const match = rows.filter(function (r) { return String(r['Order ID'] || '').trim() === orderId; });
-    if (match.length) {
-      sheet = s;
-      client = JOB_CONFIG.CLIENTS[c];
-      // Map shelf -> row(s). Preserve order so first-come, first-served.
-      match.forEach(function (r) {
-        const shelf = normShelf(r['Shelf']);
-        if (!rowMap[shelf]) rowMap[shelf] = [];
-        rowMap[shelf].push(r);
-      });
-      break;
-    }
-  }
-  if (!sheet) return { success: false, error: 'Order not found: ' + orderId };
-
-  const headers = ensurePackingHeaders_(sheet);
-  const inv = getSheet(CONFIG.SHEET_INVENTORY); ensureHeaders(inv, INV_HEADER);
-  const team = String(body.team || '').trim();
-  const now = nowDate();
-
-  const applied = [];   // { shelf, qtyApplied, extra, shortOfRequest }
-  const warnings = [];
-
-  for (let i = 0; i < scans.length; i++) {
-    const scan = scans[i] || {};
-    const shelf = normShelf(scan.shelf);
-    let qty = Math.max(1, Number(scan.qty) || 1);
-    const extra = !!scan.extra;
-    if (!shelf) { warnings.push({ reason: 'blank-shelf', scan }); continue; }
-
-    // Decrement inventory (mirrors actTakeOut behaviour).
-    const rIdx = findRowByShelf(inv, shelf);
-    if (rIdx < 0) {
-      warnings.push({ shelf, reason: 'shelf-not-in-inventory' });
-      continue;
-    }
-    const cur = readRow(inv, rIdx);
-    const total = Number(cur.totalQty) || 0;
-    const curOut = Number(cur.qtyOut) || 0;
-    const availableNow = Math.max(0, total - curOut);
-    const willTake = total ? Math.min(qty, availableNow) : qty;
-    if (willTake <= 0) {
-      warnings.push({ shelf, name: cur.name, reason: 'out-of-stock' });
-      continue;
-    }
-    const newOut = total ? Math.min(total, curOut + willTake) : curOut + willTake;
-    inv.getRange(rIdx, INV_COLS.QtyOut).setValue(newOut);
-    inv.getRange(rIdx, INV_COLS.Status)
-       .setValue(total && newOut >= total ? 'out' : (newOut > 0 ? 'partial' : 'in'));
-    inv.getRange(rIdx, INV_COLS.LastScanned).setValue(now);
-    inv.getRange(rIdx, INV_COLS.LastScannedBy).setValue(team);
-
-    // Allocate to order lines by shelf (fill earliest outstanding lines first).
-    let remaining = willTake;
-    const linesForShelf = rowMap[shelf] || [];
-    if (!extra) {
-      for (let j = 0; j < linesForShelf.length && remaining > 0; j++) {
-        const line = linesForShelf[j];
-        const ordered = Number(line['Qty']) || 0;
-        const already = Number(line['Packed Qty']) || 0;
-        const room = Math.max(0, ordered - already);
-        if (room <= 0) continue;
-        const take = Math.min(room, remaining);
-        const newPacked = already + take;
-        sheet.getRange(line._row, headers['Packed Qty']).setValue(newPacked);
-        sheet.getRange(line._row, headers['Packed By']).setValue(team);
-        sheet.getRange(line._row, headers['Packed At']).setValue(now);
-        // Keep this in-memory too so subsequent scans against the same shelf see it.
-        line['Packed Qty'] = newPacked;
-        remaining -= take;
-      }
-    }
-
-    // If there's leftover qty and it wasn't marked extra, flag it.
-    if (remaining > 0 && !extra) {
-      warnings.push({ shelf, name: cur.name, reason: 'over-packed', over: remaining });
-    }
-
-    appendScan(
-      { team, gpsLat: scan.gpsLat, gpsLng: scan.gpsLng, locationLabel: scan.locationLabel },
-      shelf, cur.name,
-      extra ? 'PACK (EXTRA): ' + orderId + ' ×' + willTake
-            : 'PACK: ' + orderId + ' ×' + willTake,
-      orderId
-    );
-
-    applied.push({
-      shelf,
-      name: cur.name,
-      qtyApplied: willTake,
-      qtyRequested: qty,
-      extra,
-      shortOfRequest: qty - willTake
+async function updatePendingChip(){
+  try{
+    const n=await idbCount(STORE_OUTBOX);
+    document.querySelectorAll('.pending-chip').forEach(el=>{
+      el.textContent=n>0?String(n):'';
+      el.style.display=n>0?'inline-flex':'none';
     });
-  }
+  }catch(_){}
+}
 
-  // Recompute order status after applying scans.
-  const fresh = readOrders_(sheet).rows.filter(function (r) { return String(r['Order ID'] || '').trim() === orderId; });
-  const allPacked = fresh.every(function (r) {
-    const ordered = Number(r['Qty']) || 0;
-    const packed  = Number(r['Packed Qty']) || 0;
-    return packed >= ordered;
-  });
-  const anyPacked = fresh.some(function (r) { return (Number(r['Packed Qty']) || 0) > 0; });
+/* ---------- Envelope + photo compression ---------- */
+function buildEnvelope(action,payload){
+  return{clientId:uuid(),action,payload,createdAt:nowIso(),attempts:0,status:'queued',inFlightAt:null,lastError:null};
+}
+function fileToDataUrl(f){return new Promise((r,j)=>{const x=new FileReader();x.onload=()=>r(x.result);x.onerror=()=>j(x.error);x.readAsDataURL(f);});}
+function loadImage(u){return new Promise((r,j)=>{const i=new Image();i.onload=()=>r(i);i.onerror=()=>j(new Error('img'));i.src=u;});}
+// Square-crop + uniform-resize. Every saved photo is exactly
+// PHOTO_OUTPUT_DIM × PHOTO_OUTPUT_DIM JPEG. This makes the catalogue
+// grid look intentional even when individual photos are scrappy:
+//   1. Centre-crop the source to its largest inscribed square.
+//   2. High-quality scale that square to the output dimension.
+//   3. Encode as JPEG at PHOTO_QUALITY.
+// Browsers respect EXIF orientation when drawing modern HTML <img> to
+// canvas, so portrait phone shots come out the right way up.
+async function compressImage(file){
+  if(!file)return null;
+  const dataUrl=await fileToDataUrl(file);
+  const img=await loadImage(dataUrl);
+  const w=img.naturalWidth||img.width, h=img.naturalHeight||img.height;
+  if(!w||!h) throw new Error('image has no dimensions');
 
-  let newStatus = null;
-  if (body.closeOut) {
-    newStatus = allPacked ? JOB_CONFIG.STATUS_ON_SITE : JOB_CONFIG.STATUS_PARTIAL;
-  } else if (allPacked) {
-    // Even without closeOut, if every line is fully packed we're On-site.
-    newStatus = JOB_CONFIG.STATUS_ON_SITE;
-  } else if (anyPacked) {
-    newStatus = JOB_CONFIG.STATUS_PARTIAL;
-  }
+  // Largest centred square that fits in the source.
+  const side=Math.min(w,h);
+  const sx=Math.round((w-side)/2);
+  const sy=Math.round((h-side)/2);
 
-  if (newStatus) {
-    const statusCol = headers['Status'];
-    for (let i = 0; i < fresh.length; i++) {
-      sheet.getRange(fresh[i]._row, statusCol).setValue(newStatus);
+  // Output canvas — fixed dimension, regardless of source size.
+  const c=document.createElement('canvas');
+  c.width=PHOTO_OUTPUT_DIM; c.height=PHOTO_OUTPUT_DIM;
+  const ctx=c.getContext('2d');
+  // Higher-quality bilinear scaling on browsers that support it.
+  if('imageSmoothingQuality' in ctx) ctx.imageSmoothingQuality='high';
+  ctx.imageSmoothingEnabled=true;
+  // White fill underneath in case the JPEG encoder ever sees transparency
+  // (rare with <img>, but defensive — keeps any edge artifacts white).
+  ctx.fillStyle='#ffffff';
+  ctx.fillRect(0,0,PHOTO_OUTPUT_DIM,PHOTO_OUTPUT_DIM);
+  ctx.drawImage(img, sx, sy, side, side, 0, 0, PHOTO_OUTPUT_DIM, PHOTO_OUTPUT_DIM);
+
+  return c.toDataURL('image/jpeg', PHOTO_QUALITY);
+}
+async function handlePhotoInput(ev,previewId){
+  const f=ev.target.files&&ev.target.files[0]; if(!f)return;
+  try{
+    const dataUrl=await compressImage(f);
+    state.pendingPhoto={dataUrl};
+    if(previewId){const img=document.getElementById(previewId);if(img){img.src=dataUrl;img.style.display='block';}}
+    toast('Photo ready');
+  }catch(_){toast('Photo error');}
+}
+
+/* ---------- Enqueue + Drain ---------- */
+async function enqueue(action,payload){
+  const env=buildEnvelope(action,payload);
+  await idbPut(STORE_OUTBOX,env);
+  updatePendingChip();
+  drainOutbox().catch(()=>{});
+  return env.clientId;
+}
+
+let _drainLock=false;
+async function drainOutbox(manual=false){
+  if(_drainLock)return;
+  _drainLock=true;
+  try{
+    if(!navigator.onLine)return;
+    const now=Date.now();
+    const all=await idbGetAll(STORE_OUTBOX);
+    for(const env of all){
+      if(env.status==='in_flight'&&env.inFlightAt&&(now-new Date(env.inFlightAt).getTime())>IN_FLIGHT_TIMEOUT_MS){
+        env.status='queued'; env.inFlightAt=null; await idbPut(STORE_OUTBOX,env);
+      }
     }
-  }
+    const fresh=(await idbGetAll(STORE_OUTBOX))
+      .filter(e=>e.status==='queued'||(manual&&e.status==='failed'))
+      .sort((a,b)=>a.createdAt<b.createdAt?-1:1);
+    for(const env of fresh){
+      if(!navigator.onLine)break;
+      env.status='in_flight'; env.inFlightAt=nowIso(); env.attempts=(env.attempts||0)+1;
+      await idbPut(STORE_OUTBOX,env);
+      let result;
+      try{ result=await postEnvelope(env); }
+      catch(err){
+        env.status='queued'; env.inFlightAt=null; env.lastError=String(err&&err.message||err);
+        await idbPut(STORE_OUTBOX,env); break;
+      }
+      if(result&&result.success){
+        await idbDelete(STORE_OUTBOX,env.clientId);
+      }else{
+        env.status='failed';
+        env.lastError=(result&&result.error)?result.error:'Unknown server error';
+        env.serverResponse=result||null;
+        await idbPut(STORE_OUTBOX,env);
+        // Surface shelf-conflict errors immediately so the user can act.
+        if (result && result.conflict) {
+          toast(result.error || 'Shelf conflict — check queue');
+        }
+      }
+      updatePendingChip(); renderPendingList();
+    }
+  }finally{ _drainLock=false; }
+}
+async function postEnvelope(env){
+  const body=Object.assign({clientId:env.clientId,action:env.action},env.payload);
+  const ctrl=new AbortController();
+  const tid=setTimeout(()=>ctrl.abort(),POST_TIMEOUT_MS);
+  try{
+    const res=await fetch(ENDPOINT,{method:'POST',mode:'cors',
+      headers:{'Content-Type':'text/plain;charset=utf-8'},
+      body:JSON.stringify(body),signal:ctrl.signal});
+    const text=await res.text();
+    let json; try{json=JSON.parse(text);}catch(_){throw new Error('Bad server response');}
+    return json;
+  }finally{ clearTimeout(tid); }
+}
 
+/* ---------- Screen + banners ---------- */
+function show(id){
+  document.querySelectorAll('.screen').forEach(el=>el.classList.remove('active'));
+  const el=document.getElementById(id); if(el) el.classList.add('active');
+  window.scrollTo(0,0); renderShelfBanners();
+}
+
+/* ---------- Shelf bind ---------- */
+function getShelfBind(){if(!state.shelfBind)return null;if(Date.now()>state.shelfBind.until){state.shelfBind=null;return null;}return state.shelfBind.code;}
+function setShelfBind(code){
+  if(!code){state.shelfBind=null;sessionStorage.removeItem('shelfBind');renderShelfBanners();return;}
+  state.shelfBind={code:code.toUpperCase(),until:Date.now()+SHELF_BIND_MINUTES*60*1000};
+  sessionStorage.setItem('shelfBind',JSON.stringify(state.shelfBind));
+  renderShelfBanners();
+}
+function clearShelfBind(){
+  setShelfBind(null);
+  // Also clear any auto-filled shelf input values so the user starts fresh.
+  document.querySelectorAll('input[data-shelf-input]').forEach(i=>{i.value='';});
+  toast('Shelf bind cleared');
+}
+function renderShelfBanners(){
+  const code=getShelfBind();
+  document.querySelectorAll('.shelf-bind-banner').forEach(b=>{
+    if(code){b.style.display='flex';const s=b.querySelector('.shelf-code');if(s)s.textContent=code;}
+    else b.style.display='none';
+  });
+  if(code) document.querySelectorAll('input[data-shelf-input]').forEach(i=>{if(!i.value)i.value=code;});
+}
+
+/* ---------- URL params ---------- */
+function parseParams(){
+  const p=new URLSearchParams(location.search);
+  const shelf=p.get('shelf')||p.get('id');
+  if(shelf) setShelfBind(shelf.toUpperCase());
+  return{shelf};
+}
+
+/* ---------- Session persistence ---------- */
+function saveSession(){sessionStorage.setItem('funkSession',JSON.stringify({team:state.team,mode:state.mode,loadout:state.loadout,delivery:state.delivery}));}
+function restoreSession(){
+  try{
+    const raw=sessionStorage.getItem('funkSession');
+    if(raw){const s=JSON.parse(raw);state.team=s.team||null;state.mode=s.mode||null;state.loadout=s.loadout||null;state.delivery=s.delivery||null;}
+    const sb=sessionStorage.getItem('shelfBind');
+    if(sb){const p=JSON.parse(sb);if(p.until&&Date.now()<p.until)state.shelfBind=p;}
+  }catch(_){}
+  updateTeamUI();
+  renderRecentNames();
+  // If we have a current team and it's not in recent list, add it (carry-over from before this feature shipped).
+  if(state.team) rememberName(state.team);
+}
+
+/* ---------- Service worker ---------- */
+async function registerSW(){
+  if(!('serviceWorker' in navigator))return;
+  try{const reg=await navigator.serviceWorker.register('./sw.js');
+    if(reg.waiting) reg.waiting.postMessage({type:'SKIP_WAITING'});
+  }catch(e){console.warn('SW register failed',e);}
+}
+
+/* ---------- GPS ---------- */
+function tryGetGPS(){
+  if(!navigator.geolocation)return;
+  navigator.geolocation.getCurrentPosition(pos=>{
+    state.gps={lat:pos.coords.latitude,lng:pos.coords.longitude,acc:pos.coords.accuracy};
+  },()=>{}, {enableHighAccuracy:true,timeout:8000,maximumAge:60000});
+}
+function gpsPayload(){
+  if(!state.gps)return{};
+  return{gpsLat:state.gps.lat,gpsLng:state.gps.lng,gpsAccuracy:state.gps.acc};
+}
+
+/* ---------- Online events + periodic drain ---------- */
+window.addEventListener('online',()=>{updateOnlineBar();drainOutbox().catch(()=>{});});
+window.addEventListener('offline',updateOnlineBar);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)drainOutbox().catch(()=>{});});
+setInterval(()=>{if(navigator.onLine)drainOutbox().catch(()=>{});},DRAIN_RETRY_MS);
+
+/* ---------- Team + mode ---------- */
+const RECENT_NAMES_KEY='funkRecentNames';
+const RECENT_NAMES_MAX=8;
+function loadRecentNames(){
+  try{const raw=localStorage.getItem(RECENT_NAMES_KEY);return raw?JSON.parse(raw):[];}
+  catch(_){return[];}
+}
+function saveRecentNames(list){
+  try{localStorage.setItem(RECENT_NAMES_KEY,JSON.stringify(list.slice(0,RECENT_NAMES_MAX)));}catch(_){}
+}
+// Add a name to the recent list, MRU-first. No-op if blank.
+function rememberName(name){
+  const n=String(name||'').trim();
+  if(!n) return;
+  const list=loadRecentNames().filter(x=>x.toLowerCase()!==n.toLowerCase());
+  list.unshift(n);
+  saveRecentNames(list);
+  renderRecentNames();
+}
+function rememberCurrentName(){if(state.team) rememberName(state.team);}
+function forgetName(name){
+  const n=String(name||'').trim().toLowerCase();
+  saveRecentNames(loadRecentNames().filter(x=>x.toLowerCase()!==n));
+  renderRecentNames();
+}
+function renderRecentNames(){
+  const host=document.getElementById('recent-names');
+  if(!host) return;
+  const list=loadRecentNames();
+  if(!list.length){host.innerHTML='';return;}
+  const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,
+    c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  host.innerHTML=list.map(n=>{
+    const sel=state.team && state.team.toLowerCase()===n.toLowerCase();
+    return `<span class="name-chip ${sel?'selected':''}" data-name="${esc(n)}">
+      <button class="pick" onclick="pickRecentName('${esc(n)}')">${esc(n)}</button>
+      <button class="x" title="Remove" onclick="forgetName('${esc(n)}');event.stopPropagation();">×</button>
+    </span>`;
+  }).join('');
+}
+function pickRecentName(n){
+  setTeam(n);
+  rememberName(n); // bump MRU
+  toast('Hi '+n);
+}
+function setTeam(t){
+  state.team=(t||'').trim()||null;
+  saveSession();
+  updateTeamUI();
+  renderRecentNames(); // re-renders so the chip highlights
+}
+function updateTeamUI(){
+  document.querySelectorAll('[data-team-display]').forEach(el=>el.textContent=state.team||'—');
+  const other=document.getElementById('team-other');
+  if(other && state.team) other.value=state.team;
+}
+function startMode(mode){
+  if(!state.team){toast('Pick a team first');return;}
+  state.mode=mode; saveSession();
+  if(mode==='sort')show('screen-browse');
+  else if(mode==='loadout')show('screen-loadout-setup');
+  else if(mode==='delivery')show('screen-delivery-setup');
+  else if(mode==='pack'){show('screen-pack-picker'); loadPendingJobs();}
+}
+function submitLoadoutSetup(){
+  const jobName=(document.getElementById('loadout-job')||{}).value?.trim();
+  if(!jobName){toast('Enter a job name');return;}
+  state.loadout={jobName,team:state.team}; saveSession();
+  show('screen-browse');
+}
+
+/* ---------- Pack-a-client-order helpers ---------- */
+async function directPost(action, payload){
+  const body = Object.assign({ clientId: uuid(), action }, payload || {});
+  const ctrl = new AbortController();
+  const tid = setTimeout(()=>ctrl.abort(), POST_TIMEOUT_MS);
+  try {
+    const res = await fetch(ENDPOINT, {
+      method:'POST', mode:'cors',
+      headers:{'Content-Type':'text/plain;charset=utf-8'},
+      body: JSON.stringify(body), signal: ctrl.signal
+    });
+    const txt = await res.text();
+    try { return JSON.parse(txt); }
+    catch(_){ throw new Error('Bad server response'); }
+  } finally { clearTimeout(tid); }
+}
+
+function fmtDate(iso){
+  if(!iso) return '—';
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return String(iso);
+  return d.toLocaleString('en-AU',{ weekday:'short', day:'numeric', month:'short',
+    hour:'2-digit', minute:'2-digit' });
+}
+
+async function loadPendingJobs(){
+  const host = document.getElementById('pack-jobs');
+  host.innerHTML = '<div class="muted">Loading…</div>';
+  try {
+    const res = await directPost('jobsPending', { team: state.team || '' });
+    if (!res || !res.success) {
+      host.innerHTML = '<div class="err-line">'+((res&&res.error)||'Could not load jobs')+'</div>';
+      return;
+    }
+    renderPackPicker(res.jobs || []);
+  } catch(e) {
+    host.innerHTML = '<div class="err-line">Network error. Check connection and tap Refresh.</div>';
+  }
+}
+
+function renderPackPicker(jobs){
+  const host = document.getElementById('pack-jobs');
+  if (!jobs.length){
+    host.innerHTML = '<div class="muted">No scheduled orders. Once we mark a Pending order as Scheduled in the sheet (after quoting), it\'ll appear here.</div>';
+    return;
+  }
+  const esc = s => String(s==null?'':s).replace(/[&<>"']/g,
+    c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  host.innerHTML = jobs.map(j => {
+    const meta = j.meta || {};
+    const pillClass = j.status === 'Partial' ? 'pill pill-warn' : 'pill pill-ok';
+    const outstanding = (j.unitsOutstanding != null) ? j.unitsOutstanding : j.unitsOrdered;
+    const title = j.jobName || j.orderId;
+    const placedBy = j.placedBy ? `<div><span class="muted">Placed by:</span> ${esc(j.placedBy)}</div>` : '';
+    return `
+      <div class="pending-item" style="cursor:pointer" onclick="selectPackJob('${esc(j.orderId)}')">
+        <div class="pending-row">
+          <span class="${pillClass}">${esc(j.status||'Scheduled')}</span>
+          <strong>${esc(title)}</strong>
+        </div>
+        <div class="pending-body">
+          <div><span class="muted">Drop-off:</span> ${esc(fmtDate(meta.dropoffWhen))}</div>
+          <div><span class="muted">To:</span> ${esc(meta.address||'—')}</div>
+          ${placedBy}
+          <div><span class="muted">Items:</span> ${j.lineCount} lines · ${outstanding} of ${j.unitsOrdered} units outstanding</div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+/* ---------- Pack-a-job: stage 3 ----------
+   state.packJob shape:
+     { orderId, client, jobName, placedBy, meta, items: [{
+         shelf, itemName, qtyOrdered, qtyPacked (server),
+         qtyOutstanding (= ordered - server), packLocal (= 0..outstanding)
+       }] }
+   Each item starts with packLocal=0. The user taps a row to set
+   packLocal to qtyOutstanding (full pack); tap again sets it back to
+   0; the −/+ buttons let them set any qty in between for partial packs.
+   Submit sends one scan per non-zero packLocal line.
+*/
+async function selectPackJob(orderId){
+  const host = document.getElementById('pack-lines');
+  if (host) host.innerHTML = '<div class="muted">Loading…</div>';
+  show('screen-pack-list');
+  try {
+    const res = await directPost('jobPack', { orderId, team: state.team || '' });
+    if (!res || !res.success){
+      if (host) host.innerHTML = '<div class="err-line">'+((res&&res.error)||'Could not load')+'</div>';
+      return;
+    }
+    state.packJob = {
+      orderId,
+      client:    res.client,
+      status:    res.status,
+      jobName:   res.jobName || '',
+      placedBy:  res.placedBy || '',
+      meta:      res.meta || {},
+      items: (res.items || []).map(it => Object.assign({}, it, { packLocal: 0 }))
+    };
+    renderPackHeader();
+    renderPackLines();
+    updatePackSummary();
+  } catch(e) {
+    if (host) host.innerHTML = '<div class="err-line">Network error. Tap Refresh on the picker.</div>';
+  }
+}
+
+function renderPackHeader(){
+  const host = document.getElementById('pack-header');
+  if (!host || !state.packJob) return;
+  const j = state.packJob;
+  const meta = j.meta || {};
+  const esc = s => String(s==null?'':s).replace(/[&<>"']/g,
+    c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  host.innerHTML = `
+    <h1 style="margin:0 0 4px">${esc(j.jobName || j.orderId)}</h1>
+    <div class="muted" style="font-size:12px;margin-bottom:6px"><code>${esc(j.orderId)}</code> · ${esc(j.status)}</div>
+    <div><span class="muted">Drop-off:</span> ${esc(fmtDate(meta.dropoffWhen))}</div>
+    <div><span class="muted">To:</span> ${esc(meta.address||'—')}</div>
+    ${j.placedBy ? `<div><span class="muted">Placed by:</span> ${esc(j.placedBy)}</div>` : ''}
+  `;
+}
+
+function renderPackLines(){
+  const host = document.getElementById('pack-lines');
+  if (!host || !state.packJob) return;
+  const items = state.packJob.items || [];
+  if (!items.length){
+    host.innerHTML = '<div class="muted">This order has no items on file.</div>';
+    return;
+  }
+  const esc = s => String(s==null?'':s).replace(/[&<>"']/g,
+    c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  host.innerHTML = items.map((it, idx) => {
+    const outstanding = Number(it.qtyOutstanding) || 0;
+    const local = Number(it.packLocal) || 0;
+    const fullyPacked = local >= outstanding && outstanding > 0;
+    const noneOutstanding = outstanding === 0;
+    const cls = ['pack-line'];
+    if (fullyPacked) cls.push('done');
+    if (noneOutstanding) cls.push('done');
+    const indicator = (fullyPacked || noneOutstanding) ? '✓' : (local > 0 ? '◐' : '○');
+    const availLine = (it.available != null)
+      ? `<span class="muted">Available on shelf: ${it.available}</span>`
+      : '<span class="muted">Shelf not on inventory yet</span>';
+    return `
+      <div class="${cls.join(' ')}" data-idx="${idx}">
+        <div class="pack-row">
+          <span class="pack-tick" onclick="togglePackLine(${idx})">${indicator}</span>
+          <div style="flex:1;min-width:0">
+            <div class="pack-name">${esc(it.itemName||'(no name)')}</div>
+            <div class="pack-meta">
+              <span><strong>${esc(it.shelf||'(no shelf)')}</strong></span>
+              <span class="muted">·</span>
+              <span>${noneOutstanding ? 'Already packed' : (outstanding + ' to pack')}</span>
+              <span class="muted">·</span>
+              ${availLine}
+            </div>
+          </div>
+        </div>
+        ${noneOutstanding ? '' : `
+          <div class="pack-stepper">
+            <button class="small" onclick="adjustPackLocal(${idx},-1)">−</button>
+            <input type="number" min="0" max="${outstanding}" value="${local}"
+                   onchange="setPackLocal(${idx}, this.value)"/>
+            <button class="small" onclick="adjustPackLocal(${idx},1)">+</button>
+            <span class="muted" style="margin-left:8px;font-size:12px">of ${outstanding}</span>
+          </div>`}
+      </div>`;
+  }).join('');
+}
+
+function togglePackLine(idx){
+  const it = state.packJob && state.packJob.items[idx];
+  if (!it) return;
+  const outstanding = Number(it.qtyOutstanding) || 0;
+  if (outstanding <= 0) return; // already packed in a prior session
+  it.packLocal = (Number(it.packLocal) || 0) >= outstanding ? 0 : outstanding;
+  renderPackLines();
+  updatePackSummary();
+}
+function setPackLocal(idx, v){
+  const it = state.packJob && state.packJob.items[idx];
+  if (!it) return;
+  const outstanding = Number(it.qtyOutstanding) || 0;
+  let n = parseInt(v, 10) || 0;
+  if (n < 0) n = 0;
+  if (n > outstanding) n = outstanding;
+  it.packLocal = n;
+  renderPackLines();
+  updatePackSummary();
+}
+function adjustPackLocal(idx, delta){
+  const it = state.packJob && state.packJob.items[idx];
+  if (!it) return;
+  setPackLocal(idx, (Number(it.packLocal) || 0) + delta);
+}
+
+function updatePackSummary(){
+  const host = document.getElementById('pack-summary');
+  if (!host || !state.packJob) return;
+  const items = state.packJob.items || [];
+  const totalOutstanding = items.reduce((s, it) => s + (Number(it.qtyOutstanding) || 0), 0);
+  const totalLocal       = items.reduce((s, it) => s + (Number(it.packLocal) || 0), 0);
+  const remaining = Math.max(0, totalOutstanding - totalLocal);
+  const allDone = totalOutstanding > 0 && remaining === 0;
+  host.textContent = allDone
+    ? 'All ' + totalOutstanding + ' units ticked off — submit to update inventory.'
+    : (totalLocal + ' of ' + totalOutstanding + ' units ticked · ' + remaining + ' remaining');
+  const btn = document.getElementById('btn-pack-submit');
+  if (btn) btn.textContent = allDone ? 'Submit & complete' : 'Submit packed items';
+}
+
+async function completePack(closeOut){
+  if (!state.packJob) { toast('No job loaded'); return; }
+  const items = state.packJob.items || [];
+  const scans = items
+    .filter(it => (Number(it.packLocal) || 0) > 0)
+    .map(it => ({ shelf: it.shelf, qty: Number(it.packLocal) || 0 }));
+  if (!scans.length){ toast('Tick at least one item first'); return; }
+  const btn = document.getElementById('btn-pack-submit');
+  if (btn) { btn.disabled = true; btn.textContent = 'Submitting…'; }
+  try {
+    const payload = Object.assign(
+      { orderId: state.packJob.orderId, team: state.team || '', closeOut: !!closeOut, scans },
+      gpsPayload()
+    );
+    const res = await directPost('jobComplete', payload);
+    if (!res || !res.success){ toast((res && res.error) || 'Submit failed'); return; }
+    const warn = (res.warnings || []).length;
+    const msg = warn
+      ? 'Submitted ('+warn+' warnings — check the queue)'
+      : (res.status === 'On-site' ? 'Order packed and marked On-site' : 'Saved progress');
+    toast(msg);
+    if (res.status === 'On-site') {
+      state.packJob = null;
+      show('screen-pack-picker');
+      loadPendingJobs();
+    } else {
+      // Refresh the line state from the server so we keep going from
+      // where the next pass starts.
+      selectPackJob(state.packJob.orderId);
+    }
+  } catch(e) {
+    toast('Network error — try again');
+  } finally {
+    if (btn) { btn.disabled = false; updatePackSummary(); }
+  }
+}
+
+function submitDeliverySetup(){
+  const from=(document.getElementById('delivery-from')||{}).value?.trim();
+  const to=(document.getElementById('delivery-to')||{}).value?.trim();
+  const note=(document.getElementById('delivery-note')||{}).value?.trim();
+  if(!from||!to){toast('Need both From and To');return;}
+  state.delivery={from,to,note}; saveSession();
+  show('screen-delivery');
+}
+
+/* ---------- Delivery scan loop ---------- */
+async function submitDelivery(){
+  const shelf=(document.getElementById('delivery-shelf')||{}).value?.trim()?.toUpperCase()||getShelfBind()||'';
+  if(!shelf){toast('Scan or type a shelf');return;}
+  await enqueue('delivery',Object.assign({
+    shelf,
+    from:state.delivery?.from||'',
+    to:state.delivery?.to||'',
+    note:state.delivery?.note||'',
+    team:state.team||'',
+    ts:nowIso()
+  },gpsPayload()));
+  toast('Queued delivery '+shelf);
+  const el=document.getElementById('delivery-shelf'); if(el)el.value='';
+}
+
+/* ---------- Browse / lookup ---------- */
+function browseManual(){show('screen-manual');}
+function browseNoTag(){show('screen-notag');}
+
+/* ---------- Inventory search (fuzzy, multi-match) ---------- */
+let _searchDebounce = null;
+let _lastSearchItems = [];
+function searchInventory(q){
+  clearTimeout(_searchDebounce);
+  const host = document.getElementById('inv-results');
+  const term = (q || '').trim();
+  if (!term){ host.innerHTML = ''; _lastSearchItems = []; return; }
+  host.innerHTML = '<div class="muted">Searching…</div>';
+  _searchDebounce = setTimeout(() => runSearch(term), 220);
+}
+
+async function runSearch(term){
+  const host = document.getElementById('inv-results');
+  try {
+    const url = ENDPOINT + '?action=search&q=' + encodeURIComponent(term);
+    const res = await fetch(url, { method:'GET' });
+    const data = await res.json();
+    if (!data || data.success === false){
+      host.innerHTML = '<div class="err-line">'+((data&&data.error)||'Search failed')+'</div>';
+      _lastSearchItems = [];
+      return;
+    }
+    _lastSearchItems = data.items || [];
+    renderSearchResults(_lastSearchItems);
+  } catch(_) {
+    host.innerHTML = '<div class="err-line">Network error. Check connection.</div>';
+  }
+}
+
+function renderSearchResults(items){
+  const host = document.getElementById('inv-results');
+  if (!items.length){
+    host.innerHTML = '<div class="muted">No matches. Try a shorter word or a different spelling.</div>';
+    return;
+  }
+  const esc = s => String(s==null?'':s).replace(/[&<>"']/g,
+    c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  host.innerHTML = items.map((it, idx) => {
+    const out = Number(it.qtyOut)||0, total = Number(it.totalQty)||0;
+    const status = String(it.status||'—');
+    const pill = status==='out' ? 'pill pill-err'
+               : status==='partial' ? 'pill pill-warn'
+               : 'pill pill-ok';
+    const meta = [];
+    if (it.brand) meta.push(esc(it.brand));
+    if (it.type)  meta.push(esc(it.type));
+    return `
+      <div class="pending-item" style="cursor:pointer" onclick="openFromSearch(${idx})">
+        <div class="pending-row">
+          <span class="${pill}">${esc(status)}</span>
+          <strong>${esc(it.name||'(no name)')}</strong>
+          <span class="muted" style="font-size:12px">${esc(it.shelf||'(no shelf)')}</span>
+        </div>
+        <div class="pending-body">
+          <span class="muted">${out} of ${total} out</span>
+          ${meta.length ? ' · ' + meta.join(' · ') : ''}
+        </div>
+      </div>`;
+  }).join('');
+}
+
+// Search results carry rowIdx — we can open the item directly without
+// another server round-trip. State is enriched with rowIdx so every
+// subsequent submit (takeOut, return, etc.) keys off the row, not the
+// shelf, which keeps things correct even when 20 items share a shelf.
+function openFromSearch(idx){
+  const it = _lastSearchItems[idx];
+  if (!it){ toast('Pick a result and try again'); return; }
+  openExistingItem(it);
+}
+
+// Centralised "drop into the existing-item screen" routine. Takes a
+// snapshot we already trust (search result, picker click, lookup hit).
+function openExistingItem(item){
+  state.currentShelf = item.shelf || '';
+  state.currentItem = Object.assign({}, item);
+  renderExistingItem(state.currentItem);
+  document.getElementById('btn-load').classList.toggle('hidden', state.mode!=='loadout');
+  if (state.mode === 'loadout'){
+    const j = document.getElementById('load-job-display');
+    if (j) j.textContent = state.loadout?.jobName || '—';
+  }
+  show('screen-existing');
+}
+
+async function submitManualShelf(){
+  const v=(document.getElementById('manual-shelf')||{}).value?.trim()?.toUpperCase();
+  if(!v){toast('Enter a shelf code');return;}
+  state.currentShelf=v;
+  lookupAndRoute(v).catch(()=>{prefillNewShelf(v);show('screen-new');});
+}
+function prefillNewShelf(shelf){
+  const f=document.getElementById('new-shelf'); if(f)f.value=shelf;
+  const d=document.getElementById('new-shelf-display'); if(d)d.textContent=shelf;
+}
+
+// Multi-item-per-shelf flow:
+//   • 0 items on shelf → "add new item" form, shelf pre-filled.
+//   • 1 item        → drop straight into the existing-item screen.
+//   • 2+ items      → shelf picker: tap one to open it, or add another.
+async function lookupAndRoute(shelf){
+  state.currentShelf = shelf;
+  if (!navigator.onLine){ prefillNewShelf(shelf); show('screen-new'); return; }
+  try {
+    const url = ENDPOINT + '?action=lookup&shelf=' + encodeURIComponent(shelf);
+    const res = await fetch(url, { method:'GET' });
+    const data = await res.json();
+    const items = (data && data.items) || [];
+    if (!data || data.exists === false || !items.length){
+      prefillNewShelf(shelf); show('screen-new'); return;
+    }
+    if (items.length === 1){
+      openExistingItem(items[0]);
+      return;
+    }
+    showShelfPicker(shelf, items);
+  } catch(_) {
+    prefillNewShelf(shelf); show('screen-new');
+  }
+}
+
+let _shelfPickerItems = [];
+function showShelfPicker(shelf, items){
+  _shelfPickerItems = items.slice();
+  const lbl = document.getElementById('picker-shelf-display');
+  if (lbl) lbl.textContent = shelf || '';
+  const host = document.getElementById('picker-list');
+  const esc = s => String(s==null?'':s).replace(/[&<>"']/g,
+    c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  host.innerHTML = items.map((it, idx) => {
+    const out = Number(it.qtyOut)||0, total = Number(it.totalQty)||0;
+    const status = String(it.status||'—');
+    const pill = status==='out' ? 'pill pill-err'
+               : status==='partial' ? 'pill pill-warn'
+               : 'pill pill-ok';
+    const meta = [];
+    if (it.brand) meta.push(esc(it.brand));
+    if (it.type)  meta.push(esc(it.type));
+    return `
+      <div class="pending-item" style="cursor:pointer" onclick="pickShelfItem(${idx})">
+        <div class="pending-row">
+          <span class="${pill}">${esc(status)}</span>
+          <strong>${esc(it.name||'(no name)')}</strong>
+        </div>
+        <div class="pending-body">
+          <span class="muted">${out} of ${total} out</span>
+          ${meta.length ? ' · ' + meta.join(' · ') : ''}
+        </div>
+      </div>`;
+  }).join('');
+  show('screen-shelf-picker');
+}
+
+function pickShelfItem(idx){
+  const it = _shelfPickerItems[idx];
+  if (!it){ toast('Pick an item and try again'); return; }
+  openExistingItem(it);
+}
+
+function addAnotherToShelf(){
+  // Drop into the new-item form with this shelf already filled in.
+  const shelf = state.currentShelf || '';
+  prefillNewShelf(shelf);
+  show('screen-new');
+}
+function renderExistingItem(item){
+  const host=document.getElementById('existing-details'); if(!host)return;
+  const out=Number(item.qtyOut)||0, total=Number(item.totalQty)||0;
+  const statusPill = item.status==='out'?'pill pill-err':(item.status==='partial'?'pill pill-warn':'pill pill-ok');
+  const notes = item.notes ? `<div style="margin-top:6px"><span class="muted">Notes:</span> ${String(item.notes).replace(/</g,'&lt;')}</div>` : '';
+  host.innerHTML=`
+    <div class="big-shelf">${item.shelf||''}</div>
+    <h1 style="margin:4px 0 8px">${item.name||'(no name)'}</h1>
+    <div><span class="${statusPill}">${item.status||'—'}</span>
+         <span class="muted">${out} out of ${total}</span></div>
+    <div><span class="muted">Brand:</span> ${item.brand||'—'}</div>
+    <div><span class="muted">Type:</span> ${item.type||'—'}</div>
+    ${notes}
+    <div class="muted" style="font-size:12px">Last scanned by ${item.lastScannedBy||'—'}</div>`;
+}
+
+/* ---------- Submit handlers ----------
+   Multi-item-per-shelf: the server appends a new row when (shelf, name)
+   doesn't yet exist, and tops up the row when it does. There's no
+   conflict to dialog through — duplicate-name on the same shelf simply
+   tops up qty rather than creating a second row, which is the right
+   behaviour for "20 silver bollards on D1".
+----------------------------------- */
+async function registerItem(payload, kind){
+  if (!navigator.onLine) {
+    await enqueue(kind, payload);
+    return { queued:true };
+  }
+  try {
+    const res = await directPost(kind, payload);
+    if (res && res.success) return res;
+    return res || { success:false, error:'Unknown error' };
+  } catch (_) {
+    // Network error → fall back to queue.
+    await enqueue(kind, payload);
+    return { queued:true };
+  }
+}
+
+async function submitNew(){
+  const shelf=((document.getElementById('new-shelf')||{}).value||'').trim().toUpperCase();
+  const name=(document.getElementById('new-name')||{}).value?.trim();
+  const brand=(document.getElementById('new-brand')||{}).value?.trim()||'Funkified';
+  const type=(document.getElementById('new-type')||{}).value?.trim();
+  const totalQty=(document.getElementById('new-qty')||{}).value;
+  const notes=(document.getElementById('new-notes')||{}).value?.trim();
+  if(!shelf){toast('Shelf required');return;}
+  if(!name){toast('Name required');return;}
+  const payload = Object.assign({
+    shelf,name,brand,type,totalQty:Number(totalQty)||0,notes,
+    team:state.team||'',photo:state.pendingPhoto?.dataUrl||'',ts:nowIso()
+  },gpsPayload());
+  const r = await registerItem(payload, 'register');
+  if (r.cancelled) { toast('Not saved'); return; }
+  state.pendingPhoto=null;
+  if (r.queued) toast('Queued for sync: '+shelf+' — '+name);
+  else if (r.success) toast('Saved: '+shelf+' — '+name);
+  else { toast(r.error || 'Server error'); return; }
+  show('screen-success');
+}
+
+async function submitNoTag(){
+  // NOTE on shelf-bind safety: we deliberately do NOT auto-fill from
+  // getShelfBind() here — the input already gets filled by
+  // renderShelfBanners() when a bind is active, and that's visible to the
+  // user. So whatever is in the textbox is what the user actually sees.
+  const shelf=((document.getElementById('notag-shelf')||{}).value||'').trim().toUpperCase();
+  const name=(document.getElementById('notag-name')||{}).value?.trim();
+  const brand=(document.getElementById('notag-brand')||{}).value?.trim()||'Funkified';
+  const type=(document.getElementById('notag-type')||{}).value?.trim();
+  const totalQty=(document.getElementById('notag-qty')||{}).value;
+  const notes=(document.getElementById('notag-notes')||{}).value?.trim();
+  if(!name){toast('Name required');return;}
+  const payload = Object.assign({
+    shelf,name,brand,type,totalQty:Number(totalQty)||0,notes,
+    team:state.team||'',photo:state.pendingPhoto?.dataUrl||'',ts:nowIso()
+  },gpsPayload());
+  const r = await registerItem(payload, 'registerNoTag');
+  if (r.cancelled) { toast('Not saved'); return; }
+  state.pendingPhoto=null;
+  if (r.queued) toast(shelf?('Queued: '+shelf+' — '+name):('Queued: '+name));
+  else if (r.success) toast(shelf?('Saved: '+shelf+' — '+name):('Saved: '+name));
+  else { toast(r.error || 'Server error'); return; }
+  // Reset form so the next item starts blank (so the user has to consciously
+  // re-enter the shelf if they're continuing on the same shelf).
+  const ids=['notag-shelf','notag-name','notag-type','notag-notes'];
+  ids.forEach(id=>{const el=document.getElementById(id); if(el)el.value=id==='notag-shelf' && getShelfBind() ? getShelfBind() : '';});
+  const qtyEl=document.getElementById('notag-qty'); if(qtyEl)qtyEl.value=1;
+  const photoEl=document.getElementById('notag-photo'); if(photoEl){photoEl.style.display='none';photoEl.src='';}
+  show('screen-success');
+}
+// itemKey() returns the keys we send to pin a row server-side. rowIdx is
+// the strongest handle (survives shelf moves and renames); shelf+name is
+// the fallback for queued submissions made before rowIdx was available.
+function itemKey(){
+  const it = state.currentItem || {};
   return {
-    success: true,
-    orderId,
-    client,
-    applied,
-    warnings,
-    status: newStatus || (fresh[0] && String(fresh[0]['Status'] || ''))
+    rowIdx: it.rowIdx || '',
+    shelf: it.shelf || state.currentShelf || '',
+    name: it.name || ''
   };
 }
+async function submitTakeOut(){
+  const qty=Math.max(1,parseInt((document.getElementById('takeout-qty')||{}).value)||1);
+  const reason=(document.getElementById('takeout-reason')||{}).value?.trim();
+  await enqueue('takeOut',Object.assign({},itemKey(),{qty,reason,team:state.team||'',ts:nowIso()}));
+  toast('Queued take-out ×'+qty);
+  show('screen-success');
+}
+async function submitLoad(){
+  const qty=Math.max(1,parseInt((document.getElementById('load-qty')||{}).value)||1);
+  await enqueue('load',Object.assign({},itemKey(),{qty,jobName:state.loadout?.jobName||'',team:state.team||'',ts:nowIso()}));
+  toast('Loaded ×'+qty+' onto '+(state.loadout?.jobName||''));
+  show('screen-success');
+}
+async function submitReturn(){
+  const qty=Math.max(1,parseInt((document.getElementById('return-qty')||{}).value)||1);
+  const notes=(document.getElementById('return-notes')||{}).value?.trim();
+  await enqueue('return',Object.assign({},itemKey(),{qty,notes,team:state.team||'',ts:nowIso()}));
+  toast('Queued return ×'+qty);
+  show('screen-success');
+}
+async function submitDamage(){
+  const desc=(document.getElementById('damage-desc')||{}).value?.trim();
+  const severity=(document.getElementById('damage-severity')||{}).value||'minor';
+  if(!desc){toast('Describe the damage');return;}
+  await enqueue('damage',Object.assign(itemKey(),{
+    description:desc,severity,
+    team:state.team||'',photo:state.pendingPhoto?.dataUrl||'',ts:nowIso()
+  },gpsPayload()));
+  state.pendingPhoto=null;
+  toast('Queued damage report');
+  show('screen-success');
+}
+async function submitUpdatePhoto(){
+  if(!state.pendingPhoto){toast('Take a photo first');return;}
+  await enqueue('updatePhoto',Object.assign({},itemKey(),{photo:state.pendingPhoto.dataUrl,team:state.team||'',ts:nowIso()}));
+  state.pendingPhoto=null;
+  toast('Queued photo');
+  show('screen-success');
+}
+function prefillEdit(){
+  const it=state.currentItem||{};
+  const set=(id,v)=>{const e=document.getElementById(id); if(e)e.value=v||'';};
+  set('edit-name',it.name);
+  set('edit-brand',it.brand);
+  set('edit-type',it.type);
+  set('edit-qty',it.totalQty||0);
+  set('edit-newshelf','');
+  set('edit-notes',it.notes||'');
+}
+async function submitEdit(){
+  const name=(document.getElementById('edit-name')||{}).value?.trim();
+  const brand=(document.getElementById('edit-brand')||{}).value?.trim();
+  const type=(document.getElementById('edit-type')||{}).value?.trim();
+  const totalQty=(document.getElementById('edit-qty')||{}).value;
+  const newShelf=((document.getElementById('edit-newshelf')||{}).value||'').trim().toUpperCase();
+  const notes=(document.getElementById('edit-notes')||{}).value;
+  // The row is anchored by rowIdx (always present once an item screen has
+  // been opened). p.name is the *new* name to write — the server's
+  // resolveRow short-circuits on rowIdx so it never confuses old vs new.
+  const key = itemKey();
+  await enqueue('edit',{
+    rowIdx: key.rowIdx,
+    shelf: key.shelf,
+    name,brand,type,
+    totalQty:totalQty===''?'':Number(totalQty)||0,
+    newShelf,notes,team:state.team||'',ts:nowIso()
+  });
+  toast('Queued edit');
+  show('screen-success');
+}
+
+/* ---------- Pending screen ---------- */
+async function renderPendingList(){
+  const host=document.getElementById('pending-list'); if(!host)return;
+  const all=await idbGetAll(STORE_OUTBOX);
+  if(!all.length){host.innerHTML='<p class="muted">No pending submissions.</p>';return;}
+  all.sort((a,b)=>a.createdAt<b.createdAt?-1:1);
+  host.innerHTML=all.map(env=>{
+    const age=Math.max(0,Math.round((Date.now()-new Date(env.createdAt).getTime())/1000));
+    const mins=Math.floor(age/60),secs=age%60;
+    const ago=mins?`${mins}m ${secs}s ago`:`${secs}s ago`;
+    const label=env.status==='failed'?'FAILED':(env.status==='in_flight'?'SENDING':'QUEUED');
+    const cls=env.status==='failed'?'pill pill-err':(env.status==='in_flight'?'pill pill-warn':'pill');
+    const err=env.lastError?`<div class="err-line">${env.lastError}</div>`:'';
+    const isConflict = env.serverResponse && env.serverResponse.conflict;
+    const extraBtn = isConflict
+      ? `<button onclick="overwriteEnvelope('${env.clientId}')">Overwrite & retry</button>`
+      : '';
+    return `<div class="pending-item">
+      <div class="pending-row"><span class="${cls}">${label}</span><strong>${env.action}</strong>
+        <span class="muted">${ago} · attempts ${env.attempts||0}</span></div>
+      <div class="pending-body">${summarizePayload(env)}</div>${err}
+      <div class="pending-actions">
+        <button onclick="retryEnvelope('${env.clientId}')">Retry</button>
+        ${extraBtn}
+        <button class="danger" onclick="discardEnvelope('${env.clientId}')">Discard</button>
+      </div></div>`;
+  }).join('');
+}
+function summarizePayload(env){
+  const p=env.payload||{},bits=[];
+  if(p.shelf) bits.push(`Shelf: <code>${p.shelf}</code>`);
+  if(p.name) bits.push(`Name: ${p.name}`);
+  if(p.type) bits.push(`Type: ${p.type}`);
+  if(p.qty) bits.push(`Qty: ${p.qty}`);
+  if(p.jobName) bits.push(`Job: ${p.jobName}`);
+  if(p.to||p.from) bits.push(`${p.from||'?'} → ${p.to||'?'}`);
+  if(p.description) bits.push(`Damage: ${p.description}`);
+  if(p.photo) bits.push(`<span class="muted">+photo</span>`);
+  return bits.join(' · ');
+}
+async function retryEnvelope(cid){
+  const env=await idbGet(STORE_OUTBOX,cid); if(!env)return;
+  env.status='queued'; env.lastError=null; env.inFlightAt=null;
+  await idbPut(STORE_OUTBOX,env);
+  renderPendingList(); updatePendingChip();
+  drainOutbox(true).catch(()=>{});
+}
+async function overwriteEnvelope(cid){
+  const env=await idbGet(STORE_OUTBOX,cid); if(!env)return;
+  if(!confirm('Overwrite the existing item on that shelf?')) return;
+  env.payload = Object.assign({}, env.payload, { allowOverwrite:true });
+  env.status='queued'; env.lastError=null; env.inFlightAt=null; env.serverResponse=null;
+  await idbPut(STORE_OUTBOX,env);
+  renderPendingList(); updatePendingChip();
+  drainOutbox(true).catch(()=>{});
+}
+async function discardEnvelope(cid){
+  if(!confirm('Discard this submission permanently?'))return;
+  await idbDelete(STORE_OUTBOX,cid);
+  renderPendingList(); updatePendingChip();
+}
+async function retryAll(){drainOutbox(true).catch(()=>{});}
+
+/* ---------- Misc ---------- */
+function manualBindShelf(){
+  const v=prompt('Shelf code (e.g. B1):'); if(!v)return;
+  setShelfBind(v.trim().toUpperCase()); toast('Shelf bound to '+getShelfBind());
+}
+function goHome(){state.currentShelf=null;state.currentItem=null;state.pendingPhoto=null;show('screen-session');}
+function goScanAnother(){
+  state.currentShelf=null;state.currentItem=null;state.pendingPhoto=null;
+  if(state.mode==='delivery')show('screen-delivery');
+  else show('screen-browse');
+}
+
+/* ---------- Init ---------- */
+async function init(){
+  updateOnlineBar();
+  restoreSession();
+  const params=parseParams();
+  await registerSW();
+  updatePendingChip();
+  renderPendingList();
+  tryGetGPS();
+  if(params.shelf){
+    state.currentShelf=params.shelf.toUpperCase();
+    lookupAndRoute(params.shelf.toUpperCase()).catch(()=>show('screen-session'));
+  } else {
+    show('screen-session');
+  }
+  drainOutbox().catch(()=>{});
+}
+document.addEventListener('DOMContentLoaded',init);
+</script>
+</body>
+</html>
