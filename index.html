@@ -978,13 +978,22 @@ document.addEventListener('keydown', e => {
 /* ---------- Keep It or Delete It (triage) ----------
    Whole team works off the same server-side list of undecided items.
    Keep/Delete writes to the inventory sheet (and removes the row from
-   everyone's list next time they refresh). Skip is purely local — the
-   row drops to the bottom of *your* queue but stays available for
-   teammates to decide.
+   everyone's list next time they refresh). Skip is purely local.
+
+   Speed strategy:
+     • Photo preloading — when rendering item N, kick off image fetches
+       for items N+1 through N+TRIAGE_PRELOAD so the next photos hit
+       the browser's HTTP cache before the user taps.
+     • Optimistic submit — Keep/Delete advances the UI the instant you
+       tap. The server call fires in the background. Failures surface
+       as a toast; in-flight count shows in the progress bar.
 */
+const TRIAGE_PRELOAD = 8;
 let _triageQueue = [];
 let _triageDecided = []; // rowIdx values you've voted on this session
-let _triageBusy = false;
+let _triageInflight = 0;
+let _triageFailures = 0;
+const _triagePreloaded = new Set(); // urls already kicked off
 
 async function loadTriageList(){
   const card = document.getElementById('triage-card');
@@ -1000,26 +1009,59 @@ async function loadTriageList(){
       return;
     }
     _triageQueue = (data.items || []).filter(it => _triageDecided.indexOf(it.rowIdx) === -1);
+    _triageFailures = 0;
     renderTriage();
   } catch(_) {
     if (card) card.innerHTML = '<div class="err-line">Network error. Tap Refresh.</div>';
   }
 }
 
+// Pre-warm the next N upcoming photos so the next render is instant.
+function triagePreloadUpcoming(){
+  const upcoming = _triageQueue.slice(1, 1 + TRIAGE_PRELOAD);
+  upcoming.forEach(it => {
+    if (!it.thumbUrl) return;
+    if (_triagePreloaded.has(it.thumbUrl)) return;
+    _triagePreloaded.add(it.thumbUrl);
+    // Trigger a background fetch — browser caches it for the real
+    // <img> render later. We don't await or do anything with the result.
+    const img = new Image();
+    img.src = it.thumbUrl;
+  });
+}
+
+function updateTriageProgress(){
+  const prog = document.getElementById('triage-progress');
+  if (!prog) return;
+  const parts = [];
+  if (_triageQueue.length) parts.push(_triageQueue.length + ' to go');
+  if (_triageInflight)     parts.push('saving ' + _triageInflight + '…');
+  if (_triageFailures)     parts.push(_triageFailures + ' failed');
+  prog.textContent = parts.join(' · ');
+}
+
 function renderTriage(){
   const card = document.getElementById('triage-card');
-  const prog = document.getElementById('triage-progress');
   if (!card) return;
   if (!_triageQueue.length){
-    card.innerHTML = `
-      <div class="center stack">
-        <h2>All done ✓</h2>
-        <p class="muted">No undecided items left. Nice work.</p>
-      </div>`;
-    if (prog) prog.textContent = '';
+    if (_triageInflight){
+      card.innerHTML = `
+        <div class="center stack">
+          <h2>Saving the last ${_triageInflight} ${_triageInflight===1?'vote':'votes'}…</h2>
+          <p class="muted">You can leave this page — they'll finish syncing.</p>
+        </div>`;
+    } else {
+      card.innerHTML = `
+        <div class="center stack">
+          <h2>All done ✓</h2>
+          <p class="muted">No undecided items left. Nice work.</p>
+        </div>`;
+    }
+    updateTriageProgress();
     return;
   }
-  if (prog) prog.textContent = _triageQueue.length + ' item' + (_triageQueue.length===1?'':'s') + ' to go';
+  updateTriageProgress();
+  triagePreloadUpcoming();
   const it = _triageQueue[0];
   const esc = s => String(s==null?'':s).replace(/[&<>"']/g,
     c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -1065,7 +1107,6 @@ function renderTriage(){
 }
 
 function triageSkip(){
-  if (_triageBusy) return;
   if (!_triageQueue.length) return;
   if (_triageQueue.length > 1){
     const head = _triageQueue.shift();
@@ -1076,35 +1117,50 @@ function triageSkip(){
   }
 }
 
-async function triageDecide(decision){
-  if (_triageBusy) return;
+// Optimistic decide: immediately drop the item from the local queue and
+// re-render, then fire the server call without awaiting. Multiple votes
+// can be in flight simultaneously — Apps Script's lock will serialise
+// them server-side, but the user's hands keep moving.
+function triageDecide(decision){
   if (!_triageQueue.length) return;
-  const it = _triageQueue[0];
-  _triageBusy = true;
+  const it = _triageQueue.shift();
+  _triageDecided.push(it.rowIdx);
+  // Brief, optimistic feedback. If the server later rejects (rare —
+  // duplicate decision or network error), we surface that separately.
+  toast(decision === 'Keep' ? 'Kept ✓' : 'Marked for delete');
+  renderTriage();
+  triageSubmit_(it, decision);
+}
+
+async function triageSubmit_(it, decision){
+  _triageInflight++;
+  updateTriageProgress();
   try {
     const res = await directPost('triageDecide', {
-      rowIdx: it.rowIdx,
-      shelf:  it.shelf || '',
+      rowIdx:   it.rowIdx,
+      shelf:    it.shelf || '',
       decision: decision,
-      team:   state.team || '',
-      ts:     nowIso()
+      team:     state.team || '',
+      ts:       nowIso()
     });
     if (!res || res.success === false){
-      toast((res && res.error) || 'Could not save — try again', true);
-      return;
+      _triageFailures++;
+      toast((res && res.error) || ('Save failed: ' + (it.name||it.rowIdx)), true);
+    } else if (res.alreadyDecided){
+      // Someone else got there first — not really a failure, but worth
+      // surfacing so the user knows their vote wasn't the one that stuck.
+      toast((it.name||'Item') + ' already marked "' + res.decision +
+            '" by ' + (res.decidedBy || 'someone'));
     }
-    if (res.alreadyDecided){
-      toast('Already marked "'+res.decision+'" by '+(res.decidedBy||'someone'));
-    } else {
-      toast(decision === 'Keep' ? 'Kept ✓' : 'Marked for delete');
-    }
-    _triageDecided.push(it.rowIdx);
-    _triageQueue.shift();
-    renderTriage();
-  } catch(_) {
-    toast('Network error — your vote was not saved. Try again.', true);
+  } catch (_) {
+    _triageFailures++;
+    toast('Network error on ' + (it.name||'item') + ' — vote may not have saved', true);
   } finally {
-    _triageBusy = false;
+    _triageInflight--;
+    updateTriageProgress();
+    // If the queue emptied while a save was in flight, re-render so the
+    // "All done" / "Saving last N…" state flips correctly.
+    if (!_triageQueue.length) renderTriage();
   }
 }
 
