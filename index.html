@@ -115,6 +115,9 @@
   .create-result .controls{display:flex;gap:6px;align-items:center}
   .create-result .controls input{width:48px;text-align:center;padding:6px}
   .create-result button.add-btn{width:auto;padding:8px 14px;font-size:13px}
+  /* Hero photo on the existing-item screen */
+  .item-hero{display:block;width:100%;max-width:520px;aspect-ratio:1/1;object-fit:cover;border-radius:12px;
+    margin:0 auto 12px;border:1px solid var(--border);background:#1c1c1c;cursor:zoom-in}
   /* Photo lightbox */
   .photo-lightbox{position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:200;display:none;
     align-items:center;justify-content:center;padding:20px;flex-direction:column;gap:14px;cursor:zoom-out}
@@ -1674,16 +1677,22 @@ function renderSearchResults(items){
     const meta = [];
     if (it.brand) meta.push(esc(it.brand));
     if (it.type)  meta.push(esc(it.type));
+    const thumbCls = it.thumbUrl ? 'pack-thumb' : 'pack-thumb empty';
+    const thumbStyle = it.thumbUrl ? `style="background-image:url('${esc(it.thumbUrl)}')"` : '';
     return `
-      <div class="pending-item" style="cursor:pointer" onclick="openFromSearch(${idx})">
-        <div class="pending-row">
-          <span class="${pill}">${esc(status)}</span>
-          <strong>${esc(it.name||'(no name)')}</strong>
-          <span class="muted" style="font-size:12px">${esc(it.shelf||'(no shelf)')}</span>
-        </div>
-        <div class="pending-body">
-          <span class="muted">${out} of ${total} out</span>
-          ${meta.length ? ' · ' + meta.join(' · ') : ''}
+      <div class="pending-item" style="display:flex;gap:10px;align-items:center;cursor:pointer" data-search-idx="${idx}">
+        <div class="${thumbCls}" ${thumbStyle}
+             onclick="event.stopPropagation();openPhotoLightbox('${esc(it.thumbUrl||'')}','${esc(it.name||'')}')"></div>
+        <div style="flex:1;min-width:0" onclick="openFromSearch(${idx})">
+          <div class="pending-row">
+            <span class="${pill}">${esc(status)}</span>
+            <strong>${esc(it.name||'(no name)')}</strong>
+            <span class="muted" style="font-size:12px">${esc(it.shelf||'(no shelf)')}</span>
+          </div>
+          <div class="pending-body">
+            <span class="muted">${out} of ${total} out</span>
+            ${meta.length ? ' · ' + meta.join(' · ') : ''}
+          </div>
         </div>
       </div>`;
   }).join('');
@@ -1766,8 +1775,13 @@ function showShelfPicker(shelf, items){
     const meta = [];
     if (it.brand) meta.push(esc(it.brand));
     if (it.type)  meta.push(esc(it.type));
+    const thumbCls = it.thumbUrl ? 'pack-thumb' : 'pack-thumb empty';
+    const thumbStyle = it.thumbUrl ? `style="background-image:url('${esc(it.thumbUrl)}')"` : '';
     return `
-      <div class="pending-item" style="cursor:pointer" onclick="pickShelfItem(${idx})">
+      <div class="pending-item" style="display:flex;gap:10px;align-items:center;cursor:pointer">
+        <div class="${thumbCls}" ${thumbStyle}
+             onclick="event.stopPropagation();openPhotoLightbox('${esc(it.thumbUrl||'')}','${esc(it.name||'')}')"></div>
+        <div style="flex:1;min-width:0" onclick="pickShelfItem(${idx})">
         <div class="pending-row">
           <span class="${pill}">${esc(status)}</span>
           <strong>${esc(it.name||'(no name)')}</strong>
@@ -1775,6 +1789,7 @@ function showShelfPicker(shelf, items){
         <div class="pending-body">
           <span class="muted">${out} of ${total} out</span>
           ${meta.length ? ' · ' + meta.join(' · ') : ''}
+        </div>
         </div>
       </div>`;
   }).join('');
@@ -1797,16 +1812,26 @@ function renderExistingItem(item){
   const host=document.getElementById('existing-details'); if(!host)return;
   const out=Number(item.qtyOut)||0, total=Number(item.totalQty)||0;
   const statusPill = item.status==='out'?'pill pill-err':(item.status==='partial'?'pill pill-warn':'pill pill-ok');
-  const notes = item.notes ? `<div style="margin-top:6px"><span class="muted">Notes:</span> ${String(item.notes).replace(/</g,'&lt;')}</div>` : '';
+  const esc = s => String(s==null?'':s).replace(/[&<>"']/g,
+    c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const notes = item.notes ? `<div style="margin-top:6px"><span class="muted">Notes:</span> ${esc(item.notes)}</div>` : '';
+  // Hero photo: medium-sized at the top of the existing-item screen,
+  // tappable to enlarge.
+  const photoBlock = item.thumbUrl
+    ? `<img src="${esc(item.thumbUrl)}" alt="" class="item-hero"
+            onclick="openPhotoLightbox('${esc(item.thumbUrl)}','${esc(item.name||'')}')"
+            onerror="this.style.display='none'"/>`
+    : '';
   host.innerHTML=`
-    <div class="big-shelf">${item.shelf||''}</div>
-    <h1 style="margin:4px 0 8px">${item.name||'(no name)'}</h1>
-    <div><span class="${statusPill}">${item.status||'—'}</span>
+    ${photoBlock}
+    <div class="big-shelf">${esc(item.shelf||'')}</div>
+    <h1 style="margin:4px 0 8px">${esc(item.name||'(no name)')}</h1>
+    <div><span class="${statusPill}">${esc(item.status||'—')}</span>
          <span class="muted">${out} out of ${total}</span></div>
-    <div><span class="muted">Brand:</span> ${item.brand||'—'}</div>
-    <div><span class="muted">Type:</span> ${item.type||'—'}</div>
+    <div><span class="muted">Brand:</span> ${esc(item.brand||'—')}</div>
+    <div><span class="muted">Type:</span> ${esc(item.type||'—')}</div>
     ${notes}
-    <div class="muted" style="font-size:12px">Last scanned by ${item.lastScannedBy||'—'}</div>`;
+    <div class="muted" style="font-size:12px">Last scanned by ${esc(item.lastScannedBy||'—')}</div>`;
 }
 
 /* ---------- Submit handlers ----------
