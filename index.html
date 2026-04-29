@@ -1129,6 +1129,10 @@ function renderTriage(){
     <div class="triage-meta">${meta.join(' · ')}</div>
     ${notesBlock}
     ${auditBlock}
+    <div class="field" style="margin-top:12px;margin-bottom:6px">
+      <input id="triage-comment" type="text" maxlength="240"
+             placeholder="Add comment (optional) — saves with your vote"/>
+    </div>
     <div class="triage-actions">
       <button class="primary" onclick="triageDecide('Keep')">Keep</button>
       <button class="danger" onclick="triageDecide('Delete')">Delete</button>
@@ -1227,14 +1231,16 @@ function triageDecide(decision){
   if (!_triageQueue.length) return;
   const it = _triageQueue.shift();
   _triageDecided.push(it.rowIdx);
-  // Brief, optimistic feedback. If the server later rejects (rare —
-  // duplicate decision or network error), we surface that separately.
+  // Capture the comment (if any) BEFORE re-render — the input is
+  // about to be replaced by the next item's blank one.
+  const ci = document.getElementById('triage-comment');
+  const comment = ci ? String(ci.value || '').trim() : '';
   toast(decision === 'Keep' ? 'Kept ✓' : 'Marked for delete');
   renderTriage();
-  triageSubmit_(it, decision);
+  triageSubmit_(it, decision, comment);
 }
 
-async function triageSubmit_(it, decision){
+async function triageSubmit_(it, decision, comment){
   _triageInflight++;
   updateTriageProgress();
   try {
@@ -1242,6 +1248,7 @@ async function triageSubmit_(it, decision){
       rowIdx:   it.rowIdx,
       shelf:    it.shelf || '',
       decision: decision,
+      comment:  comment || '',
       team:     state.team || '',
       ts:       nowIso()
     });
