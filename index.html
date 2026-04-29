@@ -885,11 +885,36 @@ function restoreSession(){
   if(state.team) rememberName(state.team);
 }
 
-/* ---------- Service worker ---------- */
+/* ---------- Service worker ----------
+   Combined with skipWaiting + clients.claim in sw.js, this listener
+   makes deploys land on every device automatically. When a new SW
+   takes control we reload the page once so the user sees the update.
+*/
 async function registerSW(){
   if(!('serviceWorker' in navigator))return;
-  try{const reg=await navigator.serviceWorker.register('./sw.js');
+  try{
+    const reg=await navigator.serviceWorker.register('./sw.js');
     if(reg.waiting) reg.waiting.postMessage({type:'SKIP_WAITING'});
+    reg.addEventListener('updatefound', () => {
+      const incoming = reg.installing;
+      if (!incoming) return;
+      incoming.addEventListener('statechange', () => {
+        if (incoming.state === 'installed' && navigator.serviceWorker.controller){
+          incoming.postMessage({type:'SKIP_WAITING'});
+        }
+      });
+    });
+    let _refreshing = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (_refreshing) return;
+      _refreshing = true;
+      window.location.reload();
+    });
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden && navigator.serviceWorker.controller){
+        reg.update();
+      }
+    });
   }catch(e){console.warn('SW register failed',e);}
 }
 
