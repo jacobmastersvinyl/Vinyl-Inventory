@@ -4,7 +4,7 @@
    - Passes through POSTs and external endpoints without touching them.
    - Supports skipWaiting on demand.
 */
-const VERSION = 'funkified-v14-2026-04-28-triage-comment';
+const VERSION = 'funkified-v15-2026-04-28-auto-update';
 const APP_SHELL = [
   './',
   './index.html',
@@ -21,9 +21,13 @@ const PASSTHROUGH_HOSTS = [
 ];
 
 self.addEventListener('install', event => {
+  // Activate this SW as soon as install completes — combined with
+  // clients.claim() on activate, this means deploys propagate without
+  // needing the user to clear cache or close tabs.
   event.waitUntil(
     caches.open(VERSION).then(cache => cache.addAll(APP_SHELL)).catch(() => {})
   );
+  self.skipWaiting();
 });
 
 self.addEventListener('activate', event => {
