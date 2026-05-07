@@ -96,6 +96,12 @@
   .pack-line{background:var(--panel2);border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-bottom:8px}
   .pack-line.done{background:rgba(34,197,94,.07);border-color:rgba(34,197,94,.4)}
   .pack-row{display:flex;align-items:center;gap:10px}
+  /* Type / category picker — dropdown of known types + "Add new" */
+  .type-picker select,.type-picker input.type-new{
+    width:100%;padding:12px;border-radius:10px;border:1px solid var(--border);
+    background:#0f0f0f;color:var(--text);font-size:16px;font-family:inherit;
+  }
+  .type-picker input.type-new{margin-top:6px}
   .pack-thumb{width:48px;height:48px;border-radius:8px;background:#1c1c1c center/cover no-repeat;flex-shrink:0;border:1px solid var(--border);cursor:zoom-in}
   .pack-thumb.empty{display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:10px;cursor:default}
   .pack-thumb.empty::before{content:'no img'}
@@ -147,6 +153,18 @@
   .pack-stepper{display:flex;gap:6px;align-items:center;margin-top:8px;padding-left:46px}
   .pack-stepper button.small{width:32px;padding:6px 0;font-size:14px}
   .pack-stepper input{width:60px;text-align:center;padding:6px}
+  /* Damage panel inside a return line */
+  .dmg-chip{font-size:11px;color:var(--err);background:rgba(239,68,68,.1);
+    border:1px solid rgba(239,68,68,.4);padding:2px 8px;border-radius:999px;font-weight:600}
+  .dmg-panel{margin-top:10px;padding:10px;background:rgba(239,68,68,.06);
+    border:1px solid rgba(239,68,68,.3);border-radius:10px}
+  .dmg-row{margin-bottom:8px}
+  .dmg-row .dmg-label{display:block;font-size:12px;color:var(--muted);margin-bottom:4px}
+  .dmg-row textarea{width:100%;padding:8px;background:#0f0f0f;color:var(--text);
+    border:1px solid var(--border);border-radius:8px;font-size:14px;font-family:inherit;min-height:50px}
+  .dmg-sev{display:flex;gap:6px}
+  .dmg-sev button.small{flex:1;padding:8px;font-size:12px}
+  .dmg-sev button.small.sel{background:var(--err);color:#fff;border-color:var(--err)}
 </style>
 </head>
 <body>
@@ -288,7 +306,7 @@
       <div class="field"><label>Brand</label>
         <input id="notag-brand" type="text" value="Funkified"/></div>
       <div class="field"><label>Type</label>
-        <input id="notag-type" type="text" placeholder="e.g. Infrastructure / Styling / Owned asset"/></div>
+        <div class="type-picker" id="notag-type"></div></div>
       <div class="field"><label>Total Qty</label>
         <input id="notag-qty" type="number" min="0" step="1" value="1"/></div>
       <div class="field"><label>Notes</label>
@@ -319,7 +337,7 @@
       <div class="field"><label>Brand</label>
         <input id="new-brand" type="text" value="Funkified"/></div>
       <div class="field"><label>Type</label>
-        <input id="new-type" type="text" placeholder="e.g. Infrastructure / Styling / Owned asset"/></div>
+        <div class="type-picker" id="new-type"></div></div>
       <div class="field"><label>Total Qty</label>
         <input id="new-qty" type="number" min="0" step="1" value="1"/></div>
       <div class="field"><label>Notes</label>
@@ -443,7 +461,7 @@
       <div class="field"><label>Brand</label>
         <input id="edit-brand" type="text"/></div>
       <div class="field"><label>Type</label>
-        <input id="edit-type" type="text"/></div>
+        <div class="type-picker" id="edit-type"></div></div>
       <div class="field"><label>Total Qty</label>
         <input id="edit-qty" type="number" min="0" step="1"/></div>
       <div class="field"><label>Move to shelf (optional)</label>
@@ -598,7 +616,7 @@
       <div class="field"><label>Brand</label>
         <input id="te-brand" type="text"/></div>
       <div class="field"><label>Type</label>
-        <input id="te-type" type="text"/></div>
+        <div class="type-picker" id="te-type"></div></div>
       <div class="field"><label>Total qty</label>
         <input id="te-qty" type="number" min="0" step="1"/></div>
       <div class="field"><label>Shelf (leave blank to keep)</label>
@@ -1010,6 +1028,85 @@ function submitLoadoutSetup(){
   show('screen-browse');
 }
 
+/* ---------- Type / category picker ----------
+   Replaces the old free-text "Type" input on the new-item, edit, and
+   triage-edit screens with a dropdown of existing types so people stop
+   inventing four spellings of "Furniture". An "+ Add new category…"
+   option toggles to a text input for cases where a new category really
+   IS needed. The list is fetched once per session and cached.
+*/
+let _knownTypes = null;
+let _typesPromise = null;
+async function fetchKnownTypes(force){
+  if (_knownTypes && !force) return _knownTypes;
+  if (_typesPromise && !force) return _typesPromise;
+  _typesPromise = (async () => {
+    try {
+      const url = ENDPOINT + '?action=inventoryTypes';
+      const res = await fetch(url, { method:'GET' });
+      const data = await res.json();
+      if (data && data.success){
+        _knownTypes = data.types || [];
+        return _knownTypes;
+      }
+    } catch (_) {}
+    _knownTypes = _knownTypes || [];
+    return _knownTypes;
+  })();
+  return _typesPromise;
+}
+
+async function buildTypePicker(rootId, currentValue){
+  const root = document.getElementById(rootId);
+  if (!root) return;
+  const cur = String(currentValue || '').trim();
+  const types = await fetchKnownTypes();
+  // Make sure the current value is in the option list even if it isn't
+  // in the master list yet — otherwise editing an item with an unusual
+  // type would silently nuke its value.
+  const merged = [...types];
+  if (cur && !merged.some(t => t.toLowerCase() === cur.toLowerCase())) {
+    merged.unshift(cur);
+  }
+  const esc = s => String(s==null?'':s).replace(/[&<>"']/g,
+    c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const optHtml = merged.map(t => {
+    const sel = t.toLowerCase() === cur.toLowerCase() ? 'selected' : '';
+    return `<option value="${esc(t)}" ${sel}>${esc(t)}</option>`;
+  }).join('');
+  root.innerHTML = `
+    <select onchange="onTypePickerChange('${rootId}')">
+      <option value="" ${cur?'':'selected'}>— pick a category —</option>
+      ${optHtml}
+      <option value="__NEW__">+ Add new category…</option>
+    </select>
+    <input class="type-new hidden" type="text" placeholder="New category name (e.g. Lighting)"/>`;
+}
+
+function onTypePickerChange(rootId){
+  const root = document.getElementById(rootId);
+  if (!root) return;
+  const sel = root.querySelector('select');
+  const inp = root.querySelector('input.type-new');
+  if (!sel || !inp) return;
+  if (sel.value === '__NEW__'){
+    inp.classList.remove('hidden');
+    inp.focus();
+  } else {
+    inp.classList.add('hidden');
+  }
+}
+
+function getTypePickerValue(rootId){
+  const root = document.getElementById(rootId);
+  if (!root) return '';
+  const sel = root.querySelector('select');
+  const inp = root.querySelector('input.type-new');
+  if (!sel) return '';
+  if (sel.value === '__NEW__') return ((inp && inp.value) || '').trim();
+  return (sel.value || '').trim();
+}
+
 /* ---------- Photo lightbox ----------
    Tap any thumbnail to enlarge. Backdrop / ESC closes.
 */
@@ -1185,11 +1282,11 @@ function openTriageEdit(){
   const it = _triageQueue[0]; if (!it) return;
   document.getElementById('te-name').value     = it.name || '';
   document.getElementById('te-brand').value    = it.brand || '';
-  document.getElementById('te-type').value     = it.type || '';
   document.getElementById('te-qty').value      = it.totalQty || 0;
   document.getElementById('te-newshelf').value = '';
   document.getElementById('te-notes').value    = it.notes || '';
   document.getElementById('te-err').textContent = '';
+  buildTypePicker('te-type', it.type || '');
   document.getElementById('triage-edit-modal').classList.add('show');
 }
 function closeTriageEdit(){
@@ -1203,7 +1300,7 @@ async function saveTriageEdit(){
   const it = _triageQueue[0]; if (!it){ closeTriageEdit(); return; }
   const name  = (document.getElementById('te-name')||{}).value?.trim();
   const brand = (document.getElementById('te-brand')||{}).value?.trim();
-  const type  = (document.getElementById('te-type')||{}).value?.trim();
+  const type  = getTypePickerValue('te-type');
   const qtyStr = (document.getElementById('te-qty')||{}).value;
   const newShelf = ((document.getElementById('te-newshelf')||{}).value || '').trim().toUpperCase();
   const notes = (document.getElementById('te-notes')||{}).value || '';
@@ -1238,6 +1335,7 @@ async function saveTriageEdit(){
     if (qtyStr !== '') it.totalQty = Number(qtyStr) || 0;
     if (newShelf) it.shelf = newShelf;
     it.notes = notes;
+    _knownTypes = null;
     closeTriageEdit();
     renderTriage();
     toast('Item updated');
@@ -1573,6 +1671,47 @@ function renderReturnLines(){
     const ind = fully ? '✓' : (local > 0 ? '◐' : '○');
     const thumbStyle = it.thumbUrl ? `style="background-image:url('${esc(it.thumbUrl)}')"` : '';
     const thumbCls = it.thumbUrl ? 'pack-thumb' : 'pack-thumb empty';
+    // Damage panel state — collapsed by default. Has its own qty
+    // (capped at the line's return qty), severity, description, photo.
+    const dmg = it.damage || {};
+    const dmgOpen = !!dmg.open;
+    const dmgQty = Math.max(0, Math.min(local, Number(dmg.qty) || 0));
+    const dmgSeverity = dmg.severity || 'minor';
+    const dmgDesc = dmg.description || '';
+    const dmgHasPhoto = !!dmg.photo;
+    const dmgChip = dmgQty > 0
+      ? `<span class="dmg-chip">⚠ ${dmgQty} damaged${dmg.severity?' · '+esc(dmg.severity):''}</span>`
+      : '';
+    const dmgPanel = dmgOpen ? `
+      <div class="dmg-panel">
+        <div class="dmg-row">
+          <label class="dmg-label">How many damaged?</label>
+          <div class="qty-row" style="max-width:160px">
+            <button class="small" onclick="adjustReturnDamageQty(${idx},-1)">−</button>
+            <input type="number" min="0" max="${Math.max(local,1)}" value="${dmgQty}"
+                   onchange="setReturnDamageQty(${idx}, this.value)"/>
+            <button class="small" onclick="adjustReturnDamageQty(${idx},1)">+</button>
+          </div>
+        </div>
+        <div class="dmg-row">
+          <label class="dmg-label">Severity</label>
+          <div class="dmg-sev">
+            <button class="small ${dmgSeverity==='minor'?'sel':''}" onclick="setReturnDamageSeverity(${idx},'minor')">Minor</button>
+            <button class="small ${dmgSeverity==='major'?'sel':''}" onclick="setReturnDamageSeverity(${idx},'major')">Major</button>
+            <button class="small ${dmgSeverity==='total'?'sel':''}" onclick="setReturnDamageSeverity(${idx},'total')">Write-off</button>
+          </div>
+        </div>
+        <div class="dmg-row">
+          <label class="dmg-label">Description</label>
+          <textarea oninput="setReturnDamageDesc(${idx}, this.value)" placeholder="What happened? (e.g. cracked base, missing legs)">${esc(dmgDesc)}</textarea>
+        </div>
+        <div class="dmg-row">
+          <label class="dmg-label">Photo</label>
+          <input type="file" accept="image/*" capture="environment" onchange="handleReturnDamagePhoto(event,${idx})"/>
+          ${dmgHasPhoto ? `<img class="photo-preview" src="${esc(dmg.photo)}" style="display:block;margin-top:6px;max-width:200px;border-radius:8px"/>` : ''}
+        </div>
+        <button class="ghost small" onclick="closeReturnDamagePanel(${idx})">Close panel</button>
+      </div>` : '';
     return `
       <div class="${cls.join(' ')}" data-idx="${idx}">
         <div class="pack-row">
@@ -1584,6 +1723,7 @@ function renderReturnLines(){
               <span><strong>${esc(it.shelf||'(no shelf)')}</strong></span>
               <span class="muted">·</span>
               <span>${onJob} on job</span>
+              ${dmgChip ? '<span class="muted">·</span>' + dmgChip : ''}
             </div>
           </div>
         </div>
@@ -1595,8 +1735,64 @@ function renderReturnLines(){
             <button class="small" onclick="adjustReturnLocal(${idx},1)">+</button>
             <span class="muted" style="margin-left:8px;font-size:12px">of ${onJob}</span>
           </div>`}
+        ${onJob === 0 ? '' : (dmgOpen ? '' : `
+          <button class="ghost small" onclick="openReturnDamagePanel(${idx})" style="margin-top:8px">⚠ Log damage</button>`)}
+        ${dmgPanel}
       </div>`;
   }).join('');
+}
+
+// ── Damage capture per return line ──
+function openReturnDamagePanel(idx){
+  const it = returnState.job && returnState.job.items[idx]; if (!it) return;
+  it.damage = it.damage || { qty: 0, severity: 'minor', description: '', photo: '' };
+  it.damage.open = true;
+  // Default the damage qty to whatever's currently being returned, so
+  // the user doesn't have to step it up if everything's broken.
+  if (!it.damage.qty) it.damage.qty = Math.max(1, Number(it.returnLocal) || 1);
+  renderReturnLines();
+}
+function closeReturnDamagePanel(idx){
+  const it = returnState.job && returnState.job.items[idx]; if (!it) return;
+  if (it.damage) it.damage.open = false;
+  renderReturnLines();
+}
+function setReturnDamageQty(idx, v){
+  const it = returnState.job && returnState.job.items[idx]; if (!it) return;
+  it.damage = it.damage || { severity: 'minor', description: '', photo: '', open: true };
+  let n = parseInt(v, 10) || 0;
+  const max = Math.max(0, Number(it.returnLocal) || 0);
+  if (n < 0) n = 0; if (n > max) n = max;
+  it.damage.qty = n;
+  renderReturnLines();
+}
+function adjustReturnDamageQty(idx, delta){
+  const it = returnState.job && returnState.job.items[idx]; if (!it) return;
+  const cur = (it.damage && Number(it.damage.qty)) || 0;
+  setReturnDamageQty(idx, cur + delta);
+}
+function setReturnDamageSeverity(idx, sev){
+  const it = returnState.job && returnState.job.items[idx]; if (!it) return;
+  it.damage = it.damage || { qty: 1, description: '', photo: '', open: true };
+  it.damage.severity = sev;
+  renderReturnLines();
+}
+function setReturnDamageDesc(idx, txt){
+  const it = returnState.job && returnState.job.items[idx]; if (!it) return;
+  it.damage = it.damage || { qty: 1, severity: 'minor', photo: '', open: true };
+  it.damage.description = String(txt || '');
+  // Don't re-render on every keystroke — would lose focus.
+}
+async function handleReturnDamagePhoto(ev, idx){
+  const it = returnState.job && returnState.job.items[idx]; if (!it) return;
+  const f = ev.target.files && ev.target.files[0]; if (!f) return;
+  try {
+    const dataUrl = await compressImage(f);
+    it.damage = it.damage || { qty: 1, severity: 'minor', description: '', open: true };
+    it.damage.photo = dataUrl;
+    renderReturnLines();
+    toast('Damage photo attached');
+  } catch(_) { toast('Photo error'); }
 }
 
 function toggleReturnLine(idx){
@@ -1636,7 +1832,20 @@ async function submitReturn(){
   const items = returnState.job.items;
   const returns = items
     .filter(it => (Number(it.returnLocal) || 0) > 0)
-    .map(it => ({ shelf: it.shelf, itemName: it.itemName, qty: Number(it.returnLocal) || 0 }));
+    .map(it => {
+      const base = { shelf: it.shelf, itemName: it.itemName, qty: Number(it.returnLocal) || 0 };
+      // Attach damage info if any was logged. Server caps damage qty
+      // at the return qty, so we can send what we have.
+      if (it.damage && Number(it.damage.qty) > 0) {
+        base.damaged = {
+          qty: Number(it.damage.qty) || 0,
+          severity: it.damage.severity || 'minor',
+          description: it.damage.description || '',
+          photo: it.damage.photo || ''
+        };
+      }
+      return base;
+    });
   if (!returns.length){ toast('Tick at least one item first'); return; }
   const btn = document.getElementById('btn-return-submit');
   if (btn){ btn.disabled = true; btn.textContent = 'Submitting…'; }
@@ -1982,7 +2191,7 @@ async function submitDelivery(){
 
 /* ---------- Browse / lookup ---------- */
 function browseManual(){show('screen-manual');}
-function browseNoTag(){show('screen-notag');}
+function browseNoTag(){show('screen-notag'); buildTypePicker('notag-type', '');}
 
 /* ---------- Inventory search (fuzzy, multi-match) ---------- */
 let _searchDebounce = null;
@@ -2085,6 +2294,7 @@ async function submitManualShelf(){
 function prefillNewShelf(shelf){
   const f=document.getElementById('new-shelf'); if(f)f.value=shelf;
   const d=document.getElementById('new-shelf-display'); if(d)d.textContent=shelf;
+  buildTypePicker('new-type', '');
 }
 
 // Multi-item-per-shelf flow:
@@ -2215,7 +2425,7 @@ async function submitNew(){
   const shelf=((document.getElementById('new-shelf')||{}).value||'').trim().toUpperCase();
   const name=(document.getElementById('new-name')||{}).value?.trim();
   const brand=(document.getElementById('new-brand')||{}).value?.trim()||'Funkified';
-  const type=(document.getElementById('new-type')||{}).value?.trim();
+  const type=getTypePickerValue('new-type');
   const totalQty=(document.getElementById('new-qty')||{}).value;
   const notes=(document.getElementById('new-notes')||{}).value?.trim();
   if(!shelf){toast('Shelf required');return;}
@@ -2230,6 +2440,9 @@ async function submitNew(){
   if (r.queued) toast('Queued for sync: '+shelf+' — '+name);
   else if (r.success) toast('Saved: '+shelf+' — '+name);
   else { toast(r.error || 'Server error'); return; }
+  // A fresh type may have been added — invalidate the cache so the
+  // next dropdown shows it.
+  _knownTypes = null;
   show('screen-success');
 }
 
@@ -2241,7 +2454,7 @@ async function submitNoTag(){
   const shelf=((document.getElementById('notag-shelf')||{}).value||'').trim().toUpperCase();
   const name=(document.getElementById('notag-name')||{}).value?.trim();
   const brand=(document.getElementById('notag-brand')||{}).value?.trim()||'Funkified';
-  const type=(document.getElementById('notag-type')||{}).value?.trim();
+  const type=getTypePickerValue('notag-type');
   const totalQty=(document.getElementById('notag-qty')||{}).value;
   const notes=(document.getElementById('notag-notes')||{}).value?.trim();
   if(!name){toast('Name required');return;}
@@ -2255,6 +2468,7 @@ async function submitNoTag(){
   if (r.queued) toast(shelf?('Queued: '+shelf+' — '+name):('Queued: '+name));
   else if (r.success) toast(shelf?('Saved: '+shelf+' — '+name):('Saved: '+name));
   else { toast(r.error || 'Server error'); return; }
+  _knownTypes = null;
   // Reset form so the next item starts blank (so the user has to consciously
   // re-enter the shelf if they're continuing on the same shelf).
   const ids=['notag-shelf','notag-name','notag-type','notag-notes'];
@@ -2318,15 +2532,15 @@ function prefillEdit(){
   const set=(id,v)=>{const e=document.getElementById(id); if(e)e.value=v||'';};
   set('edit-name',it.name);
   set('edit-brand',it.brand);
-  set('edit-type',it.type);
   set('edit-qty',it.totalQty||0);
   set('edit-newshelf','');
   set('edit-notes',it.notes||'');
+  buildTypePicker('edit-type', it.type || '');
 }
 async function submitEdit(){
   const name=(document.getElementById('edit-name')||{}).value?.trim();
   const brand=(document.getElementById('edit-brand')||{}).value?.trim();
-  const type=(document.getElementById('edit-type')||{}).value?.trim();
+  const type=getTypePickerValue('edit-type');
   const totalQty=(document.getElementById('edit-qty')||{}).value;
   const newShelf=((document.getElementById('edit-newshelf')||{}).value||'').trim().toUpperCase();
   const notes=(document.getElementById('edit-notes')||{}).value;
@@ -2341,6 +2555,7 @@ async function submitEdit(){
     totalQty:totalQty===''?'':Number(totalQty)||0,
     newShelf,notes,team:state.team||'',ts:nowIso()
   });
+  _knownTypes = null;
   toast('Queued edit');
   show('screen-success');
 }
