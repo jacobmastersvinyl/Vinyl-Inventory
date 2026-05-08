@@ -304,7 +304,7 @@
       <div class="field"><label>Name</label>
         <input id="notag-name" type="text" placeholder="e.g. Silver bollard"/></div>
       <div class="field"><label>Brand</label>
-        <input id="notag-brand" type="text" value="Funkified"/></div>
+        <div class="type-picker" id="notag-brand"></div></div>
       <div class="field"><label>Type</label>
         <div class="type-picker" id="notag-type"></div></div>
       <div class="field"><label>Total Qty</label>
@@ -335,7 +335,7 @@
       <div class="field"><label>Name</label>
         <input id="new-name" type="text"/></div>
       <div class="field"><label>Brand</label>
-        <input id="new-brand" type="text" value="Funkified"/></div>
+        <div class="type-picker" id="new-brand"></div></div>
       <div class="field"><label>Type</label>
         <div class="type-picker" id="new-type"></div></div>
       <div class="field"><label>Total Qty</label>
@@ -459,7 +459,7 @@
       <div class="field"><label>Name</label>
         <input id="edit-name" type="text"/></div>
       <div class="field"><label>Brand</label>
-        <input id="edit-brand" type="text"/></div>
+        <div class="type-picker" id="edit-brand"></div></div>
       <div class="field"><label>Type</label>
         <div class="type-picker" id="edit-type"></div></div>
       <div class="field"><label>Total Qty</label>
@@ -614,7 +614,7 @@
       <div class="field"><label>Name</label>
         <input id="te-name" type="text"/></div>
       <div class="field"><label>Brand</label>
-        <input id="te-brand" type="text"/></div>
+        <div class="type-picker" id="te-brand"></div></div>
       <div class="field"><label>Type</label>
         <div class="type-picker" id="te-type"></div></div>
       <div class="field"><label>Total qty</label>
@@ -1028,62 +1028,78 @@ function submitLoadoutSetup(){
   show('screen-browse');
 }
 
-/* ---------- Type / category picker ----------
-   Replaces the old free-text "Type" input on the new-item, edit, and
-   triage-edit screens with a dropdown of existing types so people stop
-   inventing four spellings of "Furniture". An "+ Add new category…"
-   option toggles to a text input for cases where a new category really
-   IS needed. The list is fetched once per session and cached.
+/* ---------- List picker (categories + brands) ----------
+   Reusable dropdown with "+ Add new" inline. Used for the Type and
+   Brand fields on the new-item, edit, and triage-edit screens so the
+   team picks existing values instead of inventing new spellings.
+
+   Two data sources (kinds): 'types' and 'brands'. Each is fetched
+   once per session, cached, and invalidated after any save.
 */
-let _knownTypes = null;
-let _typesPromise = null;
-async function fetchKnownTypes(force){
-  if (_knownTypes && !force) return _knownTypes;
-  if (_typesPromise && !force) return _typesPromise;
-  _typesPromise = (async () => {
+const _listCache = {
+  types:  { data: null, promise: null, action: 'inventoryTypes',  responseKey: 'types',
+            promptEmpty: '— pick a category —', addLabel: '+ Add new category…',
+            placeholderNew: 'New category name (e.g. Lighting)' },
+  brands: { data: null, promise: null, action: 'inventoryBrands', responseKey: 'brands',
+            promptEmpty: '— pick a brand —',    addLabel: '+ Add new brand…',
+            placeholderNew: 'New brand name (e.g. Funkified)' }
+};
+
+function invalidateListCache(){
+  _listCache.types.data  = null;
+  _listCache.brands.data = null;
+}
+
+async function fetchKnownList(kind, force){
+  const slot = _listCache[kind];
+  if (!slot) return [];
+  if (slot.data && !force) return slot.data;
+  if (slot.promise && !force) return slot.promise;
+  slot.promise = (async () => {
     try {
-      const url = ENDPOINT + '?action=inventoryTypes';
+      const url = ENDPOINT + '?action=' + slot.action;
       const res = await fetch(url, { method:'GET' });
       const data = await res.json();
       if (data && data.success){
-        _knownTypes = data.types || [];
-        return _knownTypes;
+        slot.data = data[slot.responseKey] || [];
+        return slot.data;
       }
     } catch (_) {}
-    _knownTypes = _knownTypes || [];
-    return _knownTypes;
+    slot.data = slot.data || [];
+    return slot.data;
   })();
-  return _typesPromise;
+  return slot.promise;
 }
 
-async function buildTypePicker(rootId, currentValue){
+async function buildListPicker(rootId, kind, currentValue){
   const root = document.getElementById(rootId);
-  if (!root) return;
+  const slot = _listCache[kind];
+  if (!root || !slot) return;
   const cur = String(currentValue || '').trim();
-  const types = await fetchKnownTypes();
-  // Make sure the current value is in the option list even if it isn't
-  // in the master list yet — otherwise editing an item with an unusual
-  // type would silently nuke its value.
-  const merged = [...types];
-  if (cur && !merged.some(t => t.toLowerCase() === cur.toLowerCase())) {
+  const list = await fetchKnownList(kind);
+  // Keep the current value in the dropdown even if it's not in the
+  // master list yet (e.g. legacy item with an old spelling) — so we
+  // don't silently nuke its value when the picker first renders.
+  const merged = [...list];
+  if (cur && !merged.some(v => v.toLowerCase() === cur.toLowerCase())) {
     merged.unshift(cur);
   }
   const esc = s => String(s==null?'':s).replace(/[&<>"']/g,
     c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-  const optHtml = merged.map(t => {
-    const sel = t.toLowerCase() === cur.toLowerCase() ? 'selected' : '';
-    return `<option value="${esc(t)}" ${sel}>${esc(t)}</option>`;
+  const optHtml = merged.map(v => {
+    const sel = v.toLowerCase() === cur.toLowerCase() ? 'selected' : '';
+    return `<option value="${esc(v)}" ${sel}>${esc(v)}</option>`;
   }).join('');
   root.innerHTML = `
-    <select onchange="onTypePickerChange('${rootId}')">
-      <option value="" ${cur?'':'selected'}>— pick a category —</option>
+    <select onchange="onListPickerChange('${rootId}')">
+      <option value="" ${cur?'':'selected'}>${esc(slot.promptEmpty)}</option>
       ${optHtml}
-      <option value="__NEW__">+ Add new category…</option>
+      <option value="__NEW__">${esc(slot.addLabel)}</option>
     </select>
-    <input class="type-new hidden" type="text" placeholder="New category name (e.g. Lighting)"/>`;
+    <input class="type-new hidden" type="text" placeholder="${esc(slot.placeholderNew)}"/>`;
 }
 
-function onTypePickerChange(rootId){
+function onListPickerChange(rootId){
   const root = document.getElementById(rootId);
   if (!root) return;
   const sel = root.querySelector('select');
@@ -1097,7 +1113,7 @@ function onTypePickerChange(rootId){
   }
 }
 
-function getTypePickerValue(rootId){
+function getListPickerValue(rootId){
   const root = document.getElementById(rootId);
   if (!root) return '';
   const sel = root.querySelector('select');
@@ -1106,6 +1122,11 @@ function getTypePickerValue(rootId){
   if (sel.value === '__NEW__') return ((inp && inp.value) || '').trim();
   return (sel.value || '').trim();
 }
+
+// Backward-compat shims so I don't have to chase down every call site.
+function buildTypePicker(rootId, val){ return buildListPicker(rootId, 'types', val); }
+function getTypePickerValue(rootId){ return getListPickerValue(rootId); }
+function onTypePickerChange(rootId){ return onListPickerChange(rootId); }
 
 /* ---------- Photo lightbox ----------
    Tap any thumbnail to enlarge. Backdrop / ESC closes.
@@ -1281,12 +1302,12 @@ function triageSkip(){
 function openTriageEdit(){
   const it = _triageQueue[0]; if (!it) return;
   document.getElementById('te-name').value     = it.name || '';
-  document.getElementById('te-brand').value    = it.brand || '';
   document.getElementById('te-qty').value      = it.totalQty || 0;
   document.getElementById('te-newshelf').value = '';
   document.getElementById('te-notes').value    = it.notes || '';
   document.getElementById('te-err').textContent = '';
-  buildTypePicker('te-type', it.type || '');
+  buildListPicker('te-type',  'types',  it.type  || '');
+  buildListPicker('te-brand', 'brands', it.brand || '');
   document.getElementById('triage-edit-modal').classList.add('show');
 }
 function closeTriageEdit(){
@@ -1299,8 +1320,8 @@ function closeTriageEditOnBg(e){
 async function saveTriageEdit(){
   const it = _triageQueue[0]; if (!it){ closeTriageEdit(); return; }
   const name  = (document.getElementById('te-name')||{}).value?.trim();
-  const brand = (document.getElementById('te-brand')||{}).value?.trim();
-  const type  = getTypePickerValue('te-type');
+  const brand = getListPickerValue('te-brand');
+  const type  = getListPickerValue('te-type');
   const qtyStr = (document.getElementById('te-qty')||{}).value;
   const newShelf = ((document.getElementById('te-newshelf')||{}).value || '').trim().toUpperCase();
   const notes = (document.getElementById('te-notes')||{}).value || '';
@@ -1335,7 +1356,7 @@ async function saveTriageEdit(){
     if (qtyStr !== '') it.totalQty = Number(qtyStr) || 0;
     if (newShelf) it.shelf = newShelf;
     it.notes = notes;
-    _knownTypes = null;
+    invalidateListCache();
     closeTriageEdit();
     renderTriage();
     toast('Item updated');
@@ -2191,7 +2212,11 @@ async function submitDelivery(){
 
 /* ---------- Browse / lookup ---------- */
 function browseManual(){show('screen-manual');}
-function browseNoTag(){show('screen-notag'); buildTypePicker('notag-type', '');}
+function browseNoTag(){
+  show('screen-notag');
+  buildListPicker('notag-type', 'types', '');
+  buildListPicker('notag-brand', 'brands', 'Funkified');
+}
 
 /* ---------- Inventory search (fuzzy, multi-match) ---------- */
 let _searchDebounce = null;
@@ -2294,7 +2319,8 @@ async function submitManualShelf(){
 function prefillNewShelf(shelf){
   const f=document.getElementById('new-shelf'); if(f)f.value=shelf;
   const d=document.getElementById('new-shelf-display'); if(d)d.textContent=shelf;
-  buildTypePicker('new-type', '');
+  buildListPicker('new-type', 'types', '');
+  buildListPicker('new-brand', 'brands', 'Funkified');
 }
 
 // Multi-item-per-shelf flow:
@@ -2424,8 +2450,8 @@ async function registerItem(payload, kind){
 async function submitNew(){
   const shelf=((document.getElementById('new-shelf')||{}).value||'').trim().toUpperCase();
   const name=(document.getElementById('new-name')||{}).value?.trim();
-  const brand=(document.getElementById('new-brand')||{}).value?.trim()||'Funkified';
-  const type=getTypePickerValue('new-type');
+  const brand=getListPickerValue('new-brand') || 'Funkified';
+  const type=getListPickerValue('new-type');
   const totalQty=(document.getElementById('new-qty')||{}).value;
   const notes=(document.getElementById('new-notes')||{}).value?.trim();
   if(!shelf){toast('Shelf required');return;}
@@ -2442,7 +2468,7 @@ async function submitNew(){
   else { toast(r.error || 'Server error'); return; }
   // A fresh type may have been added — invalidate the cache so the
   // next dropdown shows it.
-  _knownTypes = null;
+  invalidateListCache();
   show('screen-success');
 }
 
@@ -2453,8 +2479,8 @@ async function submitNoTag(){
   // user. So whatever is in the textbox is what the user actually sees.
   const shelf=((document.getElementById('notag-shelf')||{}).value||'').trim().toUpperCase();
   const name=(document.getElementById('notag-name')||{}).value?.trim();
-  const brand=(document.getElementById('notag-brand')||{}).value?.trim()||'Funkified';
-  const type=getTypePickerValue('notag-type');
+  const brand=getListPickerValue('notag-brand') || 'Funkified';
+  const type=getListPickerValue('notag-type');
   const totalQty=(document.getElementById('notag-qty')||{}).value;
   const notes=(document.getElementById('notag-notes')||{}).value?.trim();
   if(!name){toast('Name required');return;}
@@ -2468,7 +2494,7 @@ async function submitNoTag(){
   if (r.queued) toast(shelf?('Queued: '+shelf+' — '+name):('Queued: '+name));
   else if (r.success) toast(shelf?('Saved: '+shelf+' — '+name):('Saved: '+name));
   else { toast(r.error || 'Server error'); return; }
-  _knownTypes = null;
+  invalidateListCache();
   // Reset form so the next item starts blank (so the user has to consciously
   // re-enter the shelf if they're continuing on the same shelf).
   const ids=['notag-shelf','notag-name','notag-type','notag-notes'];
@@ -2531,16 +2557,16 @@ function prefillEdit(){
   const it=state.currentItem||{};
   const set=(id,v)=>{const e=document.getElementById(id); if(e)e.value=v||'';};
   set('edit-name',it.name);
-  set('edit-brand',it.brand);
   set('edit-qty',it.totalQty||0);
   set('edit-newshelf','');
   set('edit-notes',it.notes||'');
-  buildTypePicker('edit-type', it.type || '');
+  buildListPicker('edit-type', 'types', it.type || '');
+  buildListPicker('edit-brand', 'brands', it.brand || '');
 }
 async function submitEdit(){
   const name=(document.getElementById('edit-name')||{}).value?.trim();
-  const brand=(document.getElementById('edit-brand')||{}).value?.trim();
-  const type=getTypePickerValue('edit-type');
+  const brand=getListPickerValue('edit-brand');
+  const type=getListPickerValue('edit-type');
   const totalQty=(document.getElementById('edit-qty')||{}).value;
   const newShelf=((document.getElementById('edit-newshelf')||{}).value||'').trim().toUpperCase();
   const notes=(document.getElementById('edit-notes')||{}).value;
@@ -2555,7 +2581,7 @@ async function submitEdit(){
     totalQty:totalQty===''?'':Number(totalQty)||0,
     newShelf,notes,team:state.team||'',ts:nowIso()
   });
-  _knownTypes = null;
+  invalidateListCache();
   toast('Queued edit');
   show('screen-success');
 }
