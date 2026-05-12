@@ -102,6 +102,10 @@
     background:#0f0f0f;color:var(--text);font-size:16px;font-family:inherit;
   }
   .type-picker input.type-new{margin-top:6px}
+  .type-picker .picker-status{margin-top:6px;font-size:12px;line-height:1.4}
+  .type-picker .picker-status a{color:var(--accent,#ffb26b);text-decoration:underline;margin-left:6px}
+  .type-picker .picker-status.err{color:#ff8a80}
+  .type-picker .picker-status.muted{color:var(--muted)}
   .pack-thumb{width:48px;height:48px;border-radius:8px;background:#1c1c1c center/cover no-repeat;flex-shrink:0;border:1px solid var(--border);cursor:zoom-in}
   .pack-thumb.empty{display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:10px;cursor:default}
   .pack-thumb.empty::before{content:'no img'}
@@ -1037,17 +1041,21 @@ function submitLoadoutSetup(){
    once per session, cached, and invalidated after any save.
 */
 const _listCache = {
-  types:  { data: null, promise: null, action: 'inventoryTypes',  responseKey: 'types',
+  types:  { data: null, promise: null, lastErr: '', action: 'inventoryTypes',  responseKey: 'types',
             promptEmpty: '— pick a category —', addLabel: '+ Add new category…',
-            placeholderNew: 'New category name (e.g. Lighting)' },
-  brands: { data: null, promise: null, action: 'inventoryBrands', responseKey: 'brands',
+            placeholderNew: 'New category name (e.g. Lighting)',
+            humanSingular: 'category', humanPlural: 'categories' },
+  brands: { data: null, promise: null, lastErr: '', action: 'inventoryBrands', responseKey: 'brands',
             promptEmpty: '— pick a brand —',    addLabel: '+ Add new brand…',
-            placeholderNew: 'New brand name (e.g. Funkified)' }
+            placeholderNew: 'New brand name (e.g. Funkified)',
+            humanSingular: 'brand', humanPlural: 'brands' }
 };
 
 function invalidateListCache(){
-  _listCache.types.data  = null;
-  _listCache.brands.data = null;
+  // Wipe both caches AND any in-flight promises, otherwise a stale
+  // promise from before a save would still resolve to the old list.
+  _listCache.types.data  = null;  _listCache.types.promise  = null;  _listCache.types.lastErr = '';
+  _listCache.brands.data = null;  _listCache.brands.promise = null;  _listCache.brands.lastErr = '';
 }
 
 async function fetchKnownList(kind, force){
@@ -1057,16 +1065,35 @@ async function fetchKnownList(kind, force){
   if (slot.promise && !force) return slot.promise;
   slot.promise = (async () => {
     try {
-      const url = ENDPOINT + '?action=' + slot.action;
-      const res = await fetch(url, { method:'GET' });
-      const data = await res.json();
-      if (data && data.success){
-        slot.data = data[slot.responseKey] || [];
+      const url = ENDPOINT + '?action=' + slot.action + '&_=' + Date.now();
+      // cache: 'no-store' belt-and-braces — we never want the browser
+      // serving a stale list from disk while a deploy is rolling out.
+      const res = await fetch(url, { method:'GET', cache:'no-store' });
+      if (!res.ok){
+        slot.lastErr = 'HTTP ' + res.status + ' from Apps Script — re-deploy as a new version?';
+        slot.data = [];
         return slot.data;
       }
-    } catch (_) {}
-    slot.data = slot.data || [];
-    return slot.data;
+      const text = await res.text();
+      let data = null;
+      try { data = JSON.parse(text); } catch(_) {
+        slot.lastErr = 'Bad JSON from Apps Script (got HTML?) — re-deploy as a new version.';
+        slot.data = [];
+        return slot.data;
+      }
+      if (data && data.success){
+        slot.data = data[slot.responseKey] || [];
+        slot.lastErr = '';
+        return slot.data;
+      }
+      slot.lastErr = (data && data.error) || ('Apps Script returned no ' + slot.humanPlural + '. Re-deploy?');
+      slot.data = [];
+      return slot.data;
+    } catch (e) {
+      slot.lastErr = 'Network error loading ' + slot.humanPlural + '. ' + (e && e.message ? e.message : '');
+      slot.data = slot.data || [];
+      return slot.data;
+    }
   })();
   return slot.promise;
 }
@@ -1076,6 +1103,8 @@ async function buildListPicker(rootId, kind, currentValue){
   const slot = _listCache[kind];
   if (!root || !slot) return;
   const cur = String(currentValue || '').trim();
+  // Show a placeholder while loading so the field never looks frozen.
+  root.innerHTML = `<select disabled><option>Loading ${slot.humanPlural}…</option></select>`;
   const list = await fetchKnownList(kind);
   // Keep the current value in the dropdown even if it's not in the
   // master list yet (e.g. legacy item with an old spelling) — so we
@@ -1090,13 +1119,31 @@ async function buildListPicker(rootId, kind, currentValue){
     const sel = v.toLowerCase() === cur.toLowerCase() ? 'selected' : '';
     return `<option value="${esc(v)}" ${sel}>${esc(v)}</option>`;
   }).join('');
+  // Status line: tells the user (and me, debugging) how many entries
+  // came back — and surfaces fetch errors instead of swallowing them.
+  let statusHtml = '';
+  if (slot.lastErr){
+    statusHtml = `<div class="picker-status err">⚠ ${esc(slot.lastErr)} <a href="#" onclick="reloadListPicker(event,'${rootId}','${kind}','${esc(cur).replace(/'/g,"\\'")}')">Retry</a></div>`;
+  } else if (list.length === 0){
+    statusHtml = `<div class="picker-status muted">No saved ${slot.humanPlural} yet — tap "${esc(slot.addLabel)}" to add the first one. <a href="#" onclick="reloadListPicker(event,'${rootId}','${kind}','${esc(cur).replace(/'/g,"\\'")}')">Reload</a></div>`;
+  } else {
+    statusHtml = `<div class="picker-status muted">${list.length} saved ${list.length===1?slot.humanSingular:slot.humanPlural}. <a href="#" onclick="reloadListPicker(event,'${rootId}','${kind}','${esc(cur).replace(/'/g,"\\'")}')">Reload</a></div>`;
+  }
   root.innerHTML = `
     <select onchange="onListPickerChange('${rootId}')">
       <option value="" ${cur?'':'selected'}>${esc(slot.promptEmpty)}</option>
       ${optHtml}
       <option value="__NEW__">${esc(slot.addLabel)}</option>
     </select>
-    <input class="type-new hidden" type="text" placeholder="${esc(slot.placeholderNew)}"/>`;
+    <input class="type-new hidden" type="text" placeholder="${esc(slot.placeholderNew)}"/>
+    ${statusHtml}`;
+}
+
+async function reloadListPicker(ev, rootId, kind, currentValue){
+  if (ev) ev.preventDefault();
+  const slot = _listCache[kind];
+  if (slot){ slot.data = null; slot.promise = null; slot.lastErr = ''; }
+  await buildListPicker(rootId, kind, currentValue || '');
 }
 
 function onListPickerChange(rootId){
@@ -1121,6 +1168,18 @@ function getListPickerValue(rootId){
   if (!sel) return '';
   if (sel.value === '__NEW__') return ((inp && inp.value) || '').trim();
   return (sel.value || '').trim();
+}
+
+// True iff the user picked "+ Add new…" but never typed anything.
+// Lets submit handlers reject silently-empty new entries (which would
+// otherwise fall through to defaults like 'Funkified' or '').
+function listPickerHasUnfilledNew(rootId){
+  const root = document.getElementById(rootId);
+  if (!root) return false;
+  const sel = root.querySelector('select');
+  const inp = root.querySelector('input.type-new');
+  if (!sel || sel.value !== '__NEW__') return false;
+  return !((inp && inp.value) || '').trim();
 }
 
 // Backward-compat shims so I don't have to chase down every call site.
@@ -1320,6 +1379,14 @@ function closeTriageEditOnBg(e){
 async function saveTriageEdit(){
   const it = _triageQueue[0]; if (!it){ closeTriageEdit(); return; }
   const name  = (document.getElementById('te-name')||{}).value?.trim();
+  if (listPickerHasUnfilledNew('te-brand')){
+    document.getElementById('te-err').textContent = 'Type the new brand name first.';
+    return;
+  }
+  if (listPickerHasUnfilledNew('te-type')){
+    document.getElementById('te-err').textContent = 'Type the new category name first.';
+    return;
+  }
   const brand = getListPickerValue('te-brand');
   const type  = getListPickerValue('te-type');
   const qtyStr = (document.getElementById('te-qty')||{}).value;
@@ -2450,6 +2517,8 @@ async function registerItem(payload, kind){
 async function submitNew(){
   const shelf=((document.getElementById('new-shelf')||{}).value||'').trim().toUpperCase();
   const name=(document.getElementById('new-name')||{}).value?.trim();
+  if (listPickerHasUnfilledNew('new-brand')){ toast('Type the new brand name first'); return; }
+  if (listPickerHasUnfilledNew('new-type')){ toast('Type the new category name first'); return; }
   const brand=getListPickerValue('new-brand') || 'Funkified';
   const type=getListPickerValue('new-type');
   const totalQty=(document.getElementById('new-qty')||{}).value;
@@ -2479,6 +2548,8 @@ async function submitNoTag(){
   // user. So whatever is in the textbox is what the user actually sees.
   const shelf=((document.getElementById('notag-shelf')||{}).value||'').trim().toUpperCase();
   const name=(document.getElementById('notag-name')||{}).value?.trim();
+  if (listPickerHasUnfilledNew('notag-brand')){ toast('Type the new brand name first'); return; }
+  if (listPickerHasUnfilledNew('notag-type')){ toast('Type the new category name first'); return; }
   const brand=getListPickerValue('notag-brand') || 'Funkified';
   const type=getListPickerValue('notag-type');
   const totalQty=(document.getElementById('notag-qty')||{}).value;
@@ -2565,6 +2636,8 @@ function prefillEdit(){
 }
 async function submitEdit(){
   const name=(document.getElementById('edit-name')||{}).value?.trim();
+  if (listPickerHasUnfilledNew('edit-brand')){ toast('Type the new brand name first'); return; }
+  if (listPickerHasUnfilledNew('edit-type')){ toast('Type the new category name first'); return; }
   const brand=getListPickerValue('edit-brand');
   const type=getListPickerValue('edit-type');
   const totalQty=(document.getElementById('edit-qty')||{}).value;
