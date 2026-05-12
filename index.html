@@ -1056,6 +1056,11 @@ function invalidateListCache(){
   // promise from before a save would still resolve to the old list.
   _listCache.types.data  = null;  _listCache.types.promise  = null;  _listCache.types.lastErr = '';
   _listCache.brands.data = null;  _listCache.brands.promise = null;  _listCache.brands.lastErr = '';
+  // Immediately re-warm in the background so the NEXT picker open is
+  // instant — the user just typed a new brand/category, and that's
+  // exactly when they're about to register another item.
+  fetchKnownList('types').catch(()=>{});
+  fetchKnownList('brands').catch(()=>{});
 }
 
 async function fetchKnownList(kind, force){
@@ -1103,8 +1108,12 @@ async function buildListPicker(rootId, kind, currentValue){
   const slot = _listCache[kind];
   if (!root || !slot) return;
   const cur = String(currentValue || '').trim();
-  // Show a placeholder while loading so the field never looks frozen.
-  root.innerHTML = `<select disabled><option>Loading ${slot.humanPlural}…</option></select>`;
+  // If the cache isn't warm yet, show a placeholder. When the boot
+  // pre-fetch has already filled slot.data, skip the placeholder so the
+  // dropdown renders in one paint — no visible loading flicker.
+  if (!slot.data){
+    root.innerHTML = `<select disabled><option>Loading ${slot.humanPlural}…</option></select>`;
+  }
   const list = await fetchKnownList(kind);
   // Keep the current value in the dropdown even if it's not in the
   // master list yet (e.g. legacy item with an old spelling) — so we
@@ -2743,6 +2752,11 @@ async function init(){
   updatePendingChip();
   renderPendingList();
   tryGetGPS();
+  // Warm the brand + category dropdowns in the background so every
+  // subsequent form open is instant. Errors are swallowed; the picker's
+  // own retry link surfaces them when a form actually opens.
+  fetchKnownList('types').catch(()=>{});
+  fetchKnownList('brands').catch(()=>{});
   if(params.shelf){
     state.currentShelf=params.shelf.toUpperCase();
     lookupAndRoute(params.shelf.toUpperCase()).catch(()=>show('screen-session'));
