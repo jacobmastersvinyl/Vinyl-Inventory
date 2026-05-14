@@ -426,14 +426,22 @@
   <section id="screen-damage" class="screen">
     <div class="card stack">
       <h1>Log damage</h1>
+      <div class="field"><label>Type</label>
+        <div class="dmg-sev">
+          <button id="damage-type-clean" type="button" class="small sel" onclick="setStandaloneDamageType('Needs cleaning')">Needs cleaning</button>
+          <button id="damage-type-repair" type="button" class="small" onclick="setStandaloneDamageType('Needs external repair/replacement')">Needs external repair/replacement</button>
+        </div>
+      </div>
+      <div class="field"><label>How many?</label>
+        <div class="qty-row" style="max-width:200px">
+          <button class="small" type="button" onclick="adjustStandaloneDamageQty(-1)">−</button>
+          <input id="damage-qty" type="number" min="1" value="1" onchange="setStandaloneDamageQty(this.value)"/>
+          <button class="small" type="button" onclick="adjustStandaloneDamageQty(1)">+</button>
+        </div>
+        <div class="muted" style="font-size:12px;margin-top:6px">These will be marked as out — Total Qty stays the same.</div>
+      </div>
       <div class="field"><label>Description</label>
         <textarea id="damage-desc" placeholder="What broke, how"></textarea></div>
-      <div class="field"><label>Severity</label>
-        <select id="damage-severity">
-          <option value="minor">Minor</option>
-          <option value="major">Major</option>
-          <option value="destroyed">Destroyed</option>
-        </select></div>
       <div class="field">
         <label>Photo</label>
         <input type="file" accept="image/*" capture="environment" onchange="handlePhotoInput(event,'damage-photo')"/>
@@ -1769,15 +1777,16 @@ function renderReturnLines(){
     const thumbStyle = it.thumbUrl ? `style="background-image:url('${esc(it.thumbUrl)}')"` : '';
     const thumbCls = it.thumbUrl ? 'pack-thumb' : 'pack-thumb empty';
     // Damage panel state — collapsed by default. Has its own qty
-    // (capped at the line's return qty), severity, description, photo.
+    // (capped at the line's return qty), type, description, photo.
     const dmg = it.damage || {};
     const dmgOpen = !!dmg.open;
     const dmgQty = Math.max(0, Math.min(local, Number(dmg.qty) || 0));
-    const dmgSeverity = dmg.severity || 'minor';
+    const dmgType = dmg.type || 'Needs cleaning';
     const dmgDesc = dmg.description || '';
     const dmgHasPhoto = !!dmg.photo;
+    const dmgChipLabel = dmgType === 'Needs external repair/replacement' ? 'repair' : 'clean';
     const dmgChip = dmgQty > 0
-      ? `<span class="dmg-chip">⚠ ${dmgQty} damaged${dmg.severity?' · '+esc(dmg.severity):''}</span>`
+      ? `<span class="dmg-chip">⚠ ${dmgQty} damaged · ${esc(dmgChipLabel)}</span>`
       : '';
     const dmgPanel = dmgOpen ? `
       <div class="dmg-panel">
@@ -1789,13 +1798,13 @@ function renderReturnLines(){
                    onchange="setReturnDamageQty(${idx}, this.value)"/>
             <button class="small" onclick="adjustReturnDamageQty(${idx},1)">+</button>
           </div>
+          <div class="muted" style="font-size:11px;margin-top:4px">Damaged units will stay marked as out.</div>
         </div>
         <div class="dmg-row">
-          <label class="dmg-label">Severity</label>
+          <label class="dmg-label">Type</label>
           <div class="dmg-sev">
-            <button class="small ${dmgSeverity==='minor'?'sel':''}" onclick="setReturnDamageSeverity(${idx},'minor')">Minor</button>
-            <button class="small ${dmgSeverity==='major'?'sel':''}" onclick="setReturnDamageSeverity(${idx},'major')">Major</button>
-            <button class="small ${dmgSeverity==='total'?'sel':''}" onclick="setReturnDamageSeverity(${idx},'total')">Write-off</button>
+            <button class="small ${dmgType==='Needs cleaning'?'sel':''}" onclick="setReturnDamageType(${idx},'Needs cleaning')">Needs cleaning</button>
+            <button class="small ${dmgType==='Needs external repair/replacement'?'sel':''}" onclick="setReturnDamageType(${idx},'Needs external repair/replacement')">Needs external repair/replacement</button>
           </div>
         </div>
         <div class="dmg-row">
@@ -1842,7 +1851,7 @@ function renderReturnLines(){
 // ── Damage capture per return line ──
 function openReturnDamagePanel(idx){
   const it = returnState.job && returnState.job.items[idx]; if (!it) return;
-  it.damage = it.damage || { qty: 0, severity: 'minor', description: '', photo: '' };
+  it.damage = it.damage || { qty: 0, type: 'Needs cleaning', description: '', photo: '' };
   it.damage.open = true;
   // Default the damage qty to whatever's currently being returned, so
   // the user doesn't have to step it up if everything's broken.
@@ -1856,7 +1865,7 @@ function closeReturnDamagePanel(idx){
 }
 function setReturnDamageQty(idx, v){
   const it = returnState.job && returnState.job.items[idx]; if (!it) return;
-  it.damage = it.damage || { severity: 'minor', description: '', photo: '', open: true };
+  it.damage = it.damage || { type: 'Needs cleaning', description: '', photo: '', open: true };
   let n = parseInt(v, 10) || 0;
   const max = Math.max(0, Number(it.returnLocal) || 0);
   if (n < 0) n = 0; if (n > max) n = max;
@@ -1868,15 +1877,15 @@ function adjustReturnDamageQty(idx, delta){
   const cur = (it.damage && Number(it.damage.qty)) || 0;
   setReturnDamageQty(idx, cur + delta);
 }
-function setReturnDamageSeverity(idx, sev){
+function setReturnDamageType(idx, type){
   const it = returnState.job && returnState.job.items[idx]; if (!it) return;
   it.damage = it.damage || { qty: 1, description: '', photo: '', open: true };
-  it.damage.severity = sev;
+  it.damage.type = type;
   renderReturnLines();
 }
 function setReturnDamageDesc(idx, txt){
   const it = returnState.job && returnState.job.items[idx]; if (!it) return;
-  it.damage = it.damage || { qty: 1, severity: 'minor', photo: '', open: true };
+  it.damage = it.damage || { qty: 1, type: 'Needs cleaning', photo: '', open: true };
   it.damage.description = String(txt || '');
   // Don't re-render on every keystroke — would lose focus.
 }
@@ -1885,7 +1894,7 @@ async function handleReturnDamagePhoto(ev, idx){
   const f = ev.target.files && ev.target.files[0]; if (!f) return;
   try {
     const dataUrl = await compressImage(f);
-    it.damage = it.damage || { qty: 1, severity: 'minor', description: '', open: true };
+    it.damage = it.damage || { qty: 1, type: 'Needs cleaning', description: '', open: true };
     it.damage.photo = dataUrl;
     renderReturnLines();
     toast('Damage photo attached');
@@ -1936,7 +1945,7 @@ async function submitReturn(){
       if (it.damage && Number(it.damage.qty) > 0) {
         base.damaged = {
           qty: Number(it.damage.qty) || 0,
-          severity: it.damage.severity || 'minor',
+          type: it.damage.type || 'Needs cleaning',
           description: it.damage.description || '',
           photo: it.damage.photo || ''
         };
@@ -2614,15 +2623,41 @@ async function submitReturn(){
   toast('Queued return ×'+qty);
   show('screen-success');
 }
+// Standalone damage form state. Type defaults to "Needs cleaning"
+// because it's the lighter touch; qty defaults to 1.
+let _dmgType = 'Needs cleaning';
+function setStandaloneDamageType(t){
+  _dmgType = t;
+  const a = document.getElementById('damage-type-clean');
+  const b = document.getElementById('damage-type-repair');
+  if (a) a.classList.toggle('sel', t === 'Needs cleaning');
+  if (b) b.classList.toggle('sel', t === 'Needs external repair/replacement');
+}
+function setStandaloneDamageQty(v){
+  const el = document.getElementById('damage-qty'); if (!el) return;
+  let n = parseInt(v, 10) || 0; if (n < 1) n = 1;
+  el.value = n;
+}
+function adjustStandaloneDamageQty(d){
+  const el = document.getElementById('damage-qty'); if (!el) return;
+  setStandaloneDamageQty((parseInt(el.value,10) || 1) + d);
+}
+function resetStandaloneDamageForm(){
+  setStandaloneDamageType('Needs cleaning');
+  setStandaloneDamageQty(1);
+  const desc = document.getElementById('damage-desc'); if (desc) desc.value = '';
+  const ph = document.getElementById('damage-photo'); if (ph) ph.src = '';
+}
 async function submitDamage(){
   const desc=(document.getElementById('damage-desc')||{}).value?.trim();
-  const severity=(document.getElementById('damage-severity')||{}).value||'minor';
+  const qty = Math.max(1, parseInt((document.getElementById('damage-qty')||{}).value,10) || 1);
   if(!desc){toast('Describe the damage');return;}
   await enqueue('damage',Object.assign(itemKey(),{
-    description:desc,severity,
-    team:state.team||'',photo:state.pendingPhoto?.dataUrl||'',ts:nowIso()
+    description:desc, type:_dmgType, quantity:qty,
+    team:state.team||'', photo:state.pendingPhoto?.dataUrl||'', ts:nowIso()
   },gpsPayload()));
   state.pendingPhoto=null;
+  resetStandaloneDamageForm();
   toast('Queued damage report');
   show('screen-success');
 }
