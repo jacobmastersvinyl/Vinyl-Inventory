@@ -106,6 +106,31 @@
   .type-picker .picker-status a{color:var(--accent,#ffb26b);text-decoration:underline;margin-left:6px}
   .type-picker .picker-status.err{color:#ff8a80}
   .type-picker .picker-status.muted{color:var(--muted)}
+  /* Induction hazard cards */
+  .haz-card{border:1px solid var(--border);border-radius:10px;background:#0f0f0f;margin-bottom:10px;overflow:hidden}
+  .haz-head{display:flex;align-items:flex-start;gap:10px;padding:12px;cursor:pointer;user-select:none}
+  .haz-head .haz-check{margin-top:2px;width:20px;height:20px;flex:0 0 auto}
+  .haz-head .haz-title{flex:1;font-weight:600;line-height:1.3}
+  .haz-head .haz-risk{font-size:11px;padding:3px 8px;border-radius:999px;background:#222;color:var(--muted);flex:0 0 auto;white-space:nowrap;align-self:flex-start;margin-top:2px}
+  .haz-head .haz-risk.r-high{background:#5a1f1f;color:#ff9a9a}
+  .haz-head .haz-risk.r-med {background:#5a4720;color:#ffd28a}
+  .haz-head .haz-risk.r-low {background:#1f3a26;color:#a7e7b8}
+  .haz-body{padding:0 12px 12px 42px;display:none;font-size:14px;line-height:1.5}
+  .haz-card.open .haz-body{display:block}
+  .haz-body ul{margin:0;padding-left:18px}
+  .haz-body li{margin-bottom:4px}
+  .haz-card.acked{border-color:rgba(167,231,184,.35)}
+  /* Acknowledgement rows */
+  .ind-check{display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:#0f0f0f;margin-bottom:8px;font-size:14px;line-height:1.4;cursor:pointer}
+  .ind-check input{margin-top:3px;width:20px;height:20px;flex:0 0 auto}
+  /* Hazard origin chip — distinguishes site-specific from standard */
+  .haz-origin{display:inline-block;font-size:10px;padding:2px 6px;border-radius:999px;margin-left:6px;vertical-align:middle;font-weight:500}
+  .haz-origin.site{background:rgba(255,178,107,.18);color:#ffb26b}
+  .haz-origin.std {background:rgba(255,255,255,.08);color:var(--muted)}
+  /* Inline event-hazard editor row */
+  .evd-haz{border:1px solid var(--border);border-radius:8px;padding:10px;margin-bottom:8px;background:#181818}
+  .evd-haz input,.evd-haz textarea{width:100%;padding:8px;border-radius:6px;border:1px solid var(--border);background:#0f0f0f;color:var(--text);font-family:inherit;font-size:13px}
+  .small.sel{background:var(--accent,#ffb26b);color:#000;border-color:var(--accent,#ffb26b)}
   .pack-thumb{width:48px;height:48px;border-radius:8px;background:#1c1c1c center/cover no-repeat;flex-shrink:0;border:1px solid var(--border);cursor:zoom-in}
   .pack-thumb.empty{display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:10px;cursor:default}
   .pack-thumb.empty::before{content:'no img'}
@@ -208,6 +233,13 @@
         <span>
           <strong>Report an incident</strong>
           <div class="muted" style="font-size:12px;margin-top:2px">Injury, near miss, hazard or property damage</div>
+        </span>
+      </button>
+      <button class="ghost" onclick="openInductionForm()" style="text-align:left;display:flex;align-items:center;gap:10px">
+        <span style="font-size:18px">📋</span>
+        <span>
+          <strong>Event induction</strong>
+          <div class="muted" style="font-size:12px;margin-top:2px">New on site? Run through the SWMS and sign on</div>
         </span>
       </button>
     </div>
@@ -611,6 +643,192 @@
       </div>
 
       <button class="primary" onclick="submitIncident()">Submit incident report</button>
+      <button class="ghost" onclick="show('screen-session')">Cancel</button>
+    </div>
+  </section>
+
+  <!-- EVENT INDUCTION -->
+  <!--
+    Structured after the Funkified Storage SWMS template. The hazard
+    list is rendered from server data (?action=inductionContent) so
+    new hazards / control measures can be added by editing Code.gs
+    without re-deploying the front-end. The inductee acknowledges each
+    hazard with a checkbox, ticks the four general acknowledgements,
+    then types their name as a signature. Submit logs the row to the
+    Inductions sheet and emails them + the WHS contact.
+  -->
+  <section id="screen-induction" class="screen">
+    <div class="card stack">
+      <h1>Event induction</h1>
+      <p class="muted" style="font-size:13px">
+        Welcome. Work through the SWMS-based induction below and sign on at the bottom.
+        Takes 3–5 minutes. Your record is filed against your name.
+      </p>
+
+      <h2 style="margin-top:6px">Which event?</h2>
+      <div class="field">
+        <label>Event</label>
+        <div id="ind-event-picker" class="type-picker"></div>
+      </div>
+
+      <!-- Active event details — auto-filled from the picker. Editable
+           so producers can amend on the fly. -->
+      <div id="ind-event-detail" style="display:none">
+        <div id="ind-event-banner" class="muted" style="font-size:12px;margin:0 0 10px 0"></div>
+        <div class="field">
+          <label>Event location</label>
+          <input id="ind-event-location" type="text" placeholder="e.g. Sydney Showground, Olympic Park"/>
+        </div>
+        <div class="field">
+          <label>Event dates / bump-in & out times</label>
+          <input id="ind-event-dates" type="text" placeholder="e.g. Bump-in 21 Aug 6am, event 22 Aug, bump-out 23 Aug 8am"/>
+        </div>
+        <div class="field">
+          <label>Producer on this event</label>
+          <input id="ind-producer-name" type="text"/>
+        </div>
+        <div class="field">
+          <label>Producer contact</label>
+          <input id="ind-producer-contact" type="tel"/>
+        </div>
+        <div id="ind-event-extras"></div>
+      </div>
+
+      <!-- New-event editor (collapsed by default — shown when picker
+           selects "+ Add new event" or an unprofiled job name). Lets a
+           producer set site-specifics inline OR import from SWMS. -->
+      <div id="ind-event-editor" style="display:none;border:1px solid var(--border);border-radius:10px;padding:14px;background:#0f0f0f;margin-bottom:12px">
+        <h3 style="margin:0 0 10px 0">Set up this event</h3>
+        <div class="field">
+          <label>Event name</label>
+          <input id="evd-name" type="text" placeholder="e.g. Daffodils Day 2026"/>
+        </div>
+        <div class="field">
+          <label>Location</label>
+          <input id="evd-location" type="text"/>
+        </div>
+        <div class="field">
+          <label>Dates / bump-in & out</label>
+          <input id="evd-dates" type="text"/>
+        </div>
+        <div class="field">
+          <label>Producer name</label>
+          <input id="evd-producer-name" type="text"/>
+        </div>
+        <div class="field">
+          <label>Producer contact</label>
+          <input id="evd-producer-contact" type="tel"/>
+        </div>
+        <div class="field">
+          <label>Emergency assembly point</label>
+          <input id="evd-assembly" type="text" placeholder="e.g. Car park gate 4"/>
+        </div>
+        <div class="field">
+          <label>First aider on site (name · cert · phone)</label>
+          <input id="evd-first-aider" type="text" placeholder="e.g. Sarah Lee · L2 First Aid · 0400 000 000"/>
+        </div>
+        <div class="field">
+          <label>Nearest hospital</label>
+          <input id="evd-hospital" type="text" placeholder="e.g. RPA Hospital, 10 min"/>
+        </div>
+        <div class="field">
+          <label>Site access notes</label>
+          <input id="evd-access" type="text" placeholder="e.g. Loading dock B; FOH entry via gate 2"/>
+        </div>
+
+        <h4 style="margin:12px 0 6px 0">Site-specific hazards</h4>
+        <p class="muted" style="font-size:12px;margin:0 0 8px 0">
+          Pull from a filled SWMS Google Doc or add manually. Each hazard stacks on top of the generic warehouse hazards below.
+        </p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+          <button type="button" class="ghost small" onclick="openSwmsPicker()">📄 Import from SWMS</button>
+          <button type="button" class="ghost small" onclick="addEventHazardBlank()">+ Add hazard</button>
+        </div>
+        <div id="evd-hazards"></div>
+
+        <div class="field" style="margin-top:12px">
+          <label>SWMS doc URL (optional — link to filed copy)</label>
+          <input id="evd-swms-url" type="url" placeholder="https://docs.google.com/document/d/…"/>
+        </div>
+
+        <div style="display:flex;gap:8px;margin-top:12px">
+          <button class="primary small" onclick="saveEventProfile()">Save event profile</button>
+          <button class="ghost small" onclick="cancelEventEditor()">Cancel</button>
+        </div>
+      </div>
+
+      <!-- SWMS Doc picker modal — shown when "Import from SWMS" tapped -->
+      <div id="ind-swms-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:90;align-items:center;justify-content:center;padding:20px">
+        <div style="background:#0f0f0f;border:1px solid var(--border);border-radius:12px;padding:18px;max-width:540px;width:100%;max-height:80vh;overflow:auto">
+          <h3 style="margin-top:0">Pick a SWMS document</h3>
+          <p class="muted" style="font-size:12px;margin-top:0">Google Docs in your configured SWMS folder. Most recent first.</p>
+          <div id="ind-swms-list" style="margin:12px 0"></div>
+          <div style="display:flex;gap:8px;justify-content:flex-end">
+            <button class="ghost small" onclick="closeSwmsPicker()">Cancel</button>
+          </div>
+        </div>
+      </div>
+
+      <h2 style="margin-top:18px">About you</h2>
+      <div class="field">
+        <label>Full name</label>
+        <input id="ind-staff-name" type="text" placeholder="Your legal name"/>
+      </div>
+      <div class="field">
+        <label>Organisation</label>
+        <input id="ind-staff-org" type="text" placeholder="e.g. Vinyl Media, Funkified, freelance"/>
+      </div>
+      <div class="field">
+        <label>Phone</label>
+        <input id="ind-staff-phone" type="tel"/>
+      </div>
+      <div class="field">
+        <label>Role on this event</label>
+        <input id="ind-staff-role" type="text" placeholder="e.g. crew, driver, runner, supervisor"/>
+      </div>
+
+      <h2 style="margin-top:18px">Hazards on site</h2>
+      <p class="muted" style="font-size:12px;margin-top:0;margin-bottom:6px">
+        Tap each card to expand the control measures. Tick to confirm you understand
+        and will follow each one. <strong>Risk rating</strong> uses the SWMS matrix:
+        L=1, M=2, H=3. Likelihood × Severity = risk (low 1–2, med 3–4, high 6–9).
+      </p>
+      <div id="ind-baseline-link" class="muted" style="font-size:12px;margin-bottom:10px"></div>
+      <div id="ind-hazards"></div>
+
+      <h2 style="margin-top:18px">General acknowledgements</h2>
+      <label class="ind-check">
+        <input type="checkbox" id="ind-ack-ppe"/>
+        <span><strong>Protective gear.</strong> I'll wear closed-toe shoes on site at all times. I'll wear high vis, steel cap shoes, safety glasses and gloves where appropriate for the tasks I perform.</span>
+      </label>
+      <label class="ind-check">
+        <input type="checkbox" id="ind-ack-codes"/>
+        <span><strong>Looking after each other.</strong> I'll take care of my own safety, my teammates' safety, and anyone else on site. I'll follow the hazard controls in this SWMS, what the producer or supervisor asks me to do, and any safety rules at the venue.</span>
+      </label>
+      <label class="ind-check">
+        <input type="checkbox" id="ind-ack-rts"/>
+        <span><strong>Right to stop work.</strong> I understand I can — and will — stop work if I believe a task is unsafe. No penalty applies.</span>
+      </label>
+
+      <h2 style="margin-top:18px">Optional</h2>
+      <div class="field">
+        <label>Photo (selfie, for ID on site)</label>
+        <input type="file" accept="image/*" capture="environment" onchange="handlePhotoInput(event,'ind-photo')"/>
+        <img id="ind-photo" class="photo-preview"/>
+      </div>
+      <div class="field">
+        <label>Relevant skills or qualifications</label>
+        <textarea id="ind-notes" rows="2" placeholder="e.g. First aid certified · Forklift ticket · EWP / scissor lift · Working at heights · White card"></textarea>
+      </div>
+
+      <p class="muted" style="font-size:13px;margin-top:18px;margin-bottom:8px">
+        <strong>Got any questions?</strong> Talk to your supervisor or the event producer before you start.
+      </p>
+
+      <button class="primary" onclick="submitInduction()" style="margin-top:6px">
+        By clicking here I acknowledge I am prepared to operate on-site
+      </button>
+      <div id="ind-version-note" class="muted" style="font-size:11px;margin-top:8px;text-align:center"></div>
       <button class="ghost" onclick="show('screen-session')">Cancel</button>
     </div>
   </section>
@@ -2953,6 +3171,507 @@ async function submitIncident(){
   await enqueue('reportIncident', payload);
   resetIncidentForm();
   toast('Incident report queued — alert email will fire when synced');
+  show('screen-success');
+}
+
+// ─────────── Event induction ───────────
+// Hazard list, codes list, and default producer come from the server
+// (?action=inductionContent) so they can be tweaked in Code.gs
+// without re-deploying the front-end. Cached for the session so
+// re-opening the form is instant.
+let _inductionContent = null;
+let _inductionContentPromise = null;
+async function fetchInductionContent(force){
+  if (_inductionContent && !force) return _inductionContent;
+  if (_inductionContentPromise && !force) return _inductionContentPromise;
+  _inductionContentPromise = (async () => {
+    try {
+      const url = ENDPOINT + '?action=inductionContent&_=' + Date.now();
+      const res = await fetch(url, { method:'GET', cache:'no-store' });
+      const data = await res.json();
+      if (data && data.success){
+        _inductionContent = data;
+        return data;
+      }
+    } catch(_) {}
+    // Hardcoded fallback so the form works even if the network blip
+    // hits during a bump-in. Keep this minimal — the server list is
+    // the source of truth.
+    _inductionContent = {
+      version: 'offline',
+      hazards: [
+        { id:'manual-handling', title:'Manual handling',
+          likelihood:'M', severity:'M', risk:4,
+          controls:['Two-person lift over 23 kg.','Use trolleys.','Bend knees, no twisting.'] },
+        { id:'slips-trips-falls', title:'Slips, trips, falls',
+          likelihood:'M', severity:'M', risk:4,
+          controls:['Keep walkways clear.','Clean spills immediately.','Closed-toe footwear.'] }
+      ],
+      codes: ['WHS Act 2011','WHS Regulations 2011'],
+      producer: { name:'Gus Stephenson — Head of Production', contact:'0403 668 540' }
+    };
+    return _inductionContent;
+  })();
+  return _inductionContentPromise;
+}
+
+// Combined hazard list this induction is signing against: generic
+// warehouse hazards + the picked event's site-specific hazards.
+let _indCombinedHazards = [];
+// Tracks which hazard ids the inductee has acknowledged this session.
+const _indAck = new Set();
+// Cached events list from listEvents.
+let _eventsList = null;
+let _eventsListPromise = null;
+// Current event-editor state when adding/editing an event profile.
+let _evdHazards = [];
+
+function _riskTier(r){
+  if (r >= 6) return 'r-high';
+  if (r >= 3) return 'r-med';
+  return 'r-low';
+}
+function _esc(s){
+  return String(s == null ? '' : s).replace(/[&<>"']/g,
+    c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function _riskFor(l, s){
+  const v = x => x === 'L' ? 1 : (x === 'M' ? 2 : (x === 'H' ? 3 : 0));
+  return v(l) * v(s);
+}
+
+// Render hazard cards. Site-specific hazards (origin='site') get a
+// visual chip; generic ones get a "standard" chip.
+function renderInductionHazards(){
+  const host = document.getElementById('ind-hazards');
+  if (!host) return;
+  host.innerHTML = _indCombinedHazards.map((h, i) => {
+    const acked = _indAck.has(h.id);
+    const tier = _riskTier(h.risk);
+    const originChip = h.origin === 'site'
+      ? '<span class="haz-origin site">Site-specific</span>'
+      : '<span class="haz-origin std">Standard</span>';
+    return `
+      <div class="haz-card ${acked?'acked':''}" id="haz-card-${i}">
+        <div class="haz-head" onclick="toggleHazardCard(${i})">
+          <input type="checkbox" class="haz-check" ${acked?'checked':''}
+                 onclick="event.stopPropagation(); ackHazard('${_esc(h.id)}', this.checked, ${i})"/>
+          <div class="haz-title">${_esc(h.title)} ${originChip}</div>
+          <div class="haz-risk ${tier}">L=${_esc(h.likelihood)} · S=${_esc(h.severity)} · ${h.risk}</div>
+        </div>
+        <div class="haz-body">
+          <ul>${(h.controls || []).map(c => `<li>${_esc(c)}</li>`).join('')}</ul>
+        </div>
+      </div>`;
+  }).join('');
+}
+function toggleHazardCard(i){
+  const card = document.getElementById('haz-card-' + i);
+  if (card) card.classList.toggle('open');
+}
+function ackHazard(id, checked, i){
+  if (checked) _indAck.add(id); else _indAck.delete(id);
+  const card = document.getElementById('haz-card-' + i);
+  if (card) card.classList.toggle('acked', checked);
+}
+
+// Build the combined hazard list = generic (from inductionContent) +
+// event-specific (from the picked event, if any). Generic hazards are
+// origin='std', site-specific are origin='site'.
+function _buildCombinedHazards(eventHazards){
+  const generic = (_inductionContent && _inductionContent.hazards) || [];
+  const site = eventHazards || [];
+  _indCombinedHazards = generic.map(h => Object.assign({}, h, { origin:'std' }))
+    .concat(site.map(h => Object.assign({}, h, { origin:'site' })));
+  // Acknowledge state lives in _indAck by id, so we don't lose ticks
+  // if the user changes events; but ticks for now-removed hazards stay
+  // harmlessly in the set.
+}
+
+// ── Events list + picker ──
+async function fetchEventsList(force){
+  if (_eventsList && !force) return _eventsList;
+  if (_eventsListPromise && !force) return _eventsListPromise;
+  _eventsListPromise = (async () => {
+    try {
+      const url = ENDPOINT + '?action=eventsList&_=' + Date.now();
+      const res = await fetch(url, { method:'GET', cache:'no-store' });
+      const data = await res.json();
+      if (data && data.success){ _eventsList = data; return data; }
+    } catch(_) {}
+    _eventsList = { success:false, events:[], profiledCount:0, unprofiledCount:0 };
+    return _eventsList;
+  })();
+  return _eventsListPromise;
+}
+
+function _eventLabel(e){
+  if (e.status === 'profiled') return e.eventName + ' · ' + (e.location || 'no location') + ' · profiled ✓';
+  return e.eventName + ' · from ' + (e.sourceClient || 'orders') + ' · needs setup';
+}
+
+async function renderEventPicker(){
+  const root = document.getElementById('ind-event-picker');
+  if (!root) return;
+  root.innerHTML = `<select disabled><option>Loading events…</option></select>`;
+  const data = await fetchEventsList();
+  const list = data.events || [];
+  const opts = list.map(e => `<option value="${_esc(e.eventName)}">${_esc(_eventLabel(e))}</option>`).join('');
+  root.innerHTML = `
+    <select onchange="onEventPickerChange(this.value)">
+      <option value="" selected>— pick the event you're working —</option>
+      ${opts}
+      <option value="__NEW__">+ Add new event</option>
+    </select>
+    <div class="muted" style="font-size:12px;margin-top:6px">
+      ${list.length} event${list.length===1?'':'s'} (${data.profiledCount||0} with site-specifics, ${data.unprofiledCount||0} from orders only).
+    </div>`;
+}
+
+async function onEventPickerChange(value){
+  hideEventEditor();
+  _indAck.clear();  // a different event = a different SWMS coverage
+  const setVal = (id, v) => { const el = document.getElementById(id); if (el) el.value = v || ''; };
+  if (!value){
+    document.getElementById('ind-event-detail').style.display = 'none';
+    _buildCombinedHazards([]);
+    renderInductionHazards();
+    return;
+  }
+  if (value === '__NEW__'){
+    document.getElementById('ind-event-detail').style.display = 'none';
+    openEventEditor(null);
+    _buildCombinedHazards([]);
+    renderInductionHazards();
+    return;
+  }
+  // Look up the event in the cached list.
+  const list = (_eventsList && _eventsList.events) || [];
+  const ev = list.find(e => e.eventName === value);
+  if (!ev){
+    document.getElementById('ind-event-detail').style.display = 'none';
+    _buildCombinedHazards([]);
+    renderInductionHazards();
+    return;
+  }
+  if (ev.status === 'unprofiled'){
+    // Job name with no event profile yet — open editor to fill it in.
+    openEventEditor({ eventName: ev.eventName });
+    _buildCombinedHazards([]);
+    renderInductionHazards();
+    return;
+  }
+  // Profiled — fill the visible event details and load site hazards.
+  document.getElementById('ind-event-detail').style.display = '';
+  document.getElementById('ind-event-banner').innerHTML =
+    `📋 <strong>${_esc(ev.eventName)}</strong> · profile loaded · ${(ev.siteHazards||[]).length} site-specific hazard${(ev.siteHazards||[]).length===1?'':'s'}` +
+    (ev.swmsDocUrl ? ` · <a href="${_esc(ev.swmsDocUrl)}" target="_blank">📄 View full SWMS</a>` : '');
+  setVal('ind-event-location', ev.location || '');
+  setVal('ind-event-dates', ev.dates || '');
+  setVal('ind-producer-name', ev.producerName || '');
+  setVal('ind-producer-contact', ev.producerContact || '');
+  // Render any extras (emergency assembly, first aider, hospital, access).
+  const extras = document.getElementById('ind-event-extras');
+  if (extras){
+    const lines = [];
+    if (ev.emergencyAssembly) lines.push(`<div class="muted" style="font-size:12px"><strong>Assembly:</strong> ${_esc(ev.emergencyAssembly)}</div>`);
+    if (ev.firstAider)        lines.push(`<div class="muted" style="font-size:12px"><strong>First aider:</strong> ${_esc(ev.firstAider)}</div>`);
+    if (ev.nearestHospital)   lines.push(`<div class="muted" style="font-size:12px"><strong>Nearest hospital:</strong> ${_esc(ev.nearestHospital)}</div>`);
+    if (ev.siteAccess)        lines.push(`<div class="muted" style="font-size:12px"><strong>Site access:</strong> ${_esc(ev.siteAccess)}</div>`);
+    extras.innerHTML = lines.join('');
+  }
+  _buildCombinedHazards(ev.siteHazards || []);
+  renderInductionHazards();
+}
+
+// ── Inline event editor ──
+function openEventEditor(seed){
+  const setVal = (id, v) => { const el = document.getElementById(id); if (el) el.value = v || ''; };
+  setVal('evd-name', (seed && seed.eventName) || '');
+  setVal('evd-location', '');
+  setVal('evd-dates', '');
+  setVal('evd-producer-name', (_inductionContent && _inductionContent.producer && _inductionContent.producer.name) || '');
+  setVal('evd-producer-contact', (_inductionContent && _inductionContent.producer && _inductionContent.producer.contact) || '');
+  setVal('evd-assembly', '');
+  setVal('evd-first-aider', '');
+  setVal('evd-hospital', '');
+  setVal('evd-access', '');
+  setVal('evd-swms-url', '');
+  _evdHazards = [];
+  renderEvdHazards();
+  document.getElementById('ind-event-editor').style.display = '';
+}
+function hideEventEditor(){
+  const el = document.getElementById('ind-event-editor');
+  if (el) el.style.display = 'none';
+}
+function cancelEventEditor(){
+  hideEventEditor();
+  // Reset picker to blank.
+  const root = document.getElementById('ind-event-picker');
+  const sel = root && root.querySelector('select');
+  if (sel) sel.value = '';
+}
+
+function renderEvdHazards(){
+  const host = document.getElementById('evd-hazards');
+  if (!host) return;
+  if (!_evdHazards.length){
+    host.innerHTML = `<div class="muted" style="font-size:12px;padding:8px;border:1px dashed var(--border);border-radius:8px">No site-specific hazards yet. Import from a SWMS doc or add one manually.</div>`;
+    return;
+  }
+  host.innerHTML = _evdHazards.map((h, i) => `
+    <div class="evd-haz">
+      <div style="display:flex;gap:8px;align-items:center;margin-bottom:6px">
+        <input type="text" placeholder="Hazard title" value="${_esc(h.title||'')}"
+               oninput="setEvdHazardField(${i},'title',this.value)" style="flex:1"/>
+        <button type="button" class="small ghost" onclick="removeEvdHazard(${i})">✕</button>
+      </div>
+      <div style="display:flex;gap:6px;margin-bottom:6px;flex-wrap:wrap">
+        <span class="muted" style="font-size:11px">Likelihood:</span>
+        ${['L','M','H'].map(l => `<button type="button" class="small ${h.likelihood===l?'sel':''}" onclick="setEvdHazardField(${i},'likelihood','${l}')">${l}</button>`).join('')}
+        <span class="muted" style="font-size:11px;margin-left:6px">Severity:</span>
+        ${['L','M','H'].map(s => `<button type="button" class="small ${h.severity===s?'sel':''}" onclick="setEvdHazardField(${i},'severity','${s}')">${s}</button>`).join('')}
+        <span class="muted" style="font-size:11px;margin-left:6px">Risk: <strong>${h.risk||1}</strong></span>
+      </div>
+      <textarea placeholder="Control measures — one per line" rows="3"
+                oninput="setEvdHazardField(${i},'controlsRaw',this.value)">${_esc((h.controls||[]).join('\n'))}</textarea>
+    </div>
+  `).join('');
+}
+function addEventHazardBlank(){
+  _evdHazards.push({ id:'haz-' + Date.now(), title:'', likelihood:'L', severity:'L', risk:1, controls:[] });
+  renderEvdHazards();
+}
+function removeEvdHazard(i){
+  _evdHazards.splice(i, 1);
+  renderEvdHazards();
+}
+function setEvdHazardField(i, field, value){
+  const h = _evdHazards[i]; if (!h) return;
+  if (field === 'controlsRaw'){
+    h.controls = String(value || '').split(/\r?\n/).map(s => s.trim()).filter(Boolean);
+    // Don't re-render on every keystroke; textarea would lose focus.
+    return;
+  }
+  h[field] = value;
+  if (field === 'title' && !h.id) h.id = ('haz-' + Date.now());
+  if (field === 'likelihood' || field === 'severity'){
+    h.risk = _riskFor(h.likelihood, h.severity) || 1;
+  }
+  renderEvdHazards();
+}
+
+async function saveEventProfile(){
+  const val = id => ((document.getElementById(id) || {}).value || '').trim();
+  const eventName = val('evd-name');
+  if (!eventName){ toast('Event name required'); return; }
+  // Strip empty hazards.
+  const hazards = _evdHazards
+    .filter(h => h.title)
+    .map(h => ({
+      id: h.id || ('haz-' + Date.now()),
+      title: h.title,
+      likelihood: h.likelihood || 'L',
+      severity: h.severity || 'L',
+      risk: _riskFor(h.likelihood, h.severity) || h.risk || 1,
+      controls: h.controls || []
+    }));
+  const payload = {
+    eventName: eventName,
+    location: val('evd-location'),
+    dates: val('evd-dates'),
+    producerName: val('evd-producer-name'),
+    producerContact: val('evd-producer-contact'),
+    emergencyAssembly: val('evd-assembly'),
+    firstAider: val('evd-first-aider'),
+    nearestHospital: val('evd-hospital'),
+    siteAccess: val('evd-access'),
+    swmsDocUrl: val('evd-swms-url'),
+    siteHazards: hazards,
+    status: 'active',
+    team: state.team || ''
+  };
+  try {
+    const res = await directPost('upsertEvent', payload);
+    if (!res || !res.success){ toast(res && res.error || 'Save failed'); return; }
+  } catch (_) { toast('Save failed (offline?). Try again when online.'); return; }
+  // Refresh the picker and select the newly-saved event.
+  _eventsList = null; _eventsListPromise = null;
+  await renderEventPicker();
+  const sel = document.querySelector('#ind-event-picker select');
+  if (sel) sel.value = eventName;
+  await onEventPickerChange(eventName);
+  toast('Event profile saved');
+}
+
+// ── SWMS Doc import ──
+async function openSwmsPicker(){
+  const modal = document.getElementById('ind-swms-modal');
+  const list  = document.getElementById('ind-swms-list');
+  modal.style.display = 'flex';
+  list.innerHTML = `<div class="muted">Loading SWMS docs…</div>`;
+  try {
+    const url = ENDPOINT + '?action=swmsList&_=' + Date.now();
+    const res = await fetch(url, { method:'GET', cache:'no-store' });
+    const data = await res.json();
+    if (!data || !data.success){
+      list.innerHTML = `<div class="err-line">${_esc((data && data.error) || 'Could not load SWMS docs.')}</div>
+        <div class="muted" style="font-size:12px;margin-top:8px">In the Apps Script editor → Project Settings → Script Properties, set <code>SWMS_FOLDER_ID</code> to the Drive folder ID containing your SWMS Google Docs.</div>`;
+      return;
+    }
+    const docs = data.docs || [];
+    if (!docs.length){
+      list.innerHTML = `<div class="muted">No Google Docs in that folder. Open your .docx via "File → Open with Google Docs" and drop the resulting Google Doc into the folder.</div>`;
+      return;
+    }
+    list.innerHTML = docs.map(d => `
+      <div style="padding:10px;border:1px solid var(--border);border-radius:8px;margin-bottom:6px;display:flex;gap:8px;align-items:center;justify-content:space-between">
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:600">${_esc(d.name)}</div>
+          <div class="muted" style="font-size:11px">Modified ${_esc(new Date(d.modified).toLocaleString())}</div>
+        </div>
+        <button class="small primary" onclick="pickSwmsDoc('${_esc(d.id)}', '${_esc(d.url)}')">Import</button>
+      </div>
+    `).join('');
+  } catch (e) {
+    list.innerHTML = `<div class="err-line">Network error.</div>`;
+  }
+}
+function closeSwmsPicker(){
+  const m = document.getElementById('ind-swms-modal');
+  if (m) m.style.display = 'none';
+}
+async function pickSwmsDoc(docId, docUrl){
+  closeSwmsPicker();
+  toast('Parsing SWMS…');
+  try {
+    const url = ENDPOINT + '?action=swmsParse&docId=' + encodeURIComponent(docId);
+    const res = await fetch(url, { method:'GET', cache:'no-store' });
+    const data = await res.json();
+    if (!data || !data.success){ toast((data && data.error) || 'Parse failed'); return; }
+    // Pre-fill the editor with whatever the parser found.
+    const setVal = (id, v) => { const el = document.getElementById(id); if (el && v) el.value = v; };
+    if (data.overview){
+      if (data.overview.eventName && !document.getElementById('evd-name').value) setVal('evd-name', data.overview.eventName);
+      setVal('evd-location', data.overview.location || '');
+      setVal('evd-producer-name', data.overview.producerName || '');
+      setVal('evd-producer-contact', data.overview.producerContact || '');
+    }
+    setVal('evd-swms-url', docUrl);
+    if (Array.isArray(data.hazards) && data.hazards.length){
+      _evdHazards = data.hazards.map(h => Object.assign({}, h));
+      renderEvdHazards();
+      toast('Imported ' + data.hazards.length + ' hazard' + (data.hazards.length===1?'':'s') + ' — review & save.');
+    } else {
+      toast('No hazards found — verify the SWMS uses the Funkified template.');
+    }
+    if (data.parseNotes) {
+      // Show inline so it's not lost.
+      const banner = document.createElement('div');
+      banner.className = 'muted';
+      banner.style.cssText = 'font-size:12px;color:#ff9a9a;margin-top:8px';
+      banner.textContent = '⚠ ' + data.parseNotes;
+      document.getElementById('evd-hazards').appendChild(banner);
+    }
+  } catch (e) { toast('Parse failed (network)'); }
+}
+
+async function openInductionForm(){
+  _indAck.clear();
+  _evdHazards = [];
+  hideEventEditor();
+  // Reset fields.
+  const setVal = (id, v) => { const el = document.getElementById(id); if (el) el.value = v || ''; };
+  const setCheck = (id, v) => { const el = document.getElementById(id); if (el) el.checked = !!v; };
+  setVal('ind-event-location', '');
+  setVal('ind-event-dates', '');
+  setVal('ind-staff-name', state.team || '');
+  setVal('ind-staff-org', '');
+  setVal('ind-staff-phone', '');
+  setVal('ind-staff-role', '');
+  setVal('ind-notes', '');
+  setCheck('ind-ack-ppe', false);
+  setCheck('ind-ack-codes', false);
+  setCheck('ind-ack-rts', false);
+  const photo = document.getElementById('ind-photo'); if (photo) photo.src = '';
+  state.pendingPhoto = null;
+  const detail = document.getElementById('ind-event-detail'); if (detail) detail.style.display = 'none';
+
+  show('screen-induction');
+
+  // Pull generic content + events list in parallel.
+  const [content, events] = await Promise.all([fetchInductionContent(), fetchEventsList()]);
+  setVal('ind-producer-name', (content.producer && content.producer.name) || '');
+  setVal('ind-producer-contact', (content.producer && content.producer.contact) || '');
+  const vn = document.getElementById('ind-version-note');
+  if (vn) vn.textContent = 'SWMS version ' + (content.version || '—') +
+                          ' · ' + (content.hazards || []).length + ' standard hazards on site.';
+  // Baseline SWMS link — sits above the hazard cards so inductees can
+  // read the source document any time during the induction.
+  const baselineEl = document.getElementById('ind-baseline-link');
+  if (baselineEl){
+    const url = content.baselineSwmsUrl || '';
+    baselineEl.innerHTML = url
+      ? `📄 <a href="${_esc(url)}" target="_blank" rel="noopener">Read the full warehouse SWMS</a>`
+      : '';
+  }
+  _buildCombinedHazards([]);
+  renderInductionHazards();
+  renderEventPicker();
+}
+
+async function submitInduction(){
+  const val = id => ((document.getElementById(id) || {}).value || '').trim();
+  const chk = id => !!(document.getElementById(id) || {}).checked;
+  const sel = document.querySelector('#ind-event-picker select');
+  const eventName = (sel && sel.value !== '__NEW__') ? sel.value : '';
+  const staffName  = val('ind-staff-name');
+  // Clicking the acknowledgement button is the signature — we record
+  // the staff name as the signed-by value so the audit trail still
+  // shows "Anna Smith signed at 06:42" rather than just "submitted".
+  const signature = staffName;
+
+  if (!eventName){ toast('Pick an event from the dropdown'); return; }
+  if (!staffName){ toast('Your full name required'); return; }
+  if (!chk('ind-ack-ppe') || !chk('ind-ack-codes') || !chk('ind-ack-rts')){
+    toast('Tick the three acknowledgements above before signing on');
+    return;
+  }
+  const total = _indCombinedHazards.length;
+  if (_indAck.size < total){
+    const missing = total - _indAck.size;
+    if (!confirm("You haven't ticked " + missing + " hazard" + (missing===1?'':'s') +
+                 ". Sign on anyway? The gap is recorded.")){
+      return;
+    }
+  }
+
+  const payload = Object.assign({
+    eventName:        eventName,
+    eventLocation:    val('ind-event-location'),
+    eventDates:       val('ind-event-dates'),
+    producerName:     val('ind-producer-name'),
+    producerContact:  val('ind-producer-contact'),
+    staffName:        staffName,
+    organisation:     val('ind-staff-org'),
+    staffPhone:       val('ind-staff-phone'),
+    staffRole:        val('ind-staff-role'),
+    hazardsAcknowledged: Array.from(_indAck),
+    ppeAck:           chk('ind-ack-ppe'),
+    codesAck:         chk('ind-ack-codes'),
+    rightToStopAck:   chk('ind-ack-rts'),
+    signature:        signature,
+    signedAt:         nowIso(),
+    notes:            val('ind-notes'),
+    team:             state.team || staffName,
+    photo:            state.pendingPhoto?.dataUrl || '',
+    ts:               nowIso()
+  }, gpsPayload());
+
+  await enqueue('logInduction', payload);
+  state.pendingPhoto = null;
+  toast('Inducted — confirmation email will fire when synced');
   show('screen-success');
 }
 
