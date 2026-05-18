@@ -202,6 +202,15 @@
       <button onclick="startMode('return')">Return Order</button>
       <button onclick="startMode('triage')">Keep It or Delete It</button>
     </div>
+    <div class="card stack" style="margin-top:14px">
+      <button class="ghost" onclick="openIncidentForm()" style="text-align:left;display:flex;align-items:center;gap:10px">
+        <span style="font-size:18px">⚠</span>
+        <span>
+          <strong>Report an incident</strong>
+          <div class="muted" style="font-size:12px;margin-top:2px">Injury, near miss, hazard or property damage</div>
+        </span>
+      </button>
+    </div>
   </section>
 
   <!-- LOADOUT SETUP -->
@@ -449,6 +458,160 @@
       </div>
       <button class="primary" onclick="submitDamage()">Queue damage report</button>
       <button class="ghost" onclick="show('screen-existing')">Back</button>
+    </div>
+  </section>
+
+  <!-- INCIDENT REPORT -->
+  <!--
+    Fields mapped to Safe Work Australia / WHS Act 2011 incident
+    register expectations. The form supports injury, near miss, hazard
+    observation, and property damage — collected with enough detail
+    that a notifiable incident can be escalated to the regulator
+    within the 48-hour / immediate-notification window depending on
+    severity. Treatment level and severity drive a notifiability
+    suggestion in the email alert.
+  -->
+  <section id="screen-incident" class="screen">
+    <div class="card stack">
+      <h1>Report an incident</h1>
+      <p class="muted" style="font-size:13px">
+        For injuries, near misses, hazards and property damage. If anyone
+        is seriously hurt, call 000 first and report here when safe.
+      </p>
+
+      <div class="field">
+        <label>Incident type</label>
+        <div class="dmg-sev" id="inc-type-row">
+          <button type="button" class="small sel"  onclick="setIncidentType('Injury')">Injury</button>
+          <button type="button" class="small"      onclick="setIncidentType('Near miss')">Near miss</button>
+          <button type="button" class="small"      onclick="setIncidentType('Hazard observation')">Hazard</button>
+          <button type="button" class="small"      onclick="setIncidentType('Property damage')">Property damage</button>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Severity</label>
+        <div class="dmg-sev" id="inc-sev-row">
+          <button type="button" class="small sel"  onclick="setIncidentSeverity('minor')">Minor</button>
+          <button type="button" class="small"      onclick="setIncidentSeverity('moderate')">Moderate</button>
+          <button type="button" class="small"      onclick="setIncidentSeverity('serious')">Serious</button>
+          <button type="button" class="small"      onclick="setIncidentSeverity('critical')">Critical</button>
+        </div>
+        <div class="muted" style="font-size:12px;margin-top:6px">
+          Serious / critical incidents may be notifiable to SafeWork.
+        </div>
+      </div>
+
+      <div class="field">
+        <label>When did it happen?</label>
+        <input id="inc-occurred-at" type="datetime-local"/>
+        <div class="muted" style="font-size:12px;margin-top:4px">Defaults to now. Roll back if reporting after the fact.</div>
+      </div>
+
+      <div class="field">
+        <label>Location</label>
+        <input id="inc-location" type="text" placeholder="e.g. Warehouse — bay 3, near shelf B2 / On-site at Daffodils setup"/>
+      </div>
+
+      <div class="field">
+        <label>Person involved</label>
+        <input id="inc-person" type="text" placeholder="Full name"/>
+      </div>
+      <div class="field">
+        <label>Their role</label>
+        <div class="dmg-sev" id="inc-role-row">
+          <button type="button" class="small sel"  onclick="setIncidentRole('staff')">Staff</button>
+          <button type="button" class="small"      onclick="setIncidentRole('contractor')">Contractor</button>
+          <button type="button" class="small"      onclick="setIncidentRole('visitor')">Visitor</button>
+          <button type="button" class="small"      onclick="setIncidentRole('member of public')">Public</button>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Witnesses</label>
+        <input id="inc-witnesses" type="text" placeholder="Names, comma separated"/>
+      </div>
+
+      <div class="field">
+        <label>What happened?</label>
+        <textarea id="inc-description" rows="4" placeholder="Be specific: what was being done, what failed, sequence of events"></textarea>
+      </div>
+
+      <!-- Injury-only block. Shown when incident type = Injury. -->
+      <div id="inc-injury-block">
+        <div class="field">
+          <label>Body part affected</label>
+          <input id="inc-body-part" type="text" placeholder="e.g. lower back, right hand, left eye"/>
+        </div>
+        <div class="field">
+          <label>Nature of injury</label>
+          <input id="inc-injury-nature" type="text" placeholder="e.g. cut, strain, bruise, burn, fracture"/>
+        </div>
+        <div class="field">
+          <label>First aid given?</label>
+          <div class="dmg-sev" id="inc-firstaid-row">
+            <button type="button" class="small sel"  onclick="setIncidentFirstAid('No')">No</button>
+            <button type="button" class="small"      onclick="setIncidentFirstAid('Yes')">Yes</button>
+          </div>
+        </div>
+        <div class="field" id="inc-firstaid-by-field" style="display:none">
+          <label>First aid given by</label>
+          <input id="inc-firstaid-by" type="text" placeholder="Name of first aider"/>
+        </div>
+        <div class="field">
+          <label>Treatment</label>
+          <div class="dmg-sev" id="inc-treatment-row">
+            <button type="button" class="small sel"  onclick="setIncidentTreatment('none')">None</button>
+            <button type="button" class="small"      onclick="setIncidentTreatment('first aid')">First aid</button>
+            <button type="button" class="small"      onclick="setIncidentTreatment('GP')">GP</button>
+            <button type="button" class="small"      onclick="setIncidentTreatment('hospital')">Hospital</button>
+            <button type="button" class="small"      onclick="setIncidentTreatment('ambulance')">Ambulance</button>
+          </div>
+          <div class="muted" style="font-size:12px;margin-top:6px">Hospital or ambulance treatment is generally notifiable to SafeWork.</div>
+        </div>
+        <div class="field">
+          <label>PPE in use at the time</label>
+          <input id="inc-ppe" type="text" placeholder="e.g. gloves, hi-vis, safety boots, none"/>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Could this have been prevented?</label>
+        <div class="dmg-sev" id="inc-prev-row">
+          <button type="button" class="small"      onclick="setIncidentPreventability('preventable')">Yes</button>
+          <button type="button" class="small"      onclick="setIncidentPreventability('unavoidable')">No</button>
+          <button type="button" class="small sel"  onclick="setIncidentPreventability('unclear')">Unclear</button>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Contributing factors</label>
+        <textarea id="inc-contributing" rows="2" placeholder="e.g. rushed, fatigue, faulty equipment, no SWMS, poor lighting"></textarea>
+      </div>
+
+      <div class="field">
+        <label>Corrective action taken or needed</label>
+        <textarea id="inc-corrective" rows="2" placeholder="e.g. removed faulty trolley from service, added signage, briefed team"></textarea>
+      </div>
+
+      <div class="field">
+        <label>Reported to (supervisor / manager)</label>
+        <input id="inc-reported-to" type="text" placeholder="e.g. Jacob Masters"/>
+      </div>
+
+      <div class="field">
+        <label>Photo (scene, equipment, or injury — only if appropriate)</label>
+        <input type="file" accept="image/*" capture="environment" onchange="handlePhotoInput(event,'inc-photo')"/>
+        <img id="inc-photo" class="photo-preview"/>
+      </div>
+
+      <div class="field">
+        <label>Anything else</label>
+        <textarea id="inc-notes" rows="2" placeholder="Optional"></textarea>
+      </div>
+
+      <button class="primary" onclick="submitIncident()">Submit incident report</button>
+      <button class="ghost" onclick="show('screen-session')">Cancel</button>
     </div>
   </section>
 
@@ -2661,6 +2824,138 @@ async function submitDamage(){
   toast('Queued damage report');
   show('screen-success');
 }
+
+// ─────────── Incident reporting ───────────
+// Pillbox-style multi-state buttons (Type / Severity / Role / etc.)
+// keep tap targets large for mobile use in the field. State is held in
+// _incidentState so we can clear it between submissions.
+const _incidentState = {
+  type: 'Injury',
+  severity: 'minor',
+  role: 'staff',
+  firstAid: 'No',
+  treatment: 'none',
+  preventability: 'unclear'
+};
+function _setPill(rowId, label, onMatch){
+  const row = document.getElementById(rowId); if (!row) return;
+  const btns = row.querySelectorAll('button');
+  for (let i = 0; i < btns.length; i++){
+    btns[i].classList.toggle('sel', onMatch(btns[i]));
+  }
+}
+function setIncidentType(t){
+  _incidentState.type = t;
+  _setPill('inc-type-row', t, b => (b.textContent || '').trim().toLowerCase() === t.toLowerCase()
+    || (t === 'Hazard observation' && /hazard/i.test(b.textContent)));
+  // Hide injury block for non-injury incidents.
+  const block = document.getElementById('inc-injury-block');
+  if (block) block.style.display = (t === 'Injury') ? '' : 'none';
+}
+function setIncidentSeverity(s){
+  _incidentState.severity = s;
+  _setPill('inc-sev-row', s, b => (b.textContent || '').trim().toLowerCase() === s.toLowerCase());
+}
+function setIncidentRole(r){
+  _incidentState.role = r;
+  _setPill('inc-role-row', r, b => (b.textContent || '').trim().toLowerCase() === r.toLowerCase()
+    || (r === 'member of public' && /public/i.test(b.textContent)));
+}
+function setIncidentFirstAid(v){
+  _incidentState.firstAid = v;
+  _setPill('inc-firstaid-row', v, b => (b.textContent || '').trim().toLowerCase() === v.toLowerCase());
+  const field = document.getElementById('inc-firstaid-by-field');
+  if (field) field.style.display = (v === 'Yes') ? '' : 'none';
+}
+function setIncidentTreatment(t){
+  _incidentState.treatment = t;
+  _setPill('inc-treatment-row', t, b => (b.textContent || '').trim().toLowerCase() === t.toLowerCase());
+}
+function setIncidentPreventability(p){
+  _incidentState.preventability = p;
+  _setPill('inc-prev-row', p, b => {
+    const txt = (b.textContent || '').trim().toLowerCase();
+    if (p === 'preventable') return txt === 'yes';
+    if (p === 'unavoidable') return txt === 'no';
+    return txt === 'unclear';
+  });
+}
+
+function openIncidentForm(){
+  // Default occurred-at to "now", local time, in the format the
+  // <input type="datetime-local"> accepts (yyyy-MM-ddTHH:mm).
+  const now = new Date();
+  const pad = n => String(n).padStart(2,'0');
+  const local = now.getFullYear() + '-' + pad(now.getMonth()+1) + '-' + pad(now.getDate())
+    + 'T' + pad(now.getHours()) + ':' + pad(now.getMinutes());
+  const at = document.getElementById('inc-occurred-at');
+  if (at && !at.value) at.value = local;
+  // Reset state + UI to sane defaults.
+  setIncidentType('Injury');
+  setIncidentSeverity('minor');
+  setIncidentRole('staff');
+  setIncidentFirstAid('No');
+  setIncidentTreatment('none');
+  setIncidentPreventability('unclear');
+  show('screen-incident');
+}
+
+function resetIncidentForm(){
+  const ids = ['inc-location','inc-person','inc-witnesses','inc-description',
+    'inc-body-part','inc-injury-nature','inc-firstaid-by','inc-ppe',
+    'inc-contributing','inc-corrective','inc-reported-to','inc-notes'];
+  for (const id of ids){ const el = document.getElementById(id); if (el) el.value = ''; }
+  const at = document.getElementById('inc-occurred-at'); if (at) at.value = '';
+  const ph = document.getElementById('inc-photo'); if (ph) ph.src = '';
+  state.pendingPhoto = null;
+}
+
+async function submitIncident(){
+  const desc = (document.getElementById('inc-description')||{}).value?.trim();
+  const person = (document.getElementById('inc-person')||{}).value?.trim();
+  // Minimal validation: description is the one field we genuinely need.
+  if (!desc){ toast('Briefly describe what happened'); return; }
+  // For injury type, nudge for a person — but don't block. Sometimes a
+  // user reports a hazard observation that almost caused an injury.
+  if (_incidentState.type === 'Injury' && !person){
+    if (!confirm("No injured person name entered. Submit anyway?")) return;
+  }
+  // Convert datetime-local to ISO; if blank, server defaults to now.
+  const occRaw = (document.getElementById('inc-occurred-at')||{}).value || '';
+  let occurredAt = '';
+  if (occRaw){
+    try { occurredAt = new Date(occRaw).toISOString(); } catch(_) {}
+  }
+  const payload = Object.assign({
+    incidentType: _incidentState.type,
+    severity:     _incidentState.severity,
+    occurredAt:   occurredAt,
+    location:     (document.getElementById('inc-location')||{}).value?.trim() || '',
+    person:       person || '',
+    personRole:   _incidentState.role,
+    witnesses:    (document.getElementById('inc-witnesses')||{}).value?.trim() || '',
+    description:  desc,
+    bodyPart:     (document.getElementById('inc-body-part')||{}).value?.trim() || '',
+    injuryNature: (document.getElementById('inc-injury-nature')||{}).value?.trim() || '',
+    firstAid:     _incidentState.firstAid,
+    firstAidBy:   (document.getElementById('inc-firstaid-by')||{}).value?.trim() || '',
+    treatment:    _incidentState.treatment,
+    ppe:          (document.getElementById('inc-ppe')||{}).value?.trim() || '',
+    preventability:_incidentState.preventability,
+    contributing: (document.getElementById('inc-contributing')||{}).value?.trim() || '',
+    corrective:   (document.getElementById('inc-corrective')||{}).value?.trim() || '',
+    reportedTo:   (document.getElementById('inc-reported-to')||{}).value?.trim() || '',
+    notes:        (document.getElementById('inc-notes')||{}).value?.trim() || '',
+    team:         state.team || '',
+    photo:        state.pendingPhoto?.dataUrl || '',
+    ts:           nowIso()
+  }, gpsPayload());
+  await enqueue('reportIncident', payload);
+  resetIncidentForm();
+  toast('Incident report queued — alert email will fire when synced');
+  show('screen-success');
+}
+
 async function submitUpdatePhoto(){
   if(!state.pendingPhoto){toast('Take a photo first');return;}
   await enqueue('updatePhoto',Object.assign({},itemKey(),{photo:state.pendingPhoto.dataUrl,team:state.team||'',ts:nowIso()}));
