@@ -695,8 +695,9 @@
       </div>
 
       <!-- New-event editor (collapsed by default — shown when picker
-           selects "+ Add new event" or an unprofiled job name). Lets a
-           producer set site-specifics inline OR import from SWMS. -->
+           selects "+ Add new event" or a SWMS-only event awaiting
+           import). Lets a producer set site-specifics inline OR
+           import from SWMS. -->
       <div id="ind-event-editor" style="display:none;border:1px solid var(--border);border-radius:10px;padding:14px;background:#0f0f0f;margin-bottom:12px">
         <h3 style="margin:0 0 10px 0">Set up this event</h3>
         <div class="field">
@@ -3225,6 +3226,9 @@ let _eventsList = null;
 let _eventsListPromise = null;
 // Current event-editor state when adding/editing an event profile.
 let _evdHazards = [];
+// SWMS doc ID seeded into the editor (when imported via the picker).
+// Persisted on save so the event row matches back to its source doc.
+let _evdSwmsDocId = '';
 
 function _riskTier(r){
   if (r >= 6) return 'r-high';
@@ -3299,7 +3303,7 @@ async function fetchEventsList(force){
       const data = await res.json();
       if (data && data.success){ _eventsList = data; return data; }
     } catch(_) {}
-    _eventsList = { success:false, events:[], profiledCount:0, unprofiledCount:0 };
+    _eventsList = { success:false, events:[], profiledCount:0, swmsOnlyCount:0 };
     return _eventsList;
   })();
   return _eventsListPromise;
@@ -3307,7 +3311,8 @@ async function fetchEventsList(force){
 
 function _eventLabel(e){
   if (e.status === 'profiled') return e.eventName + ' · ' + (e.location || 'no location') + ' · profiled ✓';
-  return e.eventName + ' · from ' + (e.sourceClient || 'orders') + ' · needs setup';
+  if (e.status === 'swms-only') return e.eventName + ' · SWMS ready · tap to import';
+  return e.eventName;
 }
 
 async function renderEventPicker(){
@@ -3324,7 +3329,7 @@ async function renderEventPicker(){
       <option value="__NEW__">+ Add new event</option>
     </select>
     <div class="muted" style="font-size:12px;margin-top:6px">
-      ${list.length} event${list.length===1?'':'s'} (${data.profiledCount||0} with site-specifics, ${data.unprofiledCount||0} from orders only).
+      ${list.length} event${list.length===1?'':'s'} (${data.profiledCount||0} profiled, ${data.swmsOnlyCount||0} from SWMS folder awaiting import).
     </div>`;
 }
 
@@ -3354,11 +3359,17 @@ async function onEventPickerChange(value){
     renderInductionHazards();
     return;
   }
-  if (ev.status === 'unprofiled'){
-    // Job name with no event profile yet — open editor to fill it in.
+  if (ev.status === 'swms-only'){
+    // SWMS doc in the folder but no profile yet — open the editor
+    // pre-filled with the event name, then auto-import from the doc
+    // so the producer just reviews + saves.
     openEventEditor({ eventName: ev.eventName });
     _buildCombinedHazards([]);
     renderInductionHazards();
+    if (ev.swmsDocId) {
+      // Tiny delay so the editor renders before the toast fires.
+      setTimeout(() => pickSwmsDoc(ev.swmsDocId, ev.swmsDocUrl || ''), 50);
+    }
     return;
   }
   // Profiled — fill the visible event details and load site hazards.
@@ -3398,6 +3409,7 @@ function openEventEditor(seed){
   setVal('evd-access', '');
   setVal('evd-swms-url', '');
   _evdHazards = [];
+  _evdSwmsDocId = '';
   renderEvdHazards();
   document.getElementById('ind-event-editor').style.display = '';
 }
@@ -3488,6 +3500,7 @@ async function saveEventProfile(){
     nearestHospital: val('evd-hospital'),
     siteAccess: val('evd-access'),
     swmsDocUrl: val('evd-swms-url'),
+    sourceSwmsDocId: _evdSwmsDocId,
     siteHazards: hazards,
     status: 'active',
     team: state.team || ''
@@ -3544,6 +3557,7 @@ function closeSwmsPicker(){
 }
 async function pickSwmsDoc(docId, docUrl){
   closeSwmsPicker();
+  _evdSwmsDocId = docId;  // remember source doc so save records it
   toast('Parsing SWMS…');
   try {
     const url = ENDPOINT + '?action=swmsParse&docId=' + encodeURIComponent(docId);
