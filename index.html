@@ -131,6 +131,44 @@
   .evd-haz{border:1px solid var(--border);border-radius:8px;padding:10px;margin-bottom:8px;background:#181818}
   .evd-haz input,.evd-haz textarea{width:100%;padding:8px;border-radius:6px;border:1px solid var(--border);background:#0f0f0f;color:var(--text);font-family:inherit;font-size:13px}
   .small.sel{background:var(--accent,#ffb26b);color:#000;border-color:var(--accent,#ffb26b)}
+  /* In-event panel — tab bar + content */
+  .evp-tabs{display:flex;gap:6px;margin-top:12px;margin-bottom:12px;overflow-x:auto;padding-bottom:4px}
+  .evp-tab{flex:1;min-width:80px;padding:10px 8px;border:1px solid var(--border);background:#0f0f0f;color:var(--muted);border-radius:8px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer}
+  .evp-tab.sel{background:var(--accent,#ffb26b);color:#000;border-color:var(--accent,#ffb26b)}
+  .evp-panel .evp-empty{padding:18px;text-align:center;color:var(--muted);font-size:13px}
+  /* Runsheet entries */
+  .evp-day-header{font-weight:700;font-size:15px;margin:14px 0 8px 0;padding:8px 12px;background:rgba(255,178,107,.10);border-left:3px solid var(--accent,#ffb26b);border-radius:4px}
+  .evp-day-header:first-child{margin-top:0}
+  .evp-time-row{border:1px solid var(--border);background:#0f0f0f;border-radius:10px;padding:10px 12px;margin-bottom:8px;display:flex;gap:10px}
+  .evp-time{font-weight:700;font-size:14px;color:var(--accent,#ffb26b);min-width:54px;flex:0 0 auto}
+  .evp-row-body{flex:1;min-width:0}
+  .evp-action{font-size:14px;line-height:1.45;margin-bottom:4px}
+  .evp-row-meta{display:flex;gap:10px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-top:4px}
+  .evp-row-meta a{color:var(--accent,#ffb26b);text-decoration:none}
+  .evp-row-meta a:active{opacity:.6}
+  /* Contacts */
+  .evp-section{font-weight:700;font-size:13px;letter-spacing:.05em;color:var(--muted);text-transform:uppercase;margin:14px 0 6px 0}
+  .evp-section:first-child{margin-top:0}
+  .evp-person{border:1px solid var(--border);background:#0f0f0f;border-radius:10px;padding:10px 12px;margin-bottom:8px}
+  .evp-person-name{font-weight:600;font-size:14px}
+  .evp-person-role{font-size:12px;color:var(--muted);margin-top:2px}
+  .evp-person-links{margin-top:6px;display:flex;gap:14px;flex-wrap:wrap;font-size:13px}
+  .evp-person-links a{color:var(--accent,#ffb26b);text-decoration:none;display:inline-flex;align-items:center;gap:4px}
+  /* Action / Manifest tickoff rows */
+  .evp-tick{display:flex;gap:10px;align-items:flex-start;border:1px solid var(--border);background:#0f0f0f;border-radius:10px;padding:10px 12px;margin-bottom:6px}
+  .evp-tick input[type=checkbox]{width:22px;height:22px;margin-top:2px;flex:0 0 auto;cursor:pointer}
+  .evp-tick-body{flex:1;min-width:0}
+  .evp-tick-text{font-size:14px;line-height:1.4}
+  .evp-tick.done .evp-tick-text{text-decoration:line-through;opacity:.55}
+  .evp-tick.done .evp-tick-meta{opacity:.55}
+  .evp-tick-meta{display:flex;gap:12px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-top:4px}
+  .evp-tick-notes{font-size:12px;color:var(--muted);margin-top:4px;font-style:italic}
+  /* Manifest item thumbnail row */
+  .evp-manifest-thumb{width:54px;height:54px;border-radius:8px;background:#1c1c1c center/cover no-repeat;flex:0 0 auto;border:1px solid var(--border);cursor:zoom-in}
+  .evp-manifest-thumb.empty{display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:9px}
+  .evp-manifest-thumb.empty::before{content:'no img'}
+  .evp-manifest-match{font-size:11px;color:var(--muted);margin-top:4px}
+  .evp-manifest-match strong{color:var(--text)}
   .pack-thumb{width:48px;height:48px;border-radius:8px;background:#1c1c1c center/cover no-repeat;flex-shrink:0;border:1px solid var(--border);cursor:zoom-in}
   .pack-thumb.empty{display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:10px;cursor:default}
   .pack-thumb.empty::before{content:'no img'}
@@ -194,6 +232,19 @@
   .dmg-sev{display:flex;gap:6px}
   .dmg-sev button.small{flex:1;padding:8px;font-size:12px}
   .dmg-sev button.small.sel{background:var(--err);color:#fff;border-color:var(--err)}
+  /* Search screen — Browse by Brands / Categories chips */
+  .inv-browse{margin:6px 0 4px 0}
+  .inv-browse h3{font-size:13px;font-weight:600;color:var(--muted);margin:10px 0 6px 0;text-transform:uppercase;letter-spacing:.05em}
+  .inv-browse h3:first-child{margin-top:0}
+  .inv-chip-row{display:flex;gap:6px;flex-wrap:wrap}
+  .inv-chip{padding:6px 12px;border-radius:999px;border:1px solid var(--border);background:#0f0f0f;color:var(--text);font-size:13px;font-family:inherit;cursor:pointer}
+  .inv-chip:active{transform:scale(.97)}
+  .inv-filter-pill{display:inline-flex;align-items:center;gap:6px;background:rgba(255,178,107,.15);color:var(--accent,#ffb26b);border:1px solid rgba(255,178,107,.4);border-radius:999px;padding:4px 10px;font-size:12px;font-weight:600}
+  .inv-filter-pill button{background:none;border:0;color:inherit;cursor:pointer;font-size:14px;line-height:1;padding:0;margin-left:2px}
+  /* Two-tile top-level mode picker (Storage / Event day) */
+  .mode-tile{display:flex;align-items:center;gap:14px;text-align:left;padding:18px 16px;font-size:16px;line-height:1.3}
+  .mode-tile .mode-tile-emoji{font-size:28px;line-height:1;flex:0 0 auto}
+  .mode-tile .mode-tile-sub{font-size:12px;color:rgba(0,0,0,.55);font-weight:500;margin-top:2px}
 </style>
 </head>
 <body>
@@ -220,28 +271,47 @@
       <p class="muted">Team: <span data-team-display>—</span></p>
     </div>
     <div class="card switchboard stack">
-      <h2>What are you doing?</h2>
-      <button class="primary" onclick="startMode('sort')">Search Inventory</button>
+      <h2>Where are you?</h2>
+      <button class="primary mode-tile" onclick="show('screen-mode-storage')">
+        <span class="mode-tile-emoji">📦</span>
+        <span>
+          <strong>Storage</strong>
+          <div class="mode-tile-sub">Manifest, orders, triage</div>
+        </span>
+      </button>
+      <button class="primary mode-tile" onclick="show('screen-mode-event')">
+        <span class="mode-tile-emoji">🎪</span>
+        <span>
+          <strong>Event day</strong>
+          <div class="mode-tile-sub">Runsheet, induction, incidents</div>
+        </span>
+      </button>
+    </div>
+  </section>
+
+  <!-- STORAGE MODE — warehouse / manifest actions -->
+  <section id="screen-mode-storage" class="screen">
+    <div class="card switchboard stack">
+      <h1>📦 Storage</h1>
+      <p class="muted" style="margin-top:0;font-size:13px">Warehouse, manifest and order operations.</p>
+      <button class="primary" onclick="startMode('sort')">Search Manifest</button>
       <button onclick="startMode('create')">Create Order</button>
       <button onclick="startMode('pack')">Pack Order</button>
       <button onclick="startMode('return')">Return Order</button>
       <button onclick="startMode('triage')">Keep It or Delete It</button>
+      <button class="ghost" onclick="show('screen-session')">Back</button>
     </div>
-    <div class="card stack" style="margin-top:14px">
-      <button class="ghost" onclick="openIncidentForm()" style="text-align:left;display:flex;align-items:center;gap:10px">
-        <span style="font-size:18px">⚠</span>
-        <span>
-          <strong>Report an incident</strong>
-          <div class="muted" style="font-size:12px;margin-top:2px">Injury, near miss, hazard or property damage</div>
-        </span>
-      </button>
-      <button class="ghost" onclick="openInductionForm()" style="text-align:left;display:flex;align-items:center;gap:10px">
-        <span style="font-size:18px">📋</span>
-        <span>
-          <strong>Event induction</strong>
-          <div class="muted" style="font-size:12px;margin-top:2px">New on site? Run through the SWMS and sign on</div>
-        </span>
-      </button>
+  </section>
+
+  <!-- EVENT DAY MODE — on-site / safety actions -->
+  <section id="screen-mode-event" class="screen">
+    <div class="card switchboard stack">
+      <h1>🎪 Event day</h1>
+      <p class="muted" style="margin-top:0;font-size:13px">Running an event, on site, or signing on.</p>
+      <button class="primary" onclick="openEventPanel()">📅 In-event panel</button>
+      <button onclick="openInductionForm()">📋 Event induction</button>
+      <button onclick="openIncidentForm()">⚠ Report an incident</button>
+      <button class="ghost" onclick="show('screen-session')">Back</button>
     </div>
   </section>
 
@@ -296,12 +366,18 @@
       <button class="small" onclick="clearShelfBind()">Clear</button>
     </div>
     <div class="card stack">
-      <h1>Search inventory</h1>
+      <h1>Search manifest</h1>
       <p class="muted">Search by item name, shelf code, brand or type. Partial words are fine.</p>
       <div class="field">
         <input id="inv-search" type="search" autocomplete="off" autocapitalize="off"
                placeholder="e.g. candle, B1, NRMAi" oninput="searchInventory(this.value)"/>
       </div>
+      <!-- Active filter chip — shown when a brand or category chip is
+           selected. Tap × to clear and return to all results. -->
+      <div id="inv-active-filter" class="muted" style="display:none;font-size:13px;margin-top:-4px;margin-bottom:4px"></div>
+      <!-- Browse chips — visible only when the search input is empty
+           AND no filter is active. Tapping a chip filters results. -->
+      <div id="inv-browse" class="inv-browse"></div>
       <div id="inv-results" class="stack"></div>
     </div>
     <div class="card stack">
@@ -355,7 +431,7 @@
       <div class="field"><label>Total Qty</label>
         <input id="notag-qty" type="number" min="0" step="1" value="1"/></div>
       <div class="field"><label>Notes</label>
-        <textarea id="notag-notes" placeholder="Saved to the Inventory row"></textarea></div>
+        <textarea id="notag-notes" placeholder="Saved to the manifest row"></textarea></div>
       <div class="field">
         <label>Photo</label>
         <input type="file" accept="image/*" capture="environment" onchange="handlePhotoInput(event,'notag-photo')"/>
@@ -386,7 +462,7 @@
       <div class="field"><label>Total Qty</label>
         <input id="new-qty" type="number" min="0" step="1" value="1"/></div>
       <div class="field"><label>Notes</label>
-        <textarea id="new-notes" placeholder="Saved to the Inventory row"></textarea></div>
+        <textarea id="new-notes" placeholder="Saved to the manifest row"></textarea></div>
       <div class="field">
         <label>Photo</label>
         <input type="file" accept="image/*" capture="environment" onchange="handlePhotoInput(event,'new-photo')"/>
@@ -834,6 +910,43 @@
     </div>
   </section>
 
+  <!-- IN-EVENT PANEL -->
+  <!--
+    Reads per-event runsheets / event bibles from a Drive folder of
+    Google Sheets that follow the Funkified template (Runsheet,
+    Contact List, Action Items, Manifest tabs). Phone numbers on the
+    Contact List become tel: links; col-A checkboxes on Actions and
+    Manifest tickoff to the live spreadsheet (with strikethrough);
+    Manifest items auto-link to the storage inventory so we can see
+    thumbnails + shelf location alongside.
+  -->
+  <section id="screen-event-panel" class="screen">
+    <div class="card stack">
+      <h1 id="evp-title">In-event panel</h1>
+      <div class="field" id="evp-picker-field">
+        <label>Which event?</label>
+        <div id="evp-picker" class="type-picker"></div>
+      </div>
+
+      <div id="evp-loading" class="muted" style="display:none">Loading event…</div>
+
+      <div id="evp-content" style="display:none">
+        <div class="evp-tabs">
+          <button class="evp-tab sel" onclick="switchEvpTab('runsheet')">Runsheet</button>
+          <button class="evp-tab" onclick="switchEvpTab('contacts')">Contacts</button>
+          <button class="evp-tab" onclick="switchEvpTab('actions')">Actions</button>
+          <button class="evp-tab" onclick="switchEvpTab('manifest')">Manifest</button>
+        </div>
+        <div id="evp-tab-runsheet" class="evp-panel"></div>
+        <div id="evp-tab-contacts" class="evp-panel" style="display:none"></div>
+        <div id="evp-tab-actions" class="evp-panel" style="display:none"></div>
+        <div id="evp-tab-manifest" class="evp-panel" style="display:none"></div>
+      </div>
+
+      <button class="ghost" onclick="show('screen-session')" style="margin-top:14px">Back</button>
+    </div>
+  </section>
+
   <!-- PHOTO UPDATE -->
   <section id="screen-photo" class="screen">
     <div class="card stack">
@@ -861,7 +974,7 @@
       <div class="field"><label>Move to shelf (optional)</label>
         <input id="edit-newshelf" type="text" placeholder="leave blank to keep" oninput="this.value=this.value.toUpperCase()"/></div>
       <div class="field"><label>Notes</label>
-        <textarea id="edit-notes" placeholder="Saved to the Inventory row"></textarea></div>
+        <textarea id="edit-notes" placeholder="Saved to the manifest row"></textarea></div>
       <button class="primary" onclick="submitEdit()">Queue edit</button>
       <button class="ghost" onclick="show('screen-existing')">Back</button>
     </div>
@@ -1407,7 +1520,16 @@ function updateTeamUI(){
 function startMode(mode){
   if(!state.team){toast('Pick a team first');return;}
   state.mode=mode; saveSession();
-  if(mode==='sort')show('screen-browse');
+  if(mode==='sort'){
+    // Clear any filter from a previous session + paint the browse chips
+    // so the pre-search state is useful immediately.
+    _searchFilter = null;
+    const inp = document.getElementById('inv-search'); if (inp) inp.value = '';
+    const res = document.getElementById('inv-results'); if (res) res.innerHTML = '';
+    show('screen-browse');
+    renderActiveFilter();
+    renderBrowseChips();
+  }
   else if(mode==='loadout')show('screen-loadout-setup');
   else if(mode==='delivery')show('screen-delivery-setup');
   else if(mode==='pack'){show('screen-pack-picker'); loadPendingJobs();}
@@ -2519,7 +2641,7 @@ function renderPackLines(){
     const indicator = (fullyPacked || noneOutstanding) ? '✓' : (local > 0 ? '◐' : '○');
     const availLine = (it.available != null)
       ? `<span class="muted">${it.available} available</span>`
-      : '<span class="muted">Not on inventory</span>';
+      : '<span class="muted">Not on manifest</span>';
     const shelfLabel = it.shelf || '(no shelf)';
     const altCount = (it.alternateShelves || []).length;
     const altNote = altCount > 1
@@ -2595,7 +2717,7 @@ function updatePackSummary(){
   const remaining = Math.max(0, totalOutstanding - totalLocal);
   const allDone = totalOutstanding > 0 && remaining === 0;
   host.textContent = allDone
-    ? 'All ' + totalOutstanding + ' units ticked off — submit to update inventory.'
+    ? 'All ' + totalOutstanding + ' units ticked off — submit to update manifest.'
     : (totalLocal + ' of ' + totalOutstanding + ' units ticked · ' + remaining + ' remaining');
   const btn = document.getElementById('btn-pack-submit');
   if (btn) btn.textContent = allDone ? 'Submit & complete' : 'Submit packed items';
@@ -2685,22 +2807,73 @@ function browseNoTag(){
   buildListPicker('notag-brand', 'brands', 'Funkified');
 }
 
-/* ---------- Inventory search (fuzzy, multi-match) ---------- */
+/* ---------- Inventory search (word-boundary + filters) ---------- */
 let _searchDebounce = null;
 let _lastSearchItems = [];
+// Currently-active filter from the browse chips. null when no filter
+// is set; otherwise {kind:'brand'|'type', value:'Funkified'}. The free-
+// text input stacks on top of this — e.g. "candle" + brand:Funkified.
+let _searchFilter = null;
+
 function searchInventory(q){
   clearTimeout(_searchDebounce);
   const host = document.getElementById('inv-results');
   const term = (q || '').trim();
-  if (!term){ host.innerHTML = ''; _lastSearchItems = []; return; }
+  // Whenever the input changes, hide the browse chips iff there's
+  // typed text — but keep them visible while only the filter is on.
+  renderBrowseChips();
+  if (!term && !_searchFilter){
+    host.innerHTML = '';
+    _lastSearchItems = [];
+    return;
+  }
   host.innerHTML = '<div class="muted">Searching…</div>';
   _searchDebounce = setTimeout(() => runSearch(term), 220);
 }
 
+function setSearchFilter(kind, value){
+  _searchFilter = (kind && value) ? { kind, value } : null;
+  renderActiveFilter();
+  renderBrowseChips();
+  // Trigger search using whatever's currently in the text box.
+  const input = document.getElementById('inv-search');
+  searchInventory(input ? input.value : '');
+}
+
+function clearSearchFilter(){
+  setSearchFilter(null, null);
+}
+
+function renderActiveFilter(){
+  const host = document.getElementById('inv-active-filter');
+  if (!host) return;
+  if (!_searchFilter){ host.style.display = 'none'; host.innerHTML = ''; return; }
+  const label = _searchFilter.kind === 'brand' ? 'Brand' : 'Category';
+  host.style.display = '';
+  host.innerHTML = `Filtering by <span class="inv-filter-pill">${label}: ${_esc(_searchFilter.value)}<button onclick="clearSearchFilter()" aria-label="clear">×</button></span>`;
+}
+
+// Compose the query that goes to the server: free text + filter prefix.
+function _composedQuery(term){
+  const bits = [];
+  if (_searchFilter && _searchFilter.kind === 'brand'){
+    const v = _searchFilter.value;
+    bits.push('brand:' + (/\s/.test(v) ? `"${v}"` : v));
+  }
+  if (_searchFilter && _searchFilter.kind === 'type'){
+    const v = _searchFilter.value;
+    bits.push('type:'  + (/\s/.test(v) ? `"${v}"` : v));
+  }
+  if (term) bits.push(term);
+  return bits.join(' ');
+}
+
 async function runSearch(term){
   const host = document.getElementById('inv-results');
+  const composed = _composedQuery(term);
+  if (!composed){ host.innerHTML = ''; _lastSearchItems = []; return; }
   try {
-    const url = ENDPOINT + '?action=search&q=' + encodeURIComponent(term);
+    const url = ENDPOINT + '?action=search&q=' + encodeURIComponent(composed);
     const res = await fetch(url, { method:'GET' });
     const data = await res.json();
     if (!data || data.success === false){
@@ -2713,6 +2886,39 @@ async function runSearch(term){
   } catch(_) {
     host.innerHTML = '<div class="err-line">Network error. Check connection.</div>';
   }
+}
+
+// Pre-search chip rows — pulled from the same cache the brand/category
+// pickers use, so they're warmed on app boot and the chips render
+// instantly. Hidden once the user starts typing or sets a filter.
+function renderBrowseChips(){
+  const host = document.getElementById('inv-browse');
+  if (!host) return;
+  const input = document.getElementById('inv-search');
+  const hasText = input && input.value.trim();
+  if (hasText || _searchFilter){
+    host.style.display = 'none';
+    host.innerHTML = '';
+    return;
+  }
+  host.style.display = '';
+  // _listCache is populated by fetchKnownList (brands/types). If empty,
+  // kick off a warm-up fetch and re-render when it arrives.
+  const brands = (_listCache.brands.data || []);
+  const types  = (_listCache.types.data  || []);
+  if (!brands.length){ fetchKnownList('brands').then(() => renderBrowseChips()).catch(() => {}); }
+  if (!types.length ){ fetchKnownList('types').then(() => renderBrowseChips()).catch(() => {}); }
+  const brandChips = brands.length
+    ? brands.map(b => `<button type="button" class="inv-chip" onclick="setSearchFilter('brand', ${JSON.stringify(b)})">${_esc(b)}</button>`).join('')
+    : `<div class="muted" style="font-size:12px">No brands logged yet.</div>`;
+  const typeChips = types.length
+    ? types.map(t => `<button type="button" class="inv-chip" onclick="setSearchFilter('type', ${JSON.stringify(t)})">${_esc(t)}</button>`).join('')
+    : `<div class="muted" style="font-size:12px">No categories logged yet.</div>`;
+  host.innerHTML = `
+    <h3>Browse by brand</h3>
+    <div class="inv-chip-row">${brandChips}</div>
+    <h3>Browse by category</h3>
+    <div class="inv-chip-row">${typeChips}</div>`;
 }
 
 function renderSearchResults(items){
@@ -3687,6 +3893,282 @@ async function submitInduction(){
   state.pendingPhoto = null;
   toast('Inducted — confirmation email will fire when synced');
   show('screen-success');
+}
+
+// ─────────── In-event panel ───────────
+// Reads runsheets from the configured Drive folder, renders the four
+// tabs (Runsheet / Contacts / Actions / Manifest) as mobile-friendly
+// cards. Action + Manifest checkboxes mirror back to the sheet, with
+// strikethrough applied to the row. Phone numbers become tel: links.
+let _evpRunsheets = null;          // cached folder listing
+let _evpRunsheetsPromise = null;
+let _evpEvent = null;              // currently loaded event payload
+let _evpTab = 'runsheet';          // currently visible tab
+
+async function fetchRunsheetsList(force){
+  if (_evpRunsheets && !force) return _evpRunsheets;
+  if (_evpRunsheetsPromise && !force) return _evpRunsheetsPromise;
+  _evpRunsheetsPromise = (async () => {
+    try {
+      const url = ENDPOINT + '?action=runsheetsList&_=' + Date.now();
+      const res = await fetch(url, { method:'GET', cache:'no-store' });
+      const data = await res.json();
+      if (data && data.success){ _evpRunsheets = data; return data; }
+      _evpRunsheets = { success:false, files:[], error: (data && data.error) || '' };
+      return _evpRunsheets;
+    } catch (e) {
+      _evpRunsheets = { success:false, files:[], error:'Network error.' };
+      return _evpRunsheets;
+    }
+  })();
+  return _evpRunsheetsPromise;
+}
+
+async function openEventPanel(){
+  _evpEvent = null;
+  document.getElementById('evp-title').textContent = 'In-event panel';
+  document.getElementById('evp-content').style.display = 'none';
+  document.getElementById('evp-picker-field').style.display = '';
+  show('screen-event-panel');
+  await renderEvpPicker();
+}
+
+async function renderEvpPicker(){
+  const root = document.getElementById('evp-picker');
+  if (!root) return;
+  root.innerHTML = `<select disabled><option>Loading events…</option></select>`;
+  const data = await fetchRunsheetsList();
+  if (!data || !data.success){
+    root.innerHTML = `<div class="muted" style="font-size:12px;color:#ff9a9a">⚠ ${_esc(data.error || 'Could not load runsheets.')} ` +
+      `<a href="#" onclick="event.preventDefault();_evpRunsheets=null;_evpRunsheetsPromise=null;renderEvpPicker()">Retry</a></div>`;
+    return;
+  }
+  const files = data.files || [];
+  if (!files.length){
+    root.innerHTML = `<div class="muted" style="font-size:12px">No runsheets in the folder yet. Drop a Google Sheet that follows the Funkified template into the runsheet folder.</div>`;
+    return;
+  }
+  const opts = files.map(f =>
+    `<option value="${_esc(f.id)}">${_esc(f.name)}</option>`).join('');
+  root.innerHTML = `
+    <select onchange="onEvpPick(this.value)">
+      <option value="" selected>— pick the event —</option>
+      ${opts}
+    </select>
+    <div class="muted" style="font-size:12px;margin-top:6px">${files.length} event${files.length===1?'':'s'} in the runsheet folder, most recent first.</div>`;
+}
+
+async function onEvpPick(fileId){
+  if (!fileId){
+    document.getElementById('evp-content').style.display = 'none';
+    document.getElementById('evp-title').textContent = 'In-event panel';
+    return;
+  }
+  const loading = document.getElementById('evp-loading');
+  loading.style.display = '';
+  document.getElementById('evp-content').style.display = 'none';
+  try {
+    const url = ENDPOINT + '?action=runsheetGet&fileId=' + encodeURIComponent(fileId);
+    const res = await fetch(url, { method:'GET', cache:'no-store' });
+    const data = await res.json();
+    if (!data || !data.success){
+      loading.style.display = 'none';
+      toast((data && data.error) || 'Could not load that event.');
+      return;
+    }
+    _evpEvent = data;
+    document.getElementById('evp-title').textContent = data.fileName || 'In-event panel';
+    document.getElementById('evp-content').style.display = '';
+    loading.style.display = 'none';
+    _evpTab = 'runsheet';
+    switchEvpTab('runsheet');
+  } catch (e) {
+    loading.style.display = 'none';
+    toast('Network error loading event.');
+  }
+}
+
+function switchEvpTab(tab){
+  _evpTab = tab;
+  // Update tab-button styling.
+  const btns = document.querySelectorAll('.evp-tab');
+  const labels = ['runsheet','contacts','actions','manifest'];
+  btns.forEach((b, i) => b.classList.toggle('sel', labels[i] === tab));
+  // Toggle panels.
+  labels.forEach(name => {
+    const el = document.getElementById('evp-tab-' + name);
+    if (el) el.style.display = (name === tab) ? '' : 'none';
+  });
+  // Render lazily — keeps things responsive for big sheets.
+  if (!_evpEvent) return;
+  if (tab === 'runsheet')  renderEvpRunsheet();
+  if (tab === 'contacts')  renderEvpContacts();
+  if (tab === 'actions')   renderEvpActions();
+  if (tab === 'manifest')  renderEvpManifest();
+}
+
+// Convert a free-text "contact" field with one or more phone numbers
+// into HTML where each phone is a tap-to-call link. Names / labels
+// next to the numbers are preserved as plain text.
+function linkifyPhones(text){
+  if (!text) return '';
+  const esc = s => _esc(s);
+  // Match Australian-style phone formats: optional +61, then 8-12
+  // digits with spaces or hyphens. Tweak if you handle overseas
+  // numbers later.
+  const re = /(\+?61[\s-]?\d|\b0\d)[\d\s-]{6,14}\d/g;
+  let out = '', lastEnd = 0, m;
+  while ((m = re.exec(text)) !== null){
+    out += esc(text.slice(lastEnd, m.index));
+    const num = m[0];
+    const dial = num.replace(/[\s-]/g,'');
+    out += `<a href="tel:${esc(dial)}">${esc(num)}</a>`;
+    lastEnd = m.index + num.length;
+  }
+  out += esc(text.slice(lastEnd));
+  // Preserve newlines.
+  return out.replace(/\n/g, '<br>');
+}
+
+function renderEvpRunsheet(){
+  const host = document.getElementById('evp-tab-runsheet');
+  const entries = (_evpEvent && _evpEvent.runsheet) || [];
+  if (!entries.length){
+    host.innerHTML = '<div class="evp-empty">No Runsheet tab found in this event.</div>';
+    return;
+  }
+  host.innerHTML = entries.map(e => {
+    if (e.type === 'date-header'){
+      return `<div class="evp-day-header">${_esc(e.text)}</div>`;
+    }
+    const metaBits = [];
+    if (e.location) metaBits.push(`📍 ${_esc(e.location)}`);
+    if (e.contact) metaBits.push(`☎ ${linkifyPhones(e.contact)}`);
+    return `
+      <div class="evp-time-row">
+        <div class="evp-time">${_esc(e.time || '—')}</div>
+        <div class="evp-row-body">
+          <div class="evp-action">${_esc(e.action || '')}</div>
+          ${metaBits.length ? `<div class="evp-row-meta">${metaBits.join('<span class="muted">·</span>')}</div>` : ''}
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function renderEvpContacts(){
+  const host = document.getElementById('evp-tab-contacts');
+  const entries = (_evpEvent && _evpEvent.contacts) || [];
+  if (!entries.length){
+    host.innerHTML = '<div class="evp-empty">No Contact List tab found in this event.</div>';
+    return;
+  }
+  host.innerHTML = entries.map(c => {
+    if (c.type === 'section'){
+      return `<div class="evp-section">${_esc(c.text)}</div>`;
+    }
+    const links = [];
+    if (c.phone){
+      const dial = c.phone.replace(/[\s-]/g,'');
+      links.push(`<a href="tel:${_esc(dial)}">📞 ${_esc(c.phone)}</a>`);
+    }
+    if (c.email){
+      links.push(`<a href="mailto:${_esc(c.email)}">✉ ${_esc(c.email)}</a>`);
+    }
+    return `
+      <div class="evp-person">
+        <div class="evp-person-name">${_esc(c.name || '—')}</div>
+        ${c.role ? `<div class="evp-person-role">${_esc(c.role)}</div>` : ''}
+        ${links.length ? `<div class="evp-person-links">${links.join('')}</div>` : ''}
+      </div>`;
+  }).join('');
+}
+
+function renderEvpActions(){
+  const host = document.getElementById('evp-tab-actions');
+  const entries = (_evpEvent && _evpEvent.actions) || [];
+  if (!entries.length){
+    host.innerHTML = '<div class="evp-empty">No Action Items tab found in this event.</div>';
+    return;
+  }
+  host.innerHTML = entries.map((a, i) => {
+    const metaBits = [];
+    if (a.due) metaBits.push(`Due ${_esc(a.due)}`);
+    if (a.responsible) metaBits.push(_esc(a.responsible));
+    return `
+      <div class="evp-tick ${a.checked?'done':''}" id="evp-action-${i}">
+        <input type="checkbox" ${a.checked?'checked':''}
+               onchange="toggleEvpCheck('Action Items', ${a.rowNumber}, this.checked, 'evp-action-${i}')"/>
+        <div class="evp-tick-body">
+          <div class="evp-tick-text">${_esc(a.action)}</div>
+          ${a.notes ? `<div class="evp-tick-notes">${_esc(a.notes)}</div>` : ''}
+          ${metaBits.length ? `<div class="evp-tick-meta">${metaBits.join('<span class="muted">·</span>')}</div>` : ''}
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function renderEvpManifest(){
+  const host = document.getElementById('evp-tab-manifest');
+  const entries = (_evpEvent && _evpEvent.manifest) || [];
+  if (!entries.length){
+    host.innerHTML = '<div class="evp-empty">No Manifest tab found in this event.</div>';
+    return;
+  }
+  host.innerHTML = entries.map((m, i) => {
+    const inv = m.inventoryMatch;
+    const thumbHtml = inv && inv.thumbUrl
+      ? `<div class="evp-manifest-thumb" style="background-image:url('${_esc(inv.thumbUrl)}')" onclick="openPhotoLightbox('${_esc(inv.thumbUrl)}', '${_esc(inv.name || m.item)}')"></div>`
+      : `<div class="evp-manifest-thumb empty"></div>`;
+    const matchLine = inv
+      ? `<div class="evp-manifest-match">Linked: <strong>${_esc(inv.name)}</strong>${inv.shelf?` · shelf <strong>${_esc(inv.shelf)}</strong>`:''} · ${Math.max(0,(inv.totalQty||0)-(inv.qtyOut||0))} available</div>`
+      : `<div class="evp-manifest-match">No matching manifest item found in storage. Check the spelling on the runsheet, or register the item.</div>`;
+    const qty = m.qty != null && m.qty !== '' ? `× ${_esc(m.qty)}` : '';
+    return `
+      <div class="evp-tick ${m.checked?'done':''}" id="evp-manifest-${i}">
+        <input type="checkbox" ${m.checked?'checked':''}
+               onchange="toggleEvpCheck('Manifest', ${m.rowNumber}, this.checked, 'evp-manifest-${i}')"/>
+        ${thumbHtml}
+        <div class="evp-tick-body">
+          <div class="evp-tick-text">${_esc(m.item)} ${qty?`<span class="muted" style="font-size:13px">${qty}</span>`:''}</div>
+          ${m.notes ? `<div class="evp-tick-notes">${_esc(m.notes)}</div>` : ''}
+          ${matchLine}
+        </div>
+      </div>`;
+  }).join('');
+}
+
+async function toggleEvpCheck(tab, rowNumber, checked, cardId){
+  if (!_evpEvent){ return; }
+  // Optimistic UI — flip the row immediately, revert on failure.
+  const card = document.getElementById(cardId);
+  if (card) card.classList.toggle('done', !!checked);
+  try {
+    const res = await directPost('toggleRunsheetCheck', {
+      fileId: _evpEvent.fileId,
+      tab:    tab,
+      row:    rowNumber,
+      checked:!!checked
+    });
+    if (!res || !res.success){
+      // Revert.
+      if (card) card.classList.toggle('done', !checked);
+      const cb = card && card.querySelector('input[type=checkbox]');
+      if (cb) cb.checked = !checked;
+      toast((res && res.error) || 'Could not update — try again.');
+      return;
+    }
+    // Update the in-memory copy so re-rendering doesn't reset.
+    const list = tab === 'Manifest' ? _evpEvent.manifest : _evpEvent.actions;
+    if (list){
+      const hit = list.find(e => e.rowNumber === rowNumber);
+      if (hit) hit.checked = !!checked;
+    }
+  } catch (e) {
+    if (card) card.classList.toggle('done', !checked);
+    const cb = card && card.querySelector('input[type=checkbox]');
+    if (cb) cb.checked = !checked;
+    toast('Network error — try again.');
+  }
 }
 
 async function submitUpdatePhoto(){
