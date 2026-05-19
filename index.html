@@ -187,6 +187,8 @@
   .evp-manifest-status{margin-top:8px;font-size:12px;padding:6px 10px;border-radius:8px;display:inline-block}
   .evp-manifest-status.pending{background:rgba(255,178,107,.12);color:var(--accent,#ffb26b);border:1px solid rgba(255,178,107,.35)}
   .evp-manifest-status.sorted{background:rgba(120,200,140,.10);color:#a7e7b8;border:1px solid rgba(120,200,140,.30)}
+  .evp-manifest-status.packed{background:rgba(140,180,255,.10);color:#a8c4ff;border:1px solid rgba(140,180,255,.30);margin-right:8px}
+  .evp-manifest-actions{margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;align-items:center}
   /* Returns to sort queue */
   .ret-row{display:flex;gap:10px;align-items:flex-start;border:1px solid var(--border);background:#0f0f0f;border-radius:10px;padding:12px;margin-bottom:8px}
   .ret-row-body{flex:1;min-width:0}
@@ -4283,24 +4285,35 @@ function renderEvpManifest(){
       : `<div class="evp-manifest-match">No matching manifest item found in storage. Check the spelling on the runsheet, or register the item.</div>`;
     const qty = m.qty != null && m.qty !== '' ? `× ${_esc(m.qty)}` : '';
 
-    // Returned-state line + return action. Three states:
-    //   no return yet → show [↩ Return to storage] button
-    //   pending sort  → show "Returned to A3 · pending sort" badge
-    //   sorted        → show "Returned · sorted by Jacob" badge
+    // Manifest line lifecycle:
+    //   nothing done            → [📦 Pack] [↩ Return to storage]
+    //   packed, not returned    → "Packed" badge + [↩ Return]
+    //   return logged (pending) → "Returned to A3 · awaiting sort" badge
+    //   return sorted           → "Returned to A3 · sorted by X" badge
+    // Pack and Return are independent so a user who skipped Pack can
+    // still log a Return. Once the return exists, the Pack button is
+    // hidden (it'd be confusing — the item's already on its way back).
     const ret = m.returned || null;
+    const isPacked = m.checked && !ret;
+    const itemJson = JSON.stringify(m.item);
+    const qtyJson  = JSON.stringify(m.qty || 1);
+    const invName  = (inv && inv.name) || '';
+    const invRow   = (inv && inv.rowIdx) || 0;
+    const defaultShelf = (inv && inv.shelf) ? inv.shelf : '';
+
     let actionHtml = '';
-    if (!ret) {
-      // Pre-fill the return-to-shelf input with the linked inventory
-      // shelf if known, so the most common case is a single tap.
-      const defaultShelf = (inv && inv.shelf) ? inv.shelf : '';
-      actionHtml = `
-        <div class="evp-manifest-actions">
-          <button class="small" onclick='openReturnModal(${m.rowNumber}, ${JSON.stringify(m.item)}, ${JSON.stringify(m.qty || 1)}, ${JSON.stringify(defaultShelf)}, ${JSON.stringify((inv && inv.name) || "")}, ${inv && inv.rowIdx || 0})'>↩ Return to storage</button>
-        </div>`;
-    } else if (String(ret.status).toLowerCase() === 'sorted') {
-      actionHtml = `<div class="evp-manifest-status sorted">✓ Returned to ${_esc(ret.returnToShelf || '—')} · sorted${ret.sortedBy ? ' by ' + _esc(ret.sortedBy) : ''}</div>`;
+    if (ret) {
+      if (String(ret.status).toLowerCase() === 'sorted') {
+        actionHtml = `<div class="evp-manifest-status sorted">✓ Returned to ${_esc(ret.returnToShelf || '—')} · sorted${ret.sortedBy ? ' by ' + _esc(ret.sortedBy) : ''}</div>`;
+      } else {
+        actionHtml = `<div class="evp-manifest-status pending">↩ Returned to ${_esc(ret.returnToShelf || '—')} · awaiting sort</div>`;
+      }
     } else {
-      actionHtml = `<div class="evp-manifest-status pending">↩ Returned to ${_esc(ret.returnToShelf || '—')} · awaiting sort</div>`;
+      const packBtn = isPacked
+        ? `<div class="evp-manifest-status packed">📦 Packed${m.packedBy ? ' by ' + _esc(m.packedBy) : ''}</div>`
+        : `<button class="small" onclick='packManifestItem(${m.rowNumber}, ${itemJson}, ${qtyJson}, ${JSON.stringify(invName)}, ${invRow}, this)'>📦 Pack</button>`;
+      const returnBtn = `<button class="small" onclick='openReturnModal(${m.rowNumber}, ${itemJson}, ${qtyJson}, ${JSON.stringify(defaultShelf)}, ${JSON.stringify(invName)}, ${invRow})'>↩ Return to storage</button>`;
+      actionHtml = `<div class="evp-manifest-actions">${packBtn}${returnBtn}</div>`;
     }
 
     return `
@@ -4383,6 +4396,51 @@ async function submitReturnFromManifest(){
     if (_evpTab === 'manifest') renderEvpManifest();
     toast('Logged return to ' + shelf);
   } catch (e) {
+    toast('Network error — try again.');
+  }
+}
+
+// ── Pack from manifest ──
+// Pack is a direct action — no modal, no extra inputs. The qty comes
+// from the manifest row, the linked inventory row tells us where to
+// decrement stock. Optimistic UI: card flips to "Packed" immediately
+// and we revert if the server call fails.
+async function packManifestItem(manifestRow, item, qty, invName, invRow, btn){
+  if (!_evpEvent) return;
+  if (btn){ btn.disabled = true; btn.textContent = 'Packing…'; }
+  const payload = Object.assign({
+    fileId:         _evpEvent.fileId,
+    eventName:      _evpEvent.fileName,
+    manifestRow:    manifestRow,
+    item:           item,
+    qty:            Math.max(1, Number(qty) || 1),
+    inventoryMatch: invName || '',
+    inventoryRow:   invRow || 0,
+    team:           state.team || '',
+    ts:             nowIso()
+  }, gpsPayload());
+  try {
+    const res = await directPost('packFromManifest', payload);
+    if (!res || !res.success){
+      if (btn){ btn.disabled = false; btn.textContent = '📦 Pack'; }
+      toast((res && res.error) || 'Pack failed.');
+      return;
+    }
+    // Update in-memory model + re-render so the "Packed" badge appears
+    // immediately without re-fetching the whole event.
+    const hit = (_evpEvent.manifest || []).find(m => m.rowNumber === manifestRow);
+    if (hit){
+      hit.checked = true;
+      hit.packedBy = state.team || '';
+    }
+    if (_evpTab === 'manifest') renderEvpManifest();
+    if (res.capped) {
+      toast('Packed — but capped at stock total (more requested than on shelf).');
+    } else {
+      toast('Packed ' + payload.qty + ' × ' + item);
+    }
+  } catch (e) {
+    if (btn){ btn.disabled = false; btn.textContent = '📦 Pack'; }
     toast('Network error — try again.');
   }
 }
