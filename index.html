@@ -131,6 +131,19 @@
   .evd-haz{border:1px solid var(--border);border-radius:8px;padding:10px;margin-bottom:8px;background:#181818}
   .evd-haz input,.evd-haz textarea{width:100%;padding:8px;border-radius:6px;border:1px solid var(--border);background:#0f0f0f;color:var(--text);font-family:inherit;font-size:13px}
   .small.sel{background:var(--accent,#ffb26b);color:#000;border-color:var(--accent,#ffb26b)}
+  /* Event picker tiles */
+  .evp-event-tile{display:flex;align-items:center;gap:12px;width:100%;
+    background:#0f0f0f;border:1px solid var(--border);border-radius:12px;
+    padding:14px 16px;margin-bottom:8px;color:var(--text);font-family:inherit;
+    font-size:15px;text-align:left;cursor:pointer;transition:border-color .12s}
+  .evp-event-tile:active{transform:scale(.99)}
+  .evp-event-tile.pinned{border-color:rgba(255,178,107,.55);background:rgba(255,178,107,.06)}
+  .evp-event-tile-icon{font-size:22px;flex:0 0 auto;line-height:1}
+  .evp-event-tile-body{flex:1;min-width:0}
+  .evp-event-tile-name{font-weight:600;font-size:15px;line-height:1.3;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .evp-event-tile-meta{font-size:12px;color:var(--muted);margin-top:2px}
+  .evp-event-tile-arrow{font-size:22px;color:var(--muted);flex:0 0 auto;line-height:1}
   /* In-event panel — tab bar + content */
   .evp-tabs{display:flex;gap:6px;margin-top:12px;margin-bottom:12px;overflow-x:auto;padding-bottom:4px}
   .evp-tab{flex:1;min-width:80px;padding:10px 8px;border:1px solid var(--border);background:#0f0f0f;color:var(--muted);border-radius:8px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer}
@@ -169,6 +182,19 @@
   .evp-manifest-thumb.empty::before{content:'no img'}
   .evp-manifest-match{font-size:11px;color:var(--muted);margin-top:4px}
   .evp-manifest-match strong{color:var(--text)}
+  .evp-manifest-actions{margin-top:8px}
+  .evp-manifest-actions button{font-size:13px;padding:7px 12px}
+  .evp-manifest-status{margin-top:8px;font-size:12px;padding:6px 10px;border-radius:8px;display:inline-block}
+  .evp-manifest-status.pending{background:rgba(255,178,107,.12);color:var(--accent,#ffb26b);border:1px solid rgba(255,178,107,.35)}
+  .evp-manifest-status.sorted{background:rgba(120,200,140,.10);color:#a7e7b8;border:1px solid rgba(120,200,140,.30)}
+  /* Returns to sort queue */
+  .ret-row{display:flex;gap:10px;align-items:flex-start;border:1px solid var(--border);background:#0f0f0f;border-radius:10px;padding:12px;margin-bottom:8px}
+  .ret-row-body{flex:1;min-width:0}
+  .ret-row-title{font-size:15px;font-weight:600;line-height:1.3}
+  .ret-row-meta{display:flex;gap:6px;flex-wrap:wrap;font-size:12px;color:var(--text);margin-top:4px}
+  .ret-row-link{font-size:12px;color:var(--muted);margin-top:4px}
+  .ret-row-notes{font-size:12px;color:var(--text);margin-top:4px;font-style:italic}
+  .ret-row-when{font-size:11px;color:var(--muted);margin-top:4px}
   .pack-thumb{width:48px;height:48px;border-radius:8px;background:#1c1c1c center/cover no-repeat;flex-shrink:0;border:1px solid var(--border);cursor:zoom-in}
   .pack-thumb.empty{display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:10px;cursor:default}
   .pack-thumb.empty::before{content:'no img'}
@@ -272,7 +298,7 @@
     </div>
     <div class="card switchboard stack">
       <h2>Where are you?</h2>
-      <button class="primary mode-tile" onclick="show('screen-mode-storage')">
+      <button class="primary mode-tile" onclick="show('screen-mode-storage');refreshReturnsQueueBadge()">
         <span class="mode-tile-emoji">📦</span>
         <span>
           <strong>Storage</strong>
@@ -293,13 +319,24 @@
   <section id="screen-mode-storage" class="screen">
     <div class="card switchboard stack">
       <h1>📦 Storage</h1>
-      <p class="muted" style="margin-top:0;font-size:13px">Warehouse, manifest and order operations.</p>
+      <p class="muted" style="margin-top:0;font-size:13px">Warehouse, manifest and put-away.</p>
       <button class="primary" onclick="startMode('sort')">Search Manifest</button>
+      <button onclick="openReturnsQueue()">↩ Returns to sort <span id="returns-queue-badge" class="muted" style="margin-left:6px;font-size:12px"></span></button>
       <button onclick="startMode('create')">Create Order</button>
-      <button onclick="startMode('pack')">Pack Order</button>
-      <button onclick="startMode('return')">Return Order</button>
       <button onclick="startMode('triage')">Keep It or Delete It</button>
       <button class="ghost" onclick="show('screen-session')">Back</button>
+    </div>
+  </section>
+
+  <!-- RETURNS TO SORT — put-away queue for items returned from events -->
+  <section id="screen-returns-queue" class="screen">
+    <div class="card stack">
+      <h1>↩ Returns to sort</h1>
+      <p class="muted" style="margin-top:0;font-size:13px">
+        Items returned from events, waiting to be put away. Walk each one to its shelf and tap <strong>Mark sorted</strong> so stock counts catch up.
+      </p>
+      <div id="returns-queue-list"></div>
+      <button class="ghost" onclick="show('screen-mode-storage')" style="margin-top:10px">Back</button>
     </div>
   </section>
 
@@ -308,7 +345,7 @@
     <div class="card switchboard stack">
       <h1>🎪 Event day</h1>
       <p class="muted" style="margin-top:0;font-size:13px">Running an event, on site, or signing on.</p>
-      <button class="primary" onclick="openEventPanel()">📅 In-event panel</button>
+      <button id="event-day-primary-btn" class="primary" onclick="openEventPanel()">📅 In-event panel</button>
       <button onclick="openInductionForm()">📋 Event induction</button>
       <button onclick="openIncidentForm()">⚠ Report an incident</button>
       <button class="ghost" onclick="show('screen-session')">Back</button>
@@ -922,10 +959,13 @@
   -->
   <section id="screen-event-panel" class="screen">
     <div class="card stack">
-      <h1 id="evp-title">In-event panel</h1>
-      <div class="field" id="evp-picker-field">
-        <label>Which event?</label>
-        <div id="evp-picker" class="type-picker"></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
+        <h1 id="evp-title" style="margin:0">In-event panel</h1>
+        <button id="evp-switch-btn" class="small ghost" style="display:none" onclick="switchEvent()">Switch event</button>
+      </div>
+      <div id="evp-picker-field">
+        <p class="muted" style="margin-top:6px;font-size:13px">Pick the event you're working. We'll keep it pinned so you don't have to re-pick it next time.</p>
+        <div id="evp-event-list" style="margin-top:10px"></div>
       </div>
 
       <div id="evp-loading" class="muted" style="display:none">Loading event…</div>
@@ -946,6 +986,31 @@
       <button class="ghost" onclick="show('screen-session')" style="margin-top:14px">Back</button>
     </div>
   </section>
+
+  <!-- RETURN MODAL — shown when user taps Return on a manifest line -->
+  <div id="ret-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:90;align-items:center;justify-content:center;padding:20px">
+    <div style="background:#0f0f0f;border:1px solid var(--border);border-radius:12px;padding:18px;max-width:480px;width:100%">
+      <h3 style="margin-top:0">Return to storage</h3>
+      <div id="ret-modal-item" class="muted" style="font-size:13px;margin-bottom:10px"></div>
+      <div class="field">
+        <label>Return to shelf</label>
+        <input id="ret-shelf" type="text" autocapitalize="characters" placeholder="e.g. A3"/>
+        <div class="muted" style="font-size:12px;margin-top:4px" id="ret-shelf-hint"></div>
+      </div>
+      <div class="field">
+        <label>Quantity returning</label>
+        <input id="ret-qty" type="number" min="1" value="1"/>
+      </div>
+      <div class="field">
+        <label>Notes (optional)</label>
+        <textarea id="ret-notes" rows="2" placeholder="Anything off — short note here"></textarea>
+      </div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:14px">
+        <button class="ghost small" onclick="closeReturnModal()">Cancel</button>
+        <button class="primary small" onclick="submitReturnFromManifest()">Log return</button>
+      </div>
+    </div>
+  </div>
 
   <!-- PHOTO UPDATE -->
   <section id="screen-photo" class="screen">
@@ -3924,19 +3989,72 @@ async function fetchRunsheetsList(force){
   return _evpRunsheetsPromise;
 }
 
+// ── Pinned event (persisted in localStorage) ──
+// localStorage so it survives PWA restarts — sessionStorage clears
+// when the tab closes which defeats the whole point of pinning.
+const _PIN_KEY = 'funkified.event.pinned';
+function getPinnedEvent(){
+  try { return JSON.parse(localStorage.getItem(_PIN_KEY) || 'null'); }
+  catch (_) { return null; }
+}
+function setPinnedEvent(file){
+  if (!file || !file.id) { clearPinnedEvent(); return; }
+  try {
+    localStorage.setItem(_PIN_KEY, JSON.stringify({
+      id: file.id, name: file.name || '', url: file.url || ''
+    }));
+  } catch (_) {}
+}
+function clearPinnedEvent(){
+  try { localStorage.removeItem(_PIN_KEY); } catch (_) {}
+}
+
+// Format "modified 2 days ago" / "modified today" for the event tile
+// meta line. Server returns Date strings, so reconstruct here.
+function _modifiedAgo(modified){
+  if (!modified) return '';
+  const d = new Date(modified);
+  if (isNaN(d.getTime())) return '';
+  const diffMs = Date.now() - d.getTime();
+  const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+  if (days <= 0) return 'modified today';
+  if (days === 1) return 'modified yesterday';
+  if (days < 7) return 'modified ' + days + ' days ago';
+  if (days < 30) return 'modified ' + Math.floor(days / 7) + ' weeks ago';
+  return 'modified ' + d.toLocaleDateString();
+}
+
 async function openEventPanel(){
   _evpEvent = null;
   document.getElementById('evp-title').textContent = 'In-event panel';
   document.getElementById('evp-content').style.display = 'none';
   document.getElementById('evp-picker-field').style.display = '';
+  document.getElementById('evp-switch-btn').style.display = 'none';
   show('screen-event-panel');
+  // If an event is pinned, jump straight to it. The user can tap
+  // "Switch event" from inside to come back to this picker.
+  const pinned = getPinnedEvent();
+  if (pinned && pinned.id){
+    await loadEvent(pinned.id, false);
+    return;
+  }
   await renderEvpPicker();
 }
 
+// Used by the "Switch event" button inside the loaded view.
+function switchEvent(){
+  _evpEvent = null;
+  document.getElementById('evp-title').textContent = 'In-event panel';
+  document.getElementById('evp-content').style.display = 'none';
+  document.getElementById('evp-switch-btn').style.display = 'none';
+  document.getElementById('evp-picker-field').style.display = '';
+  renderEvpPicker();
+}
+
 async function renderEvpPicker(){
-  const root = document.getElementById('evp-picker');
+  const root = document.getElementById('evp-event-list');
   if (!root) return;
-  root.innerHTML = `<select disabled><option>Loading events…</option></select>`;
+  root.innerHTML = `<div class="muted" style="font-size:13px;padding:12px 0">Loading events…</div>`;
   const data = await fetchRunsheetsList();
   if (!data || !data.success){
     root.innerHTML = `<div class="muted" style="font-size:12px;color:#ff9a9a">⚠ ${_esc(data.error || 'Could not load runsheets.')} ` +
@@ -3948,43 +4066,84 @@ async function renderEvpPicker(){
     root.innerHTML = `<div class="muted" style="font-size:12px">No runsheets in the folder yet. Drop a Google Sheet that follows the Funkified template into the runsheet folder.</div>`;
     return;
   }
-  const opts = files.map(f =>
-    `<option value="${_esc(f.id)}">${_esc(f.name)}</option>`).join('');
-  root.innerHTML = `
-    <select onchange="onEvpPick(this.value)">
-      <option value="" selected>— pick the event —</option>
-      ${opts}
-    </select>
-    <div class="muted" style="font-size:12px;margin-top:6px">${files.length} event${files.length===1?'':'s'} in the runsheet folder, most recent first.</div>`;
+  const pinned = getPinnedEvent() || {};
+  // Sort pinned event to the top regardless of modified date.
+  const sorted = files.slice().sort(function (a, b) {
+    if (a.id === pinned.id) return -1;
+    if (b.id === pinned.id) return 1;
+    return 0; // server already sorted by modified desc
+  });
+  root.innerHTML = sorted.map(f => {
+    const isPinned = f.id === pinned.id;
+    const meta = _modifiedAgo(f.modified);
+    return `
+      <button type="button" class="evp-event-tile ${isPinned?'pinned':''}" onclick="loadEvent('${_esc(f.id)}', true)">
+        <div class="evp-event-tile-icon">${isPinned ? '📌' : '📅'}</div>
+        <div class="evp-event-tile-body">
+          <div class="evp-event-tile-name">${_esc(f.name)}</div>
+          ${meta ? `<div class="evp-event-tile-meta">${_esc(meta)}${isPinned?' · currently pinned':''}</div>` : (isPinned?'<div class="evp-event-tile-meta">currently pinned</div>':'')}
+        </div>
+        <div class="evp-event-tile-arrow">›</div>
+      </button>`;
+  }).join('') +
+  `<div class="muted" style="font-size:12px;margin-top:8px;text-align:center">${files.length} event${files.length===1?'':'s'} in the runsheet folder, most recent first. Opening one pins it so you land back here next time.</div>`;
 }
 
-async function onEvpPick(fileId){
-  if (!fileId){
-    document.getElementById('evp-content').style.display = 'none';
-    document.getElementById('evp-title').textContent = 'In-event panel';
-    return;
-  }
+// Load and display an event. If `pin` is true, also save it as the
+// pinned event in localStorage. Both the tile click and the auto-load
+// path use this; only tile clicks pin (auto-load doesn't change the
+// pin because it's already pinned).
+async function loadEvent(fileId, pin){
+  if (!fileId) return;
   const loading = document.getElementById('evp-loading');
   loading.style.display = '';
   document.getElementById('evp-content').style.display = 'none';
+  document.getElementById('evp-picker-field').style.display = 'none';
   try {
     const url = ENDPOINT + '?action=runsheetGet&fileId=' + encodeURIComponent(fileId);
     const res = await fetch(url, { method:'GET', cache:'no-store' });
     const data = await res.json();
     if (!data || !data.success){
       loading.style.display = 'none';
+      document.getElementById('evp-picker-field').style.display = '';
       toast((data && data.error) || 'Could not load that event.');
       return;
     }
     _evpEvent = data;
+    if (pin){
+      // Find the file in the cached list to grab name + url for storage.
+      const list = (_evpRunsheets && _evpRunsheets.files) || [];
+      const file = list.find(f => f.id === fileId) || { id:fileId, name:data.fileName };
+      setPinnedEvent(file);
+      // Re-render the Event Day screen so its label updates if user
+      // navigates back to it.
+      updateEventDayPinLabel();
+    }
     document.getElementById('evp-title').textContent = data.fileName || 'In-event panel';
     document.getElementById('evp-content').style.display = '';
+    document.getElementById('evp-switch-btn').style.display = '';
     loading.style.display = 'none';
     _evpTab = 'runsheet';
     switchEvpTab('runsheet');
   } catch (e) {
     loading.style.display = 'none';
+    document.getElementById('evp-picker-field').style.display = '';
     toast('Network error loading event.');
+  }
+}
+
+// Update the Event Day screen's primary button to reflect the pin.
+// Called on app boot and whenever the pin changes.
+function updateEventDayPinLabel(){
+  const btn = document.getElementById('event-day-primary-btn');
+  if (!btn) return;
+  const pinned = getPinnedEvent();
+  if (pinned && pinned.name){
+    btn.innerHTML = '📌 ' + _esc(pinned.name);
+    btn.title = 'Open pinned event';
+  } else {
+    btn.innerHTML = '📅 In-event panel';
+    btn.title = '';
   }
 }
 
@@ -4123,6 +4282,27 @@ function renderEvpManifest(){
       ? `<div class="evp-manifest-match">Linked: <strong>${_esc(inv.name)}</strong>${inv.shelf?` · shelf <strong>${_esc(inv.shelf)}</strong>`:''} · ${Math.max(0,(inv.totalQty||0)-(inv.qtyOut||0))} available</div>`
       : `<div class="evp-manifest-match">No matching manifest item found in storage. Check the spelling on the runsheet, or register the item.</div>`;
     const qty = m.qty != null && m.qty !== '' ? `× ${_esc(m.qty)}` : '';
+
+    // Returned-state line + return action. Three states:
+    //   no return yet → show [↩ Return to storage] button
+    //   pending sort  → show "Returned to A3 · pending sort" badge
+    //   sorted        → show "Returned · sorted by Jacob" badge
+    const ret = m.returned || null;
+    let actionHtml = '';
+    if (!ret) {
+      // Pre-fill the return-to-shelf input with the linked inventory
+      // shelf if known, so the most common case is a single tap.
+      const defaultShelf = (inv && inv.shelf) ? inv.shelf : '';
+      actionHtml = `
+        <div class="evp-manifest-actions">
+          <button class="small" onclick='openReturnModal(${m.rowNumber}, ${JSON.stringify(m.item)}, ${JSON.stringify(m.qty || 1)}, ${JSON.stringify(defaultShelf)}, ${JSON.stringify((inv && inv.name) || "")}, ${inv && inv.rowIdx || 0})'>↩ Return to storage</button>
+        </div>`;
+    } else if (String(ret.status).toLowerCase() === 'sorted') {
+      actionHtml = `<div class="evp-manifest-status sorted">✓ Returned to ${_esc(ret.returnToShelf || '—')} · sorted${ret.sortedBy ? ' by ' + _esc(ret.sortedBy) : ''}</div>`;
+    } else {
+      actionHtml = `<div class="evp-manifest-status pending">↩ Returned to ${_esc(ret.returnToShelf || '—')} · awaiting sort</div>`;
+    }
+
     return `
       <div class="evp-tick ${m.checked?'done':''}" id="evp-manifest-${i}">
         <input type="checkbox" ${m.checked?'checked':''}
@@ -4132,9 +4312,169 @@ function renderEvpManifest(){
           <div class="evp-tick-text">${_esc(m.item)} ${qty?`<span class="muted" style="font-size:13px">${qty}</span>`:''}</div>
           ${m.notes ? `<div class="evp-tick-notes">${_esc(m.notes)}</div>` : ''}
           ${matchLine}
+          ${actionHtml}
         </div>
       </div>`;
   }).join('');
+}
+
+// ── Return modal ──
+// Holds the state of the currently-open return modal. Only one can be
+// open at a time so global state is fine.
+let _returnCtx = null;
+
+function openReturnModal(manifestRow, item, qty, defaultShelf, invMatch, invRow){
+  _returnCtx = {
+    manifestRow: manifestRow,
+    item: item,
+    invMatch: invMatch || '',
+    invRow: invRow || 0
+  };
+  document.getElementById('ret-modal-item').textContent = item + ' × ' + (qty || 1);
+  document.getElementById('ret-shelf').value = defaultShelf || '';
+  document.getElementById('ret-qty').value = qty || 1;
+  document.getElementById('ret-notes').value = '';
+  document.getElementById('ret-shelf-hint').textContent = defaultShelf
+    ? 'Linked storage shelf pre-filled — change if returning to a different bay.'
+    : 'No linked storage item — type the shelf you\'re putting it on.';
+  const modal = document.getElementById('ret-modal');
+  modal.style.display = 'flex';
+}
+function closeReturnModal(){
+  document.getElementById('ret-modal').style.display = 'none';
+  _returnCtx = null;
+}
+
+async function submitReturnFromManifest(){
+  if (!_returnCtx || !_evpEvent){ closeReturnModal(); return; }
+  const shelf = (document.getElementById('ret-shelf').value || '').trim().toUpperCase();
+  const qty   = Math.max(1, parseInt(document.getElementById('ret-qty').value, 10) || 1);
+  const notes = (document.getElementById('ret-notes').value || '').trim();
+  if (!shelf){ toast('Pick a shelf to return to'); return; }
+  const payload = Object.assign({
+    fileId:         _evpEvent.fileId,
+    eventName:      _evpEvent.fileName,
+    manifestRow:    _returnCtx.manifestRow,
+    item:           _returnCtx.item,
+    qty:            qty,
+    inventoryMatch: _returnCtx.invMatch,
+    inventoryRow:   _returnCtx.invRow,
+    returnToShelf:  shelf,
+    notes:          notes,
+    team:           state.team || '',
+    ts:             nowIso()
+  }, gpsPayload());
+  closeReturnModal();
+  try {
+    const res = await directPost('returnFromManifest', payload);
+    if (!res || !res.success){ toast((res && res.error) || 'Return failed'); return; }
+    // Optimistically update the in-memory copy so the manifest re-renders
+    // with the "awaiting sort" status without a full refetch.
+    const hit = (_evpEvent.manifest || []).find(m => m.rowNumber === payload.manifestRow);
+    if (hit){
+      hit.checked = true;
+      hit.returned = {
+        returnId:      res.returnId,
+        status:        'Pending',
+        returnToShelf: shelf,
+        returnedBy:    state.team || ''
+      };
+    }
+    if (_evpTab === 'manifest') renderEvpManifest();
+    toast('Logged return to ' + shelf);
+  } catch (e) {
+    toast('Network error — try again.');
+  }
+}
+
+// ── Returns to sort screen ──
+async function openReturnsQueue(){
+  show('screen-returns-queue');
+  await renderReturnsQueue();
+}
+
+async function renderReturnsQueue(){
+  const host = document.getElementById('returns-queue-list');
+  if (!host) return;
+  host.innerHTML = '<div class="muted" style="font-size:13px;padding:10px 0">Loading…</div>';
+  try {
+    const url = ENDPOINT + '?action=returnsQueue&_=' + Date.now();
+    const res = await fetch(url, { method:'GET', cache:'no-store' });
+    const data = await res.json();
+    if (!data || !data.success){
+      host.innerHTML = '<div class="err-line">Could not load queue.</div>';
+      return;
+    }
+    const list = data.returns || [];
+    if (!list.length){
+      host.innerHTML = '<div class="muted" style="padding:14px 4px">Nothing to sort — queue is clear ✓</div>';
+      updateReturnsQueueBadge(0);
+      return;
+    }
+    host.innerHTML = list.map((r) => {
+      const when = r.loggedAt ? new Date(r.loggedAt).toLocaleString() : '';
+      return `
+        <div class="ret-row" data-row="${r.rowNumber}">
+          <div class="ret-row-body">
+            <div class="ret-row-title">${_esc(r.item)} <span class="muted" style="font-size:13px">× ${r.qty || 1}</span></div>
+            <div class="ret-row-meta">
+              ↩ to <strong>${_esc(r.returnToShelf || '—')}</strong>
+              <span class="muted">·</span>
+              <span>${_esc(r.eventName || 'event')}</span>
+              ${r.returnedBy ? `<span class="muted">·</span><span>by ${_esc(r.returnedBy)}</span>` : ''}
+            </div>
+            ${r.inventoryMatch ? `<div class="ret-row-link">Linked: <strong>${_esc(r.inventoryMatch)}</strong></div>` : '<div class="ret-row-link muted">Not linked to a storage row — sort updates the queue only.</div>'}
+            ${r.notes ? `<div class="ret-row-notes">${_esc(r.notes)}</div>` : ''}
+            ${when ? `<div class="ret-row-when">${_esc(when)}</div>` : ''}
+          </div>
+          <button class="small primary" onclick="markReturnSorted(${r.rowNumber}, this)">Mark sorted</button>
+        </div>`;
+    }).join('');
+    updateReturnsQueueBadge(list.length);
+  } catch (e) {
+    host.innerHTML = '<div class="err-line">Network error.</div>';
+  }
+}
+
+async function markReturnSorted(rowNumber, btn){
+  if (btn) { btn.disabled = true; btn.textContent = 'Sorting…'; }
+  try {
+    const res = await directPost('sortReturn', { rowNumber: rowNumber, team: state.team || '' });
+    if (!res || !res.success){
+      if (btn){ btn.disabled = false; btn.textContent = 'Mark sorted'; }
+      toast((res && res.error) || 'Could not mark sorted.');
+      return;
+    }
+    // Pull the row out of the list.
+    const card = document.querySelector(`.ret-row[data-row="${rowNumber}"]`);
+    if (card) card.remove();
+    const remaining = document.querySelectorAll('#returns-queue-list .ret-row').length;
+    updateReturnsQueueBadge(remaining);
+    if (!remaining) {
+      document.getElementById('returns-queue-list').innerHTML =
+        '<div class="muted" style="padding:14px 4px">Nothing to sort — queue is clear ✓</div>';
+    }
+    toast('Sorted — stock updated');
+  } catch (e) {
+    if (btn){ btn.disabled = false; btn.textContent = 'Mark sorted'; }
+    toast('Network error.');
+  }
+}
+
+// Tiny badge on the Storage submenu so the user sees at a glance
+// whether anything's waiting. Refreshed on screen entries.
+function updateReturnsQueueBadge(count){
+  const el = document.getElementById('returns-queue-badge');
+  if (!el) return;
+  el.textContent = count > 0 ? '(' + count + ')' : '';
+}
+async function refreshReturnsQueueBadge(){
+  try {
+    const url = ENDPOINT + '?action=returnsQueue&_=' + Date.now();
+    const res = await fetch(url, { method:'GET', cache:'no-store' });
+    const data = await res.json();
+    if (data && data.success) updateReturnsQueueBadge((data.returns || []).length);
+  } catch (_) {}
 }
 
 async function toggleEvpCheck(tab, rowNumber, checked, cardId){
@@ -4302,6 +4642,9 @@ async function init(){
   // own retry link surfaces them when a form actually opens.
   fetchKnownList('types').catch(()=>{});
   fetchKnownList('brands').catch(()=>{});
+  // Reflect any pinned event from a previous session onto the Event
+  // Day primary button so users see the event name immediately.
+  updateEventDayPinLabel();
   if(params.shelf){
     state.currentShelf=params.shelf.toUpperCase();
     lookupAndRoute(params.shelf.toUpperCase()).catch(()=>show('screen-session'));
