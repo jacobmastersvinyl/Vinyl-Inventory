@@ -298,7 +298,7 @@
         <label>Or add a new name</label>
         <input id="team-other" type="text" placeholder="e.g. Jacob" oninput="setTeam(this.value)" onblur="rememberCurrentName()"/>
       </div>
-      <p class="muted">Team: <span data-team-display>—</span></p>
+      <p class="muted">Name: <span data-team-display>—</span></p>
     </div>
     <div class="card switchboard stack">
       <h2>Where are you?</h2>
@@ -1092,7 +1092,7 @@
   <section id="screen-create-setup" class="screen">
     <div class="card stack">
       <h1>New order</h1>
-      <p class="muted" style="font-size:13px">Build a pack list yourself — no client portal involved. Anyone on the team can pack it later.</p>
+      <p class="muted" style="font-size:13px">Build a pack list yourself — no client portal involved. Anyone with the app can pack it later.</p>
       <div class="field"><label>Job / event name</label>
         <input id="cr-job" type="text" placeholder="e.g. Spring Launch — Carriageworks"/></div>
       <div class="field"><label>Client</label>
@@ -1636,7 +1636,7 @@ function updateTeamUI(){
   if(other && state.team) other.value=state.team;
 }
 function startMode(mode){
-  if(!state.team){toast('Pick a team first');return;}
+  if(!state.team){toast('Pick a name first');return;}
   state.mode=mode; saveSession();
   if(mode==='sort'){
     // Clear any filter from a previous session + paint the browse chips
