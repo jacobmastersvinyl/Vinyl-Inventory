@@ -67,7 +67,9 @@
     opacity:0;transition:all .25s;pointer-events:none;z-index:20;max-width:90%;text-align:center}
   #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
   .hidden{display:none!important}
-  .photo-preview{max-width:100%;border-radius:10px;margin-top:8px;display:none}
+  .photo-preview{max-width:100%;border-radius:10px;margin-top:8px;display:none;border:1px solid var(--border)}
+  .photo-preview-footer{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:6px;padding:8px 10px;background:rgba(255,178,107,.08);border:1px solid rgba(255,178,107,.25);border-radius:8px;font-size:12px;color:var(--text)}
+  .photo-preview-footer button{flex:0 0 auto}
   .pending-item{background:var(--panel2);border:1px solid var(--border);border-radius:10px;padding:10px;margin-bottom:8px}
   .pending-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:4px}
   .pending-body{font-size:14px;color:#ddd;margin-bottom:6px}
@@ -1315,13 +1317,16 @@ function buildEnvelope(action,payload){
 function fileToDataUrl(f){return new Promise((r,j)=>{const x=new FileReader();x.onload=()=>r(x.result);x.onerror=()=>j(x.error);x.readAsDataURL(f);});}
 function loadImage(u){return new Promise((r,j)=>{const i=new Image();i.onload=()=>r(i);i.onerror=()=>j(new Error('img'));i.src=u;});}
 // Square-crop + uniform-resize. Every saved photo is exactly
-// PHOTO_OUTPUT_DIM × PHOTO_OUTPUT_DIM JPEG. This makes the catalogue
-// grid look intentional even when individual photos are scrappy:
-//   1. Centre-crop the source to its largest inscribed square.
-//   2. High-quality scale that square to the output dimension.
-//   3. Encode as JPEG at PHOTO_QUALITY.
-// Browsers respect EXIF orientation when drawing modern HTML <img> to
-// canvas, so portrait phone shots come out the right way up.
+// PHOTO_OUTPUT_DIM × PHOTO_OUTPUT_DIM JPEG so the catalogue grid
+// looks intentional. Crop strategy is orientation-aware:
+//   • Portrait (h > w) — keep the BOTTOM square. Phones at chest
+//     height shoot shelves with the item in the lower frame; the
+//     top of a portrait photo is usually ceiling/empty. Bias to the
+//     bottom keeps the item, drops the wasted top.
+//   • Landscape (w > h) — centre-crop horizontally. No good reason
+//     to bias either side.
+//   • Already square — no crop, just scale.
+// Output is still a uniform square at PHOTO_OUTPUT_DIM.
 async function compressImage(file){
   if(!file)return null;
   const dataUrl=await fileToDataUrl(file);
@@ -1329,34 +1334,80 @@ async function compressImage(file){
   const w=img.naturalWidth||img.width, h=img.naturalHeight||img.height;
   if(!w||!h) throw new Error('image has no dimensions');
 
-  // Largest centred square that fits in the source.
-  const side=Math.min(w,h);
-  const sx=Math.round((w-side)/2);
-  const sy=Math.round((h-side)/2);
+  const side = Math.min(w, h);
+  // Horizontal crop: always centred.
+  const sx = Math.round((w - side) / 2);
+  // Vertical crop: BOTTOM-biased for portrait, centred for landscape/square.
+  // Override per-call by setting compressImage.cropBias = 'centre'.
+  const bias = compressImage.cropBias || 'auto';
+  let sy;
+  if (h > w && bias !== 'centre'){
+    sy = h - side;            // keep the bottom `side` pixels
+  } else {
+    sy = Math.round((h - side) / 2);
+  }
 
-  // Output canvas — fixed dimension, regardless of source size.
   const c=document.createElement('canvas');
   c.width=PHOTO_OUTPUT_DIM; c.height=PHOTO_OUTPUT_DIM;
   const ctx=c.getContext('2d');
-  // Higher-quality bilinear scaling on browsers that support it.
   if('imageSmoothingQuality' in ctx) ctx.imageSmoothingQuality='high';
   ctx.imageSmoothingEnabled=true;
-  // White fill underneath in case the JPEG encoder ever sees transparency
-  // (rare with <img>, but defensive — keeps any edge artifacts white).
   ctx.fillStyle='#ffffff';
   ctx.fillRect(0,0,PHOTO_OUTPUT_DIM,PHOTO_OUTPUT_DIM);
   ctx.drawImage(img, sx, sy, side, side, 0, 0, PHOTO_OUTPUT_DIM, PHOTO_OUTPUT_DIM);
 
   return c.toDataURL('image/jpeg', PHOTO_QUALITY);
 }
+
+// Track the input that fed each preview so the Retake button can
+// re-trigger the file picker without the user hunting for it.
+const _previewToInput = {};
+
 async function handlePhotoInput(ev,previewId){
   const f=ev.target.files&&ev.target.files[0]; if(!f)return;
   try{
     const dataUrl=await compressImage(f);
     state.pendingPhoto={dataUrl};
-    if(previewId){const img=document.getElementById(previewId);if(img){img.src=dataUrl;img.style.display='block';}}
-    toast('Photo ready');
+    if(previewId){
+      _previewToInput[previewId] = ev.target;
+      const img=document.getElementById(previewId);
+      if(img){
+        img.src=dataUrl;
+        img.style.display='block';
+        // Inject a label + Retake button right after the preview so the
+        // user always sees what will be saved and can re-take in one tap.
+        let footer = document.getElementById(previewId + '-footer');
+        if (!footer){
+          footer = document.createElement('div');
+          footer.id = previewId + '-footer';
+          footer.className = 'photo-preview-footer';
+          img.parentNode.insertBefore(footer, img.nextSibling);
+        }
+        footer.innerHTML =
+          `<span>📸 This is what will be saved (square crop).</span>` +
+          `<button type="button" class="small ghost" onclick="retakePhoto('${previewId}')">Retake</button>`;
+      }
+    }
+    toast('Photo ready — check the preview');
   }catch(_){toast('Photo error');}
+}
+
+// Re-open the file picker for a given preview, after clearing the
+// current capture. Falls back to a toast hint if we can't find the
+// original input (rare — it'd mean the input was removed from the DOM).
+function retakePhoto(previewId){
+  state.pendingPhoto = null;
+  const img = document.getElementById(previewId);
+  if (img){ img.src = ''; img.style.display = 'none'; }
+  const footer = document.getElementById(previewId + '-footer');
+  if (footer) footer.remove();
+  const input = _previewToInput[previewId];
+  if (input){
+    input.value = '';
+    try { input.click(); } catch(_) { toast('Tap the photo field above to retake.'); }
+  } else {
+    toast('Tap the photo field above to retake.');
+  }
 }
 
 /* ---------- Enqueue + Drain ---------- */
